@@ -1,0 +1,19 @@
+.card {
+    width: 100%;
+    padding: 15px;
+}
+
+.dividerBox {
+    margin: 40px auto 0;
+    width: 80%;
+}
+
+.dividerBox2 {
+    margin: 60px auto 0;
+    width: 80%;
+}
+
+.dividerLine {
+    border: 1px solid #e5e8eb;
+    margin-top: -40px;
+}
