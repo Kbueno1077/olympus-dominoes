@@ -33,6 +33,7 @@ import NotesDone from "../../sections/NotesDone/NotesDone";
 import TableDraw from "../../sections/TableDraw/TableDraw";
 import { gameModes2, gameModes3, gameModes4 } from "../../utils/matchSettings";
 import useToast from "/hooks/useToast";
+import FinishMatch from "@/sections/FinishMatch/FinishMatch";
 
 const emptyGame = {
     t1Datas: [],
@@ -453,15 +454,7 @@ export default function NewMatch() {
                         />
 
                         <Box mt={3}>
-                            <Button
-                                onClick={finishMatch}
-                                sx={{ height: "60px", fontSize: "18px" }}
-                                fullWidth
-                                variant="contained"
-                                disabled={true}
-                            >
-                                Finish Match (Coming Soon)
-                            </Button>
+                            <FinishMatch finishMatch={finishMatch} />
                         </Box>
                     </Box>
                 </Box>
