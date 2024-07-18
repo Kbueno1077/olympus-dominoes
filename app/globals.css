@@ -5,9 +5,11 @@
 @layer base {
     :root {
         --background: 200 20% 98%;
-        --btn-background: 200 10% 91%;
-        --btn-background-hover: 200 10% 89%;
         --foreground: 200 50% 3%;
+        --primary: 33 181 107;
+        --secondary: 200 10% 12%;
+        --error: 255 72 66;
+        --text: 200 20% 96%;
     }
 
     @media (prefers-color-scheme: dark) {

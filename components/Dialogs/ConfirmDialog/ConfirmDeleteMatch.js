@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -8,7 +6,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { IconButton } from "@mui/material";
-import Iconify from "../../../components2/Iconify";
+import Iconify from "@/components/Iconify";
 
 export default function ConfirmDeleteMatch({ onCofirm, index }) {
     const [open, setOpen] = React.useState(false);
@@ -30,7 +28,7 @@ export default function ConfirmDeleteMatch({ onCofirm, index }) {
         <React.Fragment>
             <IconButton onClick={handleClickOpen} size="small">
                 <Iconify
-                    sx={{ color: "#FF4842" }}
+                    className="text-error"
                     icon="eva:minus-circle-outline"
                 />
             </IconButton>

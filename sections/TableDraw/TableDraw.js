@@ -1,7 +1,6 @@
-// material
 import { Box, Card, Chip } from "@mui/material";
 
-import Iconify from "../../components2/Iconify";
+import Iconify from "@/components/Iconify";
 
 export default function TableDraw({
     gameMode,

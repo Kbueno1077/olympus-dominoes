@@ -8,7 +8,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import * as React from "react";
-import useToast from "../../../hooks/useToast";
+import useToast from "@/hooks/useToast";
 
 export default function AddScoreDialog({ addScore, teamNumber, disabled }) {
     const [open, setOpen] = React.useState(false);
@@ -44,13 +44,7 @@ export default function AddScoreDialog({ addScore, teamNumber, disabled }) {
                 fullWidth
                 variant="contained"
                 disabled={disabled}
-                style={{
-                    backgroundColor: !disabled && "#20B66A",
-                    width: "100%",
-                    border: "none",
-                    resize: "none",
-                    borderRadius: "5px",
-                }}
+                className="w-full border-none rounded-md bg-primary text-background"
             >
                 Add Score
             </Button>
@@ -66,7 +60,7 @@ export default function AddScoreDialog({ addScore, teamNumber, disabled }) {
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description">
-                        <div style={{ marginTop: "10px" }}>
+                        <div className="mt-2">
                             <TextField
                                 label="Points"
                                 fullWidth
@@ -87,19 +81,14 @@ export default function AddScoreDialog({ addScore, teamNumber, disabled }) {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose} sx={{ marginRight: "8px" }}>
+                    <Button onClick={handleClose} className="mr-1">
                         Cancel
                     </Button>
                     <Button
                         onClick={handleAddScore}
                         autoFocus
                         variant="contained"
-                        style={{
-                            backgroundColor: "#20B66A",
-                            border: "none",
-                            resize: "none",
-                            borderRadius: "5px",
-                        }}
+                        className="border-none rounded-md bg-primary text-background"
                     >
                         Add
                     </Button>

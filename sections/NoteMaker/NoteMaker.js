@@ -7,7 +7,7 @@ import {
     Divider,
     Typography,
 } from "@mui/material";
-import AddScoreDialog from "../../components2/Dialogs/AddScoreDialog/AddScoreDialog";
+import AddScoreDialog from "../../components/Dialogs/AddScoreDialog/AddScoreDialog";
 
 export default function NoteMaker({
     isGameStarted,

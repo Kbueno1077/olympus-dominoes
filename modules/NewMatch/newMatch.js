@@ -10,8 +10,8 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useRecoilState } from "recoil";
-import ConfirmDeleteGame from "../../components2/Dialogs/ConfirmDialog/ConfirmDeleteGame";
-import OptionalDescription from "../../components2/OptionalDescription/OptionalDescription";
+import ConfirmDeleteGame from "../../components/Dialogs/ConfirmDialog/ConfirmDeleteGame";
+import OptionalDescription from "../../components/OptionalDescription/OptionalDescription";
 import {
     completedGamesRecoil,
     currentGameRecoil,

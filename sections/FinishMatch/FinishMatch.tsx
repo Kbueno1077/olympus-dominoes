@@ -26,7 +26,7 @@ function FinishMatch({ finishMatch }: { finishMatch: () => void }) {
             {user && (
                 <Button
                     onClick={finishMatch}
-                    sx={{ height: "60px", fontSize: "18px" }}
+                    className="h-[60px] text-lg"
                     fullWidth
                     variant="contained"
                     disabled={true}

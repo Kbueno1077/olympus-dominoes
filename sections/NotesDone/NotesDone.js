@@ -1,8 +1,8 @@
 "use client";
 
 import { Box, Card, Divider, Typography } from "@mui/material";
-import ConfirmDeleteMatch from "../../components2/Dialogs/ConfirmDialog/ConfirmDeleteMatch";
-import Note from "../../components2/Notes/Note";
+import ConfirmDeleteMatch from "../../components/Dialogs/ConfirmDialog/ConfirmDeleteMatch";
+import Note from "../../components/Notes/Note";
 import styles from "./notesDone.module.css";
 
 export default function NotesDone({
@@ -40,7 +40,7 @@ export default function NotesDone({
                         justifyContent="space-evenly"
                         mt={0.7}
                         gap="25px"
-                        style={{ width: "100%" }}
+                        className="w-full"
                     >
                         <Note
                             datas={game.t1Datas}
@@ -70,7 +70,7 @@ export default function NotesDone({
                                     justifyContent="space-evenly"
                                     mt={0.7}
                                     gap="25px"
-                                    style={{ width: "100%" }}
+                                    className="w-full"
                                 >
                                     <Note
                                         datas={game.t3Datas}
