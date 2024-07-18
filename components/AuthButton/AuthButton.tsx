@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { Button } from "@mui/material";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import AuthLink from "./AuthLink";
 
 export default async function AuthButton() {
     const supabase = createClient();
@@ -28,11 +28,6 @@ export default async function AuthButton() {
             </form>
         </div>
     ) : (
-        <Link
-            href="/login"
-            className="py-2 px-3 flex rounded-md no-underline bg-btn-background hover:bg-btn-background-hover text-primary border-solid border-2 border-primary"
-        >
-            Login
-        </Link>
+        <AuthLink />
     );
 }

@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { SubmitButton } from "./submit-button";
+import { Typography } from "@mui/material";
 
 export default function Login({
     searchParams,
@@ -98,15 +99,17 @@ export default function Login({
                 />
                 <SubmitButton
                     formAction={signIn}
+                    variant="contained"
                     className="bg-primary text-white rounded-md px-4 py-2 text-foreground mb-2"
                     pendingText="Signing In..."
                 >
                     Log In
                 </SubmitButton>
 
-                <h2>Don't have an account yet?</h2>
+                <Typography>Don't have an account yet?</Typography>
                 <SubmitButton
                     formAction={signUp}
+                    variant="outlined"
                     className="border border-foreground/20 rounded-md px-4 py-2 text-foreground mb-2"
                     pendingText="Signing Up..."
                 >

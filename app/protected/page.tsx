@@ -1,4 +1,4 @@
-import AuthButton from "@/components/AuthButton";
+import AuthButton from "@/components/AuthButton/AuthButton";
 import NewMatch from "@/modules/NewMatch/newMatch";
 import { createClient } from "@/utils/supabase/server";
 import { Container } from "@mui/material";

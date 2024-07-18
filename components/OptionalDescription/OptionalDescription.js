@@ -27,9 +27,9 @@ function OptionalDescription({ matchDescription, setMatchDescription }) {
                     id="panel1a-header"
                 >
                     <Typography
+                        color={"primary"}
                         sx={{
                             fontWeight: 700,
-                            color: "#20B66A",
                         }}
                     >
                         Optional Description

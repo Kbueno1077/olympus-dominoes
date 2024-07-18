@@ -40,11 +40,12 @@ export default function AddScoreDialog({ addScore, teamNumber, disabled }) {
     return (
         <React.Fragment>
             <Button
-                onClick={handleClickOpen}
                 fullWidth
+                onClick={handleClickOpen}
                 variant="contained"
                 disabled={disabled}
-                className="w-full border-none rounded-md bg-primary text-background"
+                color="primary"
+                className="w-full border-none rounded-md "
             >
                 Add Score
             </Button>
@@ -88,7 +89,7 @@ export default function AddScoreDialog({ addScore, teamNumber, disabled }) {
                         onClick={handleAddScore}
                         autoFocus
                         variant="contained"
-                        className="border-none rounded-md bg-primary text-background"
+                        className="border-none rounded-md"
                     >
                         Add
                     </Button>

@@ -320,10 +320,10 @@ export default function NewMatch() {
                         >
                             {isGameStarted && (
                                 <Typography
+                                    color={"primary"}
                                     sx={{
                                         fontWeight: "bold",
                                         fontSize: "30px",
-                                        color: "#20B66A",
                                     }}
                                 >
                                     Hello, Welcome to Olympus!
@@ -364,10 +364,10 @@ export default function NewMatch() {
                     <Box sx={{ maxWidth: "520px", width: "100%" }}>
                         {!isGameStarted && !matchesUpXLBreakpoint && (
                             <Typography
+                                color={"primary"}
                                 sx={{
                                     fontWeight: "bold",
                                     fontSize: "30px",
-                                    color: "#20B66A",
                                 }}
                             >
                                 Hello, Welcome to Olympus!
@@ -376,10 +376,10 @@ export default function NewMatch() {
 
                         {!matchesUpXLBreakpoint && (
                             <Typography
+                                color={"primary"}
                                 sx={{
                                     fontWeight: "bold",
                                     fontSize: "30px",
-                                    color: "#20B66A",
                                     marginBottom: "15px",
                                 }}
                             >

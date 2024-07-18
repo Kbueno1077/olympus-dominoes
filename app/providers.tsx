@@ -1,7 +1,7 @@
 "use client";
 
 import { SnackbarProvider } from "notistack";
-import ThemeConfig from "../theme";
+import ThemeConfig from "../muiTheme";
 import { RecoilRoot } from "recoil";
 
 export function Providers({ children }: { children: React.ReactNode }) {
