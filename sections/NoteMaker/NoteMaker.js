@@ -1,3 +1,4 @@
+import { currentGameRecoil, gameEditionModeRecoil } from "@/recoil/recoilState";
 import { Icon } from "@iconify/react";
 import {
     Box,
@@ -5,28 +6,84 @@ import {
     Card,
     Checkbox,
     Divider,
+    IconButton,
     Typography,
 } from "@mui/material";
+import { useRecoilState } from "recoil";
 import AddScoreDialog from "../../components/Dialogs/AddScoreDialog/AddScoreDialog";
+import NoteData from "./NoteData";
 
 export default function NoteMaker({
     isGameStarted,
     completedGames,
-    currentGame,
     gameMode,
     playersAmount,
     whoWon,
     handleWhoWon,
     handleUpateScores,
-    handleNextGame,
     maxPoints,
 }) {
+    const [gameEditionMode, setGameEditionMode] = useRecoilState(
+        gameEditionModeRecoil
+    );
+    const [currentGame, setCurrentGame] = useRecoilState(currentGameRecoil);
+
+    const handleRemoveDataFromGame = (teamNumber, index) => {
+        const newCurrentGame = { ...currentGame };
+        const teamDatasName = `t${teamNumber}Datas`;
+        const teamTotalsName = `t${teamNumber}TotalPoints`;
+
+        const newTeamTotalPoints =
+            newCurrentGame[teamTotalsName] -
+            newCurrentGame[teamDatasName][index];
+
+        let frontPart = newCurrentGame[teamDatasName].slice(0, index);
+        let lastPart = newCurrentGame[teamDatasName].slice(index + 1);
+        const newTeamDatas = [...frontPart, ...lastPart];
+
+        newCurrentGame[teamTotalsName] = newTeamTotalPoints;
+        newCurrentGame[teamDatasName] = newTeamDatas;
+
+        setCurrentGame(newCurrentGame);
+    };
+
     return (
         <>
             <Card elevation={10} sx={{ width: "100%", padding: "15px" }}>
-                <Typography variant="h6" sx={{ color: "#56616A" }}>
-                    Game {completedGames.length + 1}
-                </Typography>
+                <Box display="flex" justifyContent="space-between">
+                    <Typography variant="h6" sx={{ color: "#56616A" }}>
+                        Game {completedGames.length + 1}
+                    </Typography>
+
+                    {!gameEditionMode ? (
+                        <IconButton
+                            color="primary"
+                            onClick={() => {
+                                setGameEditionMode(true);
+                            }}
+                        >
+                            <Icon
+                                style={{
+                                    fontSize: "22px",
+                                }}
+                                icon="ic:baseline-edit"
+                            />
+                        </IconButton>
+                    ) : (
+                        <IconButton
+                            onClick={() => {
+                                setGameEditionMode(false);
+                            }}
+                        >
+                            <Icon
+                                style={{
+                                    fontSize: "22px",
+                                }}
+                                icon="ic:baseline-edit-off"
+                            />
+                        </IconButton>
+                    )}
+                </Box>
 
                 <div
                     style={{
@@ -38,12 +95,18 @@ export default function NoteMaker({
                         left: "0",
                     }}
                 >
-                    <h4 style={{ color: "#56616A", fontWeight: "bold" }}>
+                    <Typography
+                        variant="h6"
+                        style={{ color: "#56616A", fontWeight: "bold" }}
+                    >
                         Team 1
-                    </h4>
-                    <h4 style={{ color: "#56616A", fontWeight: "bold" }}>
+                    </Typography>
+                    <Typography
+                        variant="h6"
+                        style={{ color: "#56616A", fontWeight: "bold" }}
+                    >
                         Team 2
-                    </h4>
+                    </Typography>
                 </div>
 
                 <Box sx={{ margin: "50px auto 0", width: "90%" }}>
@@ -60,41 +123,19 @@ export default function NoteMaker({
                 >
                     {/**TEAM 1 WRITABLE */}
                     <Box sx={{ width: "100%" }}>
-                        {currentGame.t1Datas.map((data, index) => {
-                            if (index === 0)
-                                return (
-                                    <h4
-                                        style={{
-                                            color: "gray",
-                                            fontStyle: "italic",
-                                            textAlign: "center",
-                                            margin: "5px 0 5px",
-                                            fontWeight: "bold",
-                                        }}
-                                    >
-                                        {`x    -    ${data}`}
-                                    </h4>
-                                );
-                            else
-                                return (
-                                    <h4
-                                        style={{
-                                            color: "gray",
-                                            fontStyle: "italic",
-                                            textAlign: "center",
-                                            margin: "5px 0 5px",
-                                            fontWeight: "bold",
-                                        }}
-                                    >
-                                        {`${currentGame.t1Datas[index]}    `}-
-                                        {`    ${
-                                            currentGame.t1Datas
-                                                .slice(0, index)
-                                                .reduce((a, b) => a + b, 0) +
-                                            data
-                                        }`}
-                                    </h4>
-                                );
+                        {currentGame.t1Datas.map((hand, index) => {
+                            return (
+                                <NoteData
+                                    key={`${hand} + ${index}`}
+                                    gameEditionMode={gameEditionMode}
+                                    handleRemoveDataFromGame={
+                                        handleRemoveDataFromGame
+                                    }
+                                    index={index}
+                                    teamDatas={currentGame.t1Datas}
+                                    teamNumber={1}
+                                />
+                            );
                         })}
 
                         <AddScoreDialog
@@ -134,11 +175,6 @@ export default function NoteMaker({
                                     }
                                     sx={{ marginTop: "-2px" }}
                                     checked={whoWon === "Team 1"}
-                                    onChange={() => {
-                                        if (whoWon === "Team 1")
-                                            handleWhoWon("");
-                                        else handleWhoWon("Team 1");
-                                    }}
                                 />
                                 Total:{" "}
                                 {currentGame.t1TotalPoints < maxPoints ? (
@@ -169,41 +205,19 @@ export default function NoteMaker({
                             width: "100%",
                         }}
                     >
-                        {currentGame.t2Datas.map((data, index) => {
-                            if (index === 0)
-                                return (
-                                    <h4
-                                        style={{
-                                            color: "gray",
-                                            fontStyle: "italic",
-                                            textAlign: "center",
-                                            margin: "5px 0 5px",
-                                            fontWeight: "bold",
-                                        }}
-                                    >
-                                        {`x    -    ${data}`}
-                                    </h4>
-                                );
-                            else
-                                return (
-                                    <h4
-                                        style={{
-                                            color: "gray",
-                                            fontStyle: "italic",
-                                            textAlign: "center",
-                                            margin: "5px 0 5px",
-                                            fontWeight: "bold",
-                                        }}
-                                    >
-                                        {`${currentGame.t2Datas[index]}    `}-
-                                        {`    ${
-                                            currentGame.t2Datas
-                                                .slice(0, index)
-                                                .reduce((a, b) => a + b, 0) +
-                                            data
-                                        }`}
-                                    </h4>
-                                );
+                        {currentGame.t2Datas.map((hand, index) => {
+                            return (
+                                <NoteData
+                                    key={`${hand} + ${index}`}
+                                    gameEditionMode={gameEditionMode}
+                                    handleRemoveDataFromGame={
+                                        handleRemoveDataFromGame
+                                    }
+                                    index={index}
+                                    teamDatas={currentGame.t2Datas}
+                                    teamNumber={2}
+                                />
+                            );
                         })}
 
                         <AddScoreDialog
@@ -247,11 +261,6 @@ export default function NoteMaker({
                                     }
                                     sx={{ marginTop: "-2px" }}
                                     checked={whoWon === "Team 2"}
-                                    onChange={() => {
-                                        if (whoWon === "Team 2")
-                                            handleWhoWon("");
-                                        else handleWhoWon("Team 2");
-                                    }}
                                 />
                                 Total:{" "}
                                 {currentGame.t2TotalPoints < maxPoints ? (
@@ -302,64 +311,42 @@ export default function NoteMaker({
                                     top: "225px",
                                 }}
                             >
-                                <h4
+                                <Typography
+                                    variant="h6"
                                     style={{
                                         color: "#56616A",
                                         fontWeight: "bold",
                                     }}
                                 >
                                     Team 3
-                                </h4>
+                                </Typography>
                                 {playersAmount === 4 && (
-                                    <h4
+                                    <Typography
+                                        variant="h6"
                                         style={{
                                             color: "#56616A",
                                             fontWeight: "bold",
                                         }}
                                     >
                                         Team 4
-                                    </h4>
+                                    </Typography>
                                 )}
                             </div>
 
                             <Box sx={{ width: "100%" }}>
-                                {currentGame.t3Datas.map((data, index) => {
-                                    if (index === 0)
-                                        return (
-                                            <h4
-                                                style={{
-                                                    color: "gray",
-                                                    fontStyle: "italic",
-                                                    textAlign: "center",
-                                                    margin: "5px 0 5px",
-                                                    fontWeight: "bold",
-                                                }}
-                                            >
-                                                {`x    -    ${data}`}
-                                            </h4>
-                                        );
-                                    else
-                                        return (
-                                            <h4
-                                                style={{
-                                                    color: "gray",
-                                                    fontStyle: "italic",
-                                                    textAlign: "center",
-                                                    margin: "5px 0 5px",
-                                                }}
-                                            >
-                                                {`${currentGame.t3Datas[index]}    `}
-                                                -
-                                                {`    ${
-                                                    currentGame.t3Datas
-                                                        .slice(0, index)
-                                                        .reduce(
-                                                            (a, b) => a + b,
-                                                            0
-                                                        ) + data
-                                                }`}
-                                            </h4>
-                                        );
+                                {currentGame.t3Datas.map((hand, index) => {
+                                    return (
+                                        <NoteData
+                                            key={`${hand} + ${index}`}
+                                            gameEditionMode={gameEditionMode}
+                                            handleRemoveDataFromGame={
+                                                handleRemoveDataFromGame
+                                            }
+                                            index={index}
+                                            teamDatas={currentGame.t3Datas}
+                                            teamNumber={3}
+                                        />
+                                    );
                                 })}
 
                                 <AddScoreDialog
@@ -407,11 +394,6 @@ export default function NoteMaker({
                                             }
                                             sx={{ marginTop: "-2px" }}
                                             checked={whoWon === "Team 3"}
-                                            onChange={() => {
-                                                if (whoWon === "Team 3")
-                                                    handleWhoWon("");
-                                                else handleWhoWon("Team 3");
-                                            }}
                                         />
                                         Total:{" "}
                                         {currentGame.t3TotalPoints <
@@ -453,44 +435,21 @@ export default function NoteMaker({
                                         width: "100%",
                                     }}
                                 >
-                                    {currentGame.t4Datas.map((data, index) => {
-                                        if (index === 0)
-                                            return (
-                                                <h4
-                                                    style={{
-                                                        color: "gray",
-                                                        fontStyle: "italic",
-                                                        textAlign: "center",
-                                                        margin: "5px 0 5px",
-                                                        fontWeight: "bold",
-                                                    }}
-                                                >
-                                                    {`x    -    ${data}`}
-                                                </h4>
-                                            );
-                                        else
-                                            return (
-                                                <h4
-                                                    style={{
-                                                        color: "gray",
-                                                        fontStyle: "italic",
-                                                        textAlign: "center",
-                                                        margin: "5px 0 5px",
-                                                        fontWeight: "bold",
-                                                    }}
-                                                >
-                                                    {`${currentGame.t4Datas[index]}    `}
-                                                    -
-                                                    {`    ${
-                                                        currentGame.t4Datas
-                                                            .slice(0, index)
-                                                            .reduce(
-                                                                (a, b) => a + b,
-                                                                0
-                                                            ) + data
-                                                    }`}
-                                                </h4>
-                                            );
+                                    {currentGame.t4Datas.map((hand, index) => {
+                                        return (
+                                            <NoteData
+                                                key={`${hand} + ${index}`}
+                                                gameEditionMode={
+                                                    gameEditionMode
+                                                }
+                                                handleRemoveDataFromGame={
+                                                    handleRemoveDataFromGame
+                                                }
+                                                index={index}
+                                                teamDatas={currentGame.t4Datas}
+                                                teamNumber={4}
+                                            />
+                                        );
                                     })}
 
                                     <AddScoreDialog
@@ -540,11 +499,6 @@ export default function NoteMaker({
                                                 }
                                                 sx={{ marginTop: "-2px" }}
                                                 checked={whoWon === "Team 4"}
-                                                onChange={() => {
-                                                    if (whoWon === "Team 4")
-                                                        handleWhoWon("");
-                                                    else handleWhoWon("Team 4");
-                                                }}
                                             />
                                             Total:{" "}
                                             {currentGame.t4TotalPoints <
@@ -577,17 +531,6 @@ export default function NoteMaker({
                     </>
                 )}
             </Card>
-
-            {isGameStarted && (
-                <Card
-                    elevation={10}
-                    sx={{ maxWidth: "950px", width: "100%", padding: "15px" }}
-                >
-                    <Box display="flex" justifyContent="flex-end">
-                        <Button onClick={handleNextGame}>Next Game</Button>
-                    </Box>
-                </Card>
-            )}
         </>
     );
 }

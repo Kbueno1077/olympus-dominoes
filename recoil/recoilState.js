@@ -100,3 +100,9 @@ export const matchDescriptionRecoil = atom({
     default: "",
     effects_UNSTABLE: [persistAtom],
 });
+
+export const gameEditionModeRecoil = atom({
+    key: "gameEditionMode",
+    default: false,
+    effects_UNSTABLE: [persistAtom],
+});

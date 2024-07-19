@@ -348,10 +348,28 @@ export default function NewMatch() {
                                 handleWhoWon={handleWhoWon}
                                 whoWon={whoWon}
                                 maxPoints={maxPoints}
-                                currentGame={currentGame}
                                 handleUpateScores={handleUpateScores}
-                                handleNextGame={handleNextGame}
                             />
+
+                            {isGameStarted && (
+                                <Card
+                                    elevation={10}
+                                    sx={{
+                                        maxWidth: "950px",
+                                        width: "100%",
+                                        padding: "15px",
+                                    }}
+                                >
+                                    <Box
+                                        display="flex"
+                                        justifyContent="flex-end"
+                                    >
+                                        <Button onClick={handleNextGame}>
+                                            Next Game
+                                        </Button>
+                                    </Box>
+                                </Card>
+                            )}
 
                             {/**DESCRIPTION */}
                             <OptionalDescription

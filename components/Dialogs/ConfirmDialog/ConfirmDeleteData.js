@@ -6,7 +6,12 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import * as React from "react";
 
-export default function ConfirmDeleteData({ onCofirm }) {
+export default function ConfirmDeleteData({
+    onCofirm,
+    teamDatas,
+    index,
+    isFirst,
+}) {
     const [open, setOpen] = React.useState(false);
 
     const handleClickOpen = () => {
@@ -24,7 +29,45 @@ export default function ConfirmDeleteData({ onCofirm }) {
 
     return (
         <React.Fragment>
-            <Button onClick={handleClickOpen}>Cancel Game</Button>
+            {isFirst && (
+                <Button
+                    fullWidth
+                    color="error"
+                    variant="outlined"
+                    onClick={handleClickOpen}
+                    style={{
+                        color: "gray",
+                        fontStyle: "italic",
+                        textAlign: "center",
+                        margin: "5px 0 5px",
+                        fontWeight: "bold",
+                    }}
+                >
+                    {`x    -    ${teamDatas[0]}`}
+                </Button>
+            )}
+
+            {!isFirst && (
+                <Button
+                    fullWidth
+                    color="error"
+                    onClick={handleClickOpen}
+                    variant="outlined"
+                    style={{
+                        color: "gray",
+                        fontStyle: "italic",
+                        textAlign: "center",
+                        margin: "5px 0 5px",
+                        fontWeight: "bold",
+                    }}
+                >
+                    {`${teamDatas[index]}    `}-
+                    {`    ${
+                        teamDatas.slice(0, index).reduce((a, b) => a + b, 0) +
+                        teamDatas[index]
+                    }`}
+                </Button>
+            )}
 
             <Dialog
                 open={open}
@@ -33,7 +76,7 @@ export default function ConfirmDeleteData({ onCofirm }) {
                 aria-describedby="alert-dialog-description"
             >
                 <DialogTitle id="alert-dialog-title">
-                    Are you sure you want to delete this game?
+                    Are you sure you want to delete this data?
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description"></DialogContentText>
