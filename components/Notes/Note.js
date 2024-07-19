@@ -2,28 +2,28 @@
 
 import React from "react";
 
-function Note({ winner, datas, team }) {
+function Note({ winner, hands, team }) {
     return (
         <div style={{ textAlign: "center" }}>
-            {datas.map((data, index) => {
+            {hands.map((hand, index) => {
                 if (index === 0)
                     return (
                         <h4 className="text-gray-500 font-italic font-bold my-2">
-                            {`x    -    ${data}`}
+                            {`x    -    ${hand}`}
                         </h4>
                     );
                 else
                     return (
                         <h4 className="text-gray-500 font-italic font-bold my-2">
-                            {datas[index] < 0 && (
+                            {hands[index] < 0 && (
                                 <p className="text-primary">Overflown by</p>
                             )}
                             <span>
-                                {`${datas[index]}    `}-
+                                {`${hands[index]}    `}-
                                 {`    ${
-                                    datas
+                                    hands
                                         .slice(0, index)
-                                        .reduce((a, b) => a + b, 0) + data
+                                        .reduce((a, b) => a + b, 0) + hand
                                 }`}
                             </span>
                         </h4>
@@ -34,10 +34,10 @@ function Note({ winner, datas, team }) {
                 <h4 className="text-primary italic font-bold my-2">Winner</h4>
             )}
 
-            {datas.length === 0 && winner !== team && (
+            {hands.length === 0 && winner !== team && (
                 <h4 className="text-error italic font-bold my-2">Pollo</h4>
             )}
-            {datas.length === 1 && winner !== team && (
+            {hands.length === 1 && winner !== team && (
                 <h4 className="text-error italic font-bold my-2">Zapato</h4>
             )}
         </div>

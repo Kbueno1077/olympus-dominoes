@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { useRecoilState } from "recoil";
 import AddScoreDialog from "../../components/Dialogs/AddScoreDialog/AddScoreDialog";
-import NoteData from "./NoteData";
+import NoteHand from "./NoteHand";
 
 export default function NoteMaker({
     isGameStarted,
@@ -49,7 +49,7 @@ export default function NoteMaker({
 
     return (
         <>
-            <Card elevation={10} sx={{ width: "100%", padding: "15px" }}>
+            <Card elevation={10} sx={{ width: "100%", padding: "16px" }}>
                 <Box display="flex" justifyContent="space-between">
                     <Typography variant="h6" sx={{ color: "#56616A" }}>
                         Game {completedGames.length + 1}
@@ -63,7 +63,7 @@ export default function NoteMaker({
                             }}
                         >
                             <Icon
-                                style={{
+                                sx={{
                                     fontSize: "22px",
                                 }}
                                 icon="ic:baseline-edit"
@@ -76,7 +76,7 @@ export default function NoteMaker({
                             }}
                         >
                             <Icon
-                                style={{
+                                sx={{
                                     fontSize: "22px",
                                 }}
                                 icon="ic:baseline-edit-off"
@@ -119,13 +119,13 @@ export default function NoteMaker({
                     justifyContent="space-evenly"
                     mt={2}
                     px={2}
-                    gap="15px"
+                    gap="16px"
                 >
                     {/**TEAM 1 WRITABLE */}
                     <Box sx={{ width: "100%" }}>
                         {currentGame.t1Datas.map((hand, index) => {
                             return (
-                                <NoteData
+                                <NoteHand
                                     key={`${hand} + ${index}`}
                                     gameEditionMode={gameEditionMode}
                                     handleRemoveDataFromGame={
@@ -207,7 +207,7 @@ export default function NoteMaker({
                     >
                         {currentGame.t2Datas.map((hand, index) => {
                             return (
-                                <NoteData
+                                <NoteHand
                                     key={`${hand} + ${index}`}
                                     gameEditionMode={gameEditionMode}
                                     handleRemoveDataFromGame={
@@ -295,7 +295,7 @@ export default function NoteMaker({
                             justifyContent="space-evenly"
                             mt={2}
                             px={2}
-                            gap="15px"
+                            gap="16px"
                         >
                             <div
                                 style={{
@@ -336,7 +336,7 @@ export default function NoteMaker({
                             <Box sx={{ width: "100%" }}>
                                 {currentGame.t3Datas.map((hand, index) => {
                                     return (
-                                        <NoteData
+                                        <NoteHand
                                             key={`${hand} + ${index}`}
                                             gameEditionMode={gameEditionMode}
                                             handleRemoveDataFromGame={
@@ -437,7 +437,7 @@ export default function NoteMaker({
                                 >
                                     {currentGame.t4Datas.map((hand, index) => {
                                         return (
-                                            <NoteData
+                                            <NoteHand
                                                 key={`${hand} + ${index}`}
                                                 gameEditionMode={
                                                     gameEditionMode

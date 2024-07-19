@@ -1,17 +1,7 @@
 "use client";
 
-import {
-    Box,
-    Button,
-    Card,
-    Stack,
-    Typography,
-    useMediaQuery,
-} from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import { useRecoilState } from "recoil";
-import ConfirmDeleteGame from "../../components/Dialogs/ConfirmDialog/ConfirmDeleteGame";
-import OptionalDescription from "../../components/OptionalDescription/OptionalDescription";
+import ConfirmDeleteGame from "@/components/Dialogs/ConfirmDialog/ConfirmDeleteGame";
+import OptionalDescription from "@/components/OptionalDescription/OptionalDescription";
 import {
     completedGamesRecoil,
     currentGameRecoil,
@@ -26,14 +16,25 @@ import {
     playersAmountRecoil,
     renderGameModesRecoil,
     whoWonRecoil,
-} from "../../recoil/recoilState";
-import MatchSettings from "../../sections/MatchSettings/MatchSettings";
-import NoteMaker from "../../sections/NoteMaker/NoteMaker";
-import NotesDone from "../../sections/NotesDone/NotesDone";
-import TableDraw from "../../sections/TableDraw/TableDraw";
-import { gameModes2, gameModes3, gameModes4 } from "../../utils/matchSettings";
-import useToast from "/hooks/useToast";
+} from "@/recoil/recoilState";
 import FinishMatch from "@/sections/FinishMatch/FinishMatch";
+import MatchSettings from "@/sections/MatchSettings/MatchSettings";
+import NoteMaker from "@/sections/NoteMaker/NoteMaker";
+import NotesDone from "@/sections/NotesDone/NotesDone";
+import TableDraw from "@/sections/TableDraw/TableDraw";
+import { gameModes4 } from "@/utils/matchSettings";
+import {
+    Box,
+    Button,
+    Card,
+    Stack,
+    Typography,
+    useMediaQuery,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { useRecoilState } from "recoil";
+import useToast from "/hooks/useToast";
+import ConfirmDeleteMatch from "@/components/Dialogs/ConfirmDialog/ConfirmDeleteMatch";
 
 const emptyGame = {
     t1Datas: [],
@@ -182,118 +183,20 @@ export default function NewMatch() {
 
     const handleUpateScores = (scoreText, teamNumber) => {
         const score = Number(scoreText);
+        const teamNumberTotalPoints = `t${teamNumber}TotalPoints`;
+        const teamNumberHands = `t${teamNumber}Datas`;
 
-        if (teamNumber === 1) {
-            if (currentGame.t1TotalPoints + score >= maxPoints) {
-                handleWhoWon("Team 1");
-            }
-
-            setCurrentGame((prev) => {
-                return {
-                    ...prev,
-                    t1Datas: [...prev.t1Datas, score],
-                    t1TotalPoints: prev.t1TotalPoints + score,
-                };
-            });
+        if (currentGame[teamNumberTotalPoints] + score >= maxPoints) {
+            handleWhoWon("Team 1");
         }
 
-        if (teamNumber === 2) {
-            if (currentGame.t2TotalPoints + score >= maxPoints) {
-                handleWhoWon("Team 2");
-            }
-
-            setCurrentGame((prev) => {
-                return {
-                    ...prev,
-                    t2Datas: [...prev.t2Datas, score],
-                    t2TotalPoints: prev.t2TotalPoints + score,
-                };
-            });
-        }
-
-        if (teamNumber === 3) {
-            if (currentGame.t3TotalPoints + score >= maxPoints) {
-                handleWhoWon("Team 3");
-            }
-            setCurrentGame((prev) => {
-                return {
-                    ...prev,
-                    t3Datas: [...prev.t3Datas, score],
-                    t3TotalPoints: prev.t3TotalPoints + score,
-                };
-            });
-        }
-
-        if (teamNumber === 4) {
-            if (currentGame.t4TotalPoints + score >= maxPoints) {
-                handleWhoWon("Team 4");
-            }
-
-            setCurrentGame((prev) => {
-                return {
-                    ...prev,
-                    t4Datas: [...prev.t4Datas, score],
-                    t4TotalPoints: prev.t4TotalPoints + score,
-                };
-            });
-        }
-    };
-
-    const removeGame = (index) => {
-        const removedGame = completedGames.filter((_, i) => i !== index);
-        setCompletedGame(removedGame);
-    };
-
-    const handleSliderChange = (event) => {
-        const newSlideValue = event.target.value;
-
-        if (newSlideValue === 2) {
-            setRenderGamesModes(gameModes2);
-            setGameMode(gameModes2[0]);
-        } else if (newSlideValue === 3) {
-            setRenderGamesModes(gameModes3);
-            setGameMode(gameModes3[0]);
-        } else if (newSlideValue === 4) {
-            setRenderGamesModes(gameModes4);
-            setGameMode(gameModes4[1]);
-        }
-
-        setPlayersAmount(newSlideValue === "" ? "" : newSlideValue);
-    };
-
-    const handlePlayers = (playerNumber, newPlayer) => {
-        if (playerNumber === "1") setPlayer1(newPlayer);
-        if (playerNumber === "2") setPlayer2(newPlayer);
-        if (playerNumber === "3") setPlayer3(newPlayer);
-        if (playerNumber === "4") setPlayer4(newPlayer);
-    };
-
-    const handleMaxPoints = (newMax) => {
-        setMaxPoints(newMax);
-    };
-
-    const handleModeChange = (newMode) => {
-        setGameMode(newMode);
-    };
-
-    const finishMatch = () => {
-        if (!completedGames.length) {
-            displayToast(`Empty match not allowed`, "error");
-            return;
-        }
-
-        const settings = {
-            matchDate: value,
-            gameMode,
-            maxPoints,
-            playersAmount,
-            playerslayout,
-            matchDescription,
-        };
-
-        console.log(settings);
-        console.log(teamsLayout);
-        console.log(completedGames);
+        setCurrentGame((prev) => {
+            return {
+                ...prev,
+                [teamNumberHands]: [...prev[teamNumberHands], score],
+                [teamNumberTotalPoints]: prev[teamNumberTotalPoints] + score,
+            };
+        });
     };
 
     return (
@@ -311,13 +214,7 @@ export default function NewMatch() {
                     gap="30px"
                 >
                     {isGameStarted && (
-                        <Stack
-                            gap="10px"
-                            style={{
-                                width: "100%",
-                                maxWidth: "520px",
-                            }}
-                        >
+                        <Stack gap="10px">
                             {isGameStarted && (
                                 <Typography
                                     color={"primary"}
@@ -331,13 +228,7 @@ export default function NewMatch() {
                             )}
 
                             {/**NOTES ALREADY DONE */}
-                            <NotesDone
-                                completedGames={completedGames}
-                                removeGame={removeGame}
-                                playersAmount={playersAmount}
-                                gameMode={gameMode}
-                                isEditable
-                            />
+                            <NotesDone />
 
                             {/**CURRENT GAME */}
                             <NoteMaker
@@ -352,14 +243,7 @@ export default function NewMatch() {
                             />
 
                             {isGameStarted && (
-                                <Card
-                                    elevation={10}
-                                    sx={{
-                                        maxWidth: "950px",
-                                        width: "100%",
-                                        padding: "15px",
-                                    }}
-                                >
+                                <Card elevation={10} className="p-4">
                                     <Box
                                         display="flex"
                                         justifyContent="flex-end"
@@ -398,7 +282,7 @@ export default function NewMatch() {
                                 sx={{
                                     fontWeight: "bold",
                                     fontSize: "30px",
-                                    marginBottom: "15px",
+                                    marginBottom: "16px",
                                 }}
                             >
                                 Settings
@@ -406,33 +290,11 @@ export default function NewMatch() {
                         )}
 
                         {/**GAME SETTINGS */}
-                        <MatchSettings
-                            isGameStarted={isGameStarted}
-                            gameMode={gameMode}
-                            handlePlayers={handlePlayers}
-                            playersAmount={playersAmount}
-                            handleSliderChange={handleSliderChange}
-                            maxPoints={maxPoints}
-                            renderGameModes={renderGameModes}
-                            handleMaxPoints={handleMaxPoints}
-                            handleModeChange={handleModeChange}
-                            player1={player1}
-                            player2={player2}
-                            player3={player3}
-                            player4={player4}
-                        />
+                        <MatchSettings />
 
                         {/*LOCK GAME*/}
                         {!isGameStarted && (
-                            <Card
-                                elevation={10}
-                                sx={{
-                                    maxWidth: "950px",
-                                    width: "100%",
-                                    padding: "15px",
-                                    marginTop: "15px",
-                                }}
-                            >
+                            <Card className="w-full mt-4 p-4" elevation={10}>
                                 {!isGameStarted && (
                                     <Box
                                         display="flex"
@@ -448,16 +310,11 @@ export default function NewMatch() {
 
                         {isGameStarted && (
                             <Card
+                                className="w-full max-w-[950px] mt-4 p-4"
                                 elevation={10}
-                                sx={{
-                                    maxWidth: "950px",
-                                    width: "100%",
-                                    padding: "15px",
-                                    marginTop: "15px",
-                                }}
                             >
                                 <Box display="flex" justifyContent="flex-end">
-                                    <ConfirmDeleteGame
+                                    <ConfirmDeleteMatch
                                         onCofirm={handleCancelGame}
                                     />
                                 </Box>
@@ -465,14 +322,12 @@ export default function NewMatch() {
                         )}
 
                         {/**TABLE SETUP */}
-                        <TableDraw
-                            matchesDownBreakpoint={matchesDownBreakpoint}
-                            gameMode={gameMode}
-                            playersAmount={playersAmount}
-                        />
+                        <Box mt={2}>
+                            <TableDraw />
+                        </Box>
 
-                        <Box mt={3}>
-                            <FinishMatch finishMatch={finishMatch} />
+                        <Box mt={2}>
+                            <FinishMatch />
                         </Box>
                     </Box>
                 </Box>

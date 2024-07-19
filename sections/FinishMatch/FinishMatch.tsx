@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/client";
 import { Button } from "@mui/material";
 import { useEffect, useState } from "react";
 
-function FinishMatch({ finishMatch }: { finishMatch: () => void }) {
+function FinishMatch() {
     const [user, setUser] = useState<any | null>(null);
 
     const loadUser = async () => {
@@ -20,6 +20,24 @@ function FinishMatch({ finishMatch }: { finishMatch: () => void }) {
     useEffect(() => {
         loadUser();
     }, []);
+
+    const finishMatch = () => {
+        // if (!completedGames.length) {
+        //     displayToast(`Empty match not allowed`, "error");
+        //     return;
+        // }
+        // const settings = {
+        //     matchDate: value,
+        //     gameMode,
+        //     maxPoints,
+        //     playersAmount,
+        //     playerslayout,
+        //     matchDescription,
+        // };
+        // console.log(settings);
+        // console.log(teamsLayout);
+        // console.log(completedGames);
+    };
 
     return (
         <>

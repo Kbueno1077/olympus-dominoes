@@ -1,8 +1,9 @@
 "use client";
 import React from "react";
-import ConfirmDeleteData from "@/components/Dialogs/ConfirmDialog/ConfirmDeleteData";
+import ConfirmDeleteHand from "@/components/Dialogs/ConfirmDialog/ConfirmDeleteHand";
+import { Typography } from "@mui/material";
 
-export default function NoteData({
+export default function NoteHand({
     gameEditionMode,
     handleRemoveDataFromGame,
     index,
@@ -11,7 +12,7 @@ export default function NoteData({
 }) {
     if (gameEditionMode && index === 0) {
         return (
-            <ConfirmDeleteData
+            <ConfirmDeleteHand
                 onCofirm={() => handleRemoveDataFromGame(teamNumber, index)}
                 teamDatas={teamDatas}
                 index={index}
@@ -22,7 +23,7 @@ export default function NoteData({
 
     if (gameEditionMode && index !== 0) {
         return (
-            <ConfirmDeleteData
+            <ConfirmDeleteHand
                 onCofirm={() => handleRemoveDataFromGame(teamNumber, index)}
                 teamDatas={teamDatas}
                 index={index}
@@ -33,26 +34,30 @@ export default function NoteData({
 
     if (index === 0) {
         return (
-            <h4
-                style={{
+            <Typography
+                variant="h6"
+                sx={{
                     color: "gray",
                     fontStyle: "italic",
                     textAlign: "center",
+                    padding: "0 20px 0",
                     margin: "5px 0 5px",
                     fontWeight: "bold",
                 }}
             >
                 {`x    -    ${teamDatas[0]}`}
-            </h4>
+            </Typography>
         );
     }
 
     return (
-        <h4
-            style={{
+        <Typography
+            variant="h6"
+            sx={{
                 color: "gray",
                 fontStyle: "italic",
                 textAlign: "center",
+                padding: "0 20px 0",
                 margin: "5px 0 5px",
                 fontWeight: "bold",
             }}
@@ -62,6 +67,6 @@ export default function NoteData({
                 teamDatas.slice(0, index).reduce((a, b) => a + b, 0) +
                 teamDatas[index]
             }`}
-        </h4>
+        </Typography>
     );
 }

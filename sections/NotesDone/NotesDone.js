@@ -1,17 +1,28 @@
 "use client";
 
 import { Box, Card, Divider, Typography } from "@mui/material";
-import ConfirmDeleteMatch from "../../components/Dialogs/ConfirmDialog/ConfirmDeleteMatch";
-import Note from "../../components/Notes/Note";
+import ConfirmDeleteGame from "@/components/Dialogs/ConfirmDialog/ConfirmDeleteGame";
+import Note from "@/components/Notes/Note";
 import styles from "./notesDone.module.css";
+import { useRecoilState, useRecoilValue } from "recoil";
+import {
+    completedGamesRecoil,
+    gameModeRecoil,
+    playersAmountRecoil,
+} from "@/recoil/recoilState";
 
-export default function NotesDone({
-    completedGames,
-    removeGame,
-    gameMode,
-    playersAmount,
-    isEditable,
-}) {
+export default function NotesDone() {
+    const [completedGames, setCompletedGame] =
+        useRecoilState(completedGamesRecoil);
+
+    const playersAmount = useRecoilValue(playersAmountRecoil);
+    const gameMode = useRecoilValue(gameModeRecoil);
+
+    const removeGame = (index) => {
+        const removedGame = completedGames.filter((_, i) => i !== index);
+        setCompletedGame(removedGame);
+    };
+
     return (
         <>
             {completedGames.map((game, i) => (
@@ -22,12 +33,8 @@ export default function NotesDone({
                         alignItems={"center"}
                     >
                         <Typography variant="h6">Game {i + 1}</Typography>
-                        {isEditable && (
-                            <ConfirmDeleteMatch
-                                onCofirm={removeGame}
-                                index={i}
-                            />
-                        )}
+
+                        <ConfirmDeleteGame onCofirm={removeGame} index={i} />
                     </Box>
 
                     <Box className={styles.dividerBox}>
@@ -43,7 +50,7 @@ export default function NotesDone({
                         className="w-full"
                     >
                         <Note
-                            datas={game.t1Datas}
+                            hands={game.t1Datas}
                             winner={game.winner}
                             team="Team 1"
                         />
@@ -51,7 +58,7 @@ export default function NotesDone({
                         <Box className={styles.dividerLine} />
 
                         <Note
-                            datas={game.t2Datas}
+                            hands={game.t2Datas}
                             winner={game.winner}
                             team="Team 2"
                         />
@@ -73,7 +80,7 @@ export default function NotesDone({
                                     className="w-full"
                                 >
                                     <Note
-                                        datas={game.t3Datas}
+                                        hands={game.t3Datas}
                                         winner={game.winner}
                                         team="Team 3"
                                     />
@@ -84,7 +91,7 @@ export default function NotesDone({
                                                 className={styles.dividerLine}
                                             />
                                             <Note
-                                                datas={game.t4Datas}
+                                                hands={game.t4Datas}
                                                 winner={game.winner}
                                                 team="Team 4"
                                             />

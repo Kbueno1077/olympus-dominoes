@@ -6,7 +6,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import * as React from "react";
 
-export default function ConfirmDeleteData({
+export default function ConfirmDeleteHand({
     onCofirm,
     teamDatas,
     index,
@@ -35,7 +35,7 @@ export default function ConfirmDeleteData({
                     color="error"
                     variant="outlined"
                     onClick={handleClickOpen}
-                    style={{
+                    sx={{
                         color: "gray",
                         fontStyle: "italic",
                         textAlign: "center",
@@ -53,7 +53,7 @@ export default function ConfirmDeleteData({
                     color="error"
                     onClick={handleClickOpen}
                     variant="outlined"
-                    style={{
+                    sx={{
                         color: "gray",
                         fontStyle: "italic",
                         textAlign: "center",
@@ -76,7 +76,7 @@ export default function ConfirmDeleteData({
                 aria-describedby="alert-dialog-description"
             >
                 <DialogTitle id="alert-dialog-title">
-                    Are you sure you want to delete this data?
+                    Are you sure you want to delete this Hand?
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description"></DialogContentText>

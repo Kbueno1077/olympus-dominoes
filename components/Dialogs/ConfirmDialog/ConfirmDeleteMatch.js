@@ -1,14 +1,12 @@
-import * as React from "react";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { IconButton } from "@mui/material";
-import Iconify from "@/components/Iconify";
+import * as React from "react";
 
-export default function ConfirmDeleteMatch({ onCofirm, index }) {
+export default function ConfirmDeleteGame({ onCofirm }) {
     const [open, setOpen] = React.useState(false);
 
     const handleClickOpen = () => {
@@ -20,18 +18,13 @@ export default function ConfirmDeleteMatch({ onCofirm, index }) {
     };
 
     const handleConfirm = () => {
-        onCofirm(index);
+        onCofirm();
         setOpen(false);
     };
 
     return (
         <React.Fragment>
-            <IconButton onClick={handleClickOpen} size="small">
-                <Iconify
-                    className="text-error"
-                    icon="eva:minus-circle-outline"
-                />
-            </IconButton>
+            <Button onClick={handleClickOpen}>Cancel Match</Button>
 
             <Dialog
                 open={open}
@@ -40,7 +33,7 @@ export default function ConfirmDeleteMatch({ onCofirm, index }) {
                 aria-describedby="alert-dialog-description"
             >
                 <DialogTitle id="alert-dialog-title">
-                    Are you sure you want to delete this match?
+                    Are you sure you want to delete this Match?
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description"></DialogContentText>

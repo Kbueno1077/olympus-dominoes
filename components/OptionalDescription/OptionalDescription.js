@@ -17,7 +17,7 @@ function OptionalDescription({ matchDescription, setMatchDescription }) {
             elevation={10}
             sx={{
                 width: "100%",
-                padding: "15px",
+                padding: "16px",
             }}
         >
             <Accordion>
