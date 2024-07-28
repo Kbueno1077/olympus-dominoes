@@ -1,14 +1,35 @@
 "use client";
 
+import useToast from "@/hooks/useToast";
+import { createClient } from "@/utils/supabase/client";
 import { Box, Button, Card, Stack, TextField, Typography } from "@mui/material";
 import React from "react";
 
 function AddPlayer() {
+    const [isLoading, setIsLoading] = React.useState(false);
+    const displayToast = useToast();
     const [name, setName] = React.useState("");
     const [color, setColor] = React.useState("#e66465");
 
-    const submitPlayer = () => {
-        console.log("🚀 ~ AddPlayer ~ submitPlayer:", name, color);
+    const submitPlayer = async () => {
+        setIsLoading(true);
+        const supabase = createClient();
+
+        const { error, status, statusText } = await supabase
+            .from("players")
+            .insert({ name, color });
+
+        if (status === 201) {
+            console.log("🚀 ~ submitPlayer ~ statusText:", statusText);
+            displayToast("Player added successfully", "success");
+        }
+
+        if (error) {
+            console.log("🚀 ~ submitPlayer ~ error:", error);
+            displayToast(error.message, "error");
+        }
+
+        setIsLoading(false);
     };
 
     return (
@@ -53,8 +74,9 @@ function AddPlayer() {
                         fullWidth
                         variant="contained"
                         disabled={!name}
+                        onClick={submitPlayer}
                     >
-                        Add Player
+                        {isLoading ? "Loading..." : "Add Player"}
                     </Button>
                 </Box>{" "}
             </Stack>
