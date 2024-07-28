@@ -48,9 +48,7 @@ export default function AccountMenu() {
         } = await supabase.auth.getUser();
 
         if (user) {
-            {
-                /**@ts-ignore */
-            }
+            /**@ts-ignore */
             setUser(user);
         }
     };
