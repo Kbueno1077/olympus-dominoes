@@ -14,6 +14,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
 import { useRouter } from "next/navigation";
+import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
 import * as React from "react";
 import { useRecoilState } from "recoil";
 
@@ -39,6 +40,13 @@ export default function AccountMenu() {
 
     const goToAddPlayer = async () => {
         router.push("/players");
+    };
+    const goToDashboard = async () => {
+        if (!recoilUser) {
+            router.push("/");
+        } else {
+            router.push("/protected");
+        }
     };
 
     const loadUser = async () => {
@@ -123,6 +131,13 @@ export default function AccountMenu() {
                     <Avatar /> My account
                 </MenuItem>
                 <Divider />
+
+                <MenuItem onClick={goToDashboard}>
+                    <ListItemIcon>
+                        <SpaceDashboardIcon fontSize="small" />
+                    </ListItemIcon>
+                    Dashboard
+                </MenuItem>
                 <MenuItem onClick={goToAddPlayer}>
                     <ListItemIcon>
                         <PersonAdd fontSize="small" />
