@@ -3,22 +3,15 @@
 import { Box, Card, TextField, Typography } from "@mui/material";
 import React, { useState } from "react";
 
-function AllPlayers() {
+interface AllPlayersProps {
+    data: any[];
+}
+
+function AllPlayers({ data }: AllPlayersProps) {
     const [filter, setFilter] = useState("");
 
-    const players = [
-        { name: "Player 1", color: "#e66465" },
-        { name: "Player 2", color: "#e66465" },
-        { name: "Player 3", color: "#e66465" },
-        { name: "Player 4", color: "#e66465" },
-        { name: "Player 5", color: "#e66465" },
-        { name: "Player 6", color: "#e66465" },
-        { name: "Player 7", color: "#e66465" },
-        { name: "Player 8", color: "#e66465" },
-    ];
-
     const searchPlayer = (player: string) => {
-        return players.filter((item) => item.name.includes(player));
+        return data.filter((item) => item.name.includes(player));
     };
 
     return (
@@ -53,7 +46,7 @@ function AllPlayers() {
                     marginTop: "24px",
                 }}
             >
-                {players
+                {data
                     .filter((item) => item.name.includes(filter))
                     .map((player) => (
                         <Card

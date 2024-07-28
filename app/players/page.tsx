@@ -12,6 +12,9 @@ export default async function ProtectedPage() {
         data: { user },
     } = await supabase.auth.getUser();
 
+    const { data: playerData } = await supabase.from("players").select("*");
+    console.log("🚀 ~ ProtectedPage ~ data:", playerData);
+
     if (!user) {
         return redirect("/login");
     }
@@ -40,7 +43,7 @@ export default async function ProtectedPage() {
                 </Container>
 
                 <Container>
-                    <AllPlayers />
+                    <AllPlayers data={playerData} />
                 </Container>
             </main>
 
