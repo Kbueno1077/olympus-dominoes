@@ -47,6 +47,7 @@ function FinishMatch() {
                     className="h-[60px] text-lg"
                     fullWidth
                     variant="contained"
+                    size="large"
                     disabled={true}
                 >
                     Finish Match (Coming Soon)

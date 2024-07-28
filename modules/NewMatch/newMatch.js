@@ -214,7 +214,10 @@ export default function NewMatch() {
                     gap="30px"
                 >
                     {isGameStarted && (
-                        <Stack gap="10px">
+                        <Stack
+                            gap="10px"
+                            sx={{ maxWidth: "520px", width: "100%" }}
+                        >
                             {isGameStarted && (
                                 <Typography
                                     color={"primary"}
