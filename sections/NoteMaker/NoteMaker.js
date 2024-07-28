@@ -19,7 +19,7 @@ export default function NoteMaker({
     gameMode,
     playersAmount,
     whoWon,
-    handleWhoWon,
+
     handleUpateScores,
     maxPoints,
 }) {

@@ -187,7 +187,7 @@ export default function NewMatch() {
         const teamNumberHands = `t${teamNumber}Datas`;
 
         if (currentGame[teamNumberTotalPoints] + score >= maxPoints) {
-            handleWhoWon("Team 1");
+            handleWhoWon(`Team ${teamNumber}`);
         }
 
         setCurrentGame((prev) => {
@@ -239,7 +239,6 @@ export default function NewMatch() {
                                 gameMode={gameMode}
                                 playersAmount={playersAmount}
                                 completedGames={completedGames}
-                                handleWhoWon={handleWhoWon}
                                 whoWon={whoWon}
                                 maxPoints={maxPoints}
                                 handleUpateScores={handleUpateScores}
