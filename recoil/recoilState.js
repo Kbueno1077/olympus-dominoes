@@ -106,3 +106,8 @@ export const gameEditionModeRecoil = atom({
     default: false,
     effects_UNSTABLE: [persistAtom],
 });
+
+export const userDataRecoil = atom({
+    key: "userData",
+    default: null,
+});

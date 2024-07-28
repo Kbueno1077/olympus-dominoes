@@ -2,6 +2,7 @@ import NewMatch from "@/modules/NewMatch/newMatch";
 import { createClient } from "@/utils/supabase/server";
 import { Container } from "@mui/material";
 import AuthButton from "../components/AuthButton/AuthButton";
+import { redirect } from "next/navigation";
 
 export default async function Index() {
     const supabase = createClient();
@@ -9,6 +10,10 @@ export default async function Index() {
     const {
         data: { user },
     } = await supabase.auth.getUser();
+
+    if (user) {
+        return redirect("/protected");
+    }
 
     return (
         <div className="flex-1 w-full flex flex-col  items-center">

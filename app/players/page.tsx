@@ -1,10 +1,9 @@
-import AuthButton from "@/components/AuthButton/AuthButton";
-import AccountMenu from "@/components/AccountMenu/AccountMenu";
-import NewMatch from "@/modules/NewMatch/newMatch";
+import NavBar from "@/components/NavBar/NavBar";
+import AddPlayer from "@/modules/AddPlayer/AddPlayer";
+import AllPlayers from "@/modules/AllPlayers/AllPlayers";
 import { createClient } from "@/utils/supabase/server";
 import { Container } from "@mui/material";
 import { redirect } from "next/navigation";
-import NavBar from "@/components/NavBar/NavBar";
 
 export default async function ProtectedPage() {
     const supabase = createClient();
@@ -24,23 +23,26 @@ export default async function ProtectedPage() {
                     This is a protected page that you can only see as an
                     authenticated user
                 </div>
+
                 <NavBar />
             </div>
 
-            <div className="">
-                <main className="flex-1 flex flex-col gap-6">
-                    <Container maxWidth="xl" sx={{ padding: "0" }}>
-                        <div
-                            style={{
-                                paddingTop: "40px",
-                                paddingBottom: "40px",
-                            }}
-                        >
-                            <NewMatch />
-                        </div>
-                    </Container>
-                </main>
-            </div>
+            <main className="w-full">
+                <Container>
+                    <div
+                        style={{
+                            paddingTop: "40px",
+                            paddingBottom: "40px",
+                        }}
+                    >
+                        <AddPlayer />
+                    </div>
+                </Container>
+
+                <Container>
+                    <AllPlayers />
+                </Container>
+            </main>
 
             <footer className="w-full border-t border-t-foreground/10 p-8 flex justify-center text-center text-xs">
                 <p>

@@ -2,6 +2,7 @@ import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import { Providers } from "./providers";
 import type { Metadata, Viewport } from "next";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
 
 const defaultUrl = process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
@@ -27,7 +28,7 @@ export default function RootLayout({
     return (
         <html lang="en" className={GeistSans.className}>
             <body className="bg-background text-foreground">
-                <main className="min-h-screen flex flex-col items-center px-3 md:px-0">
+                <main className="min-h-screen flex flex-col items-center md:px-0">
                     <Providers>{children}</Providers>
                 </main>
             </body>
