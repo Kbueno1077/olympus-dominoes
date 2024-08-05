@@ -9,7 +9,6 @@ function AddPlayer() {
     const [isLoading, setIsLoading] = React.useState(false);
     const displayToast = useToast();
     const [name, setName] = React.useState("");
-    const [color, setColor] = React.useState("#e66465");
 
     const submitPlayer = async () => {
         setIsLoading(true);
@@ -17,7 +16,7 @@ function AddPlayer() {
 
         const { error, status, statusText } = await supabase
             .from("players")
-            .insert({ name, color });
+            .insert({ name });
 
         if (status === 201) {
             console.log("🚀 ~ submitPlayer ~ statusText:", statusText);
@@ -54,19 +53,6 @@ function AddPlayer() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                     />
-                </Box>
-                <Box>
-                    <input
-                        type="color"
-                        id="PlayerColor"
-                        name="PlayerColor"
-                        value={color}
-                        onChange={(e) => setColor(e.target.value)}
-                    />
-                    {/**@ts-ignore */}
-                    <label style={{ marginLeft: "10px" }} for="PlayerColor">
-                        Pick the Player Color
-                    </label>
                 </Box>
                 <Box>
                     <Button
