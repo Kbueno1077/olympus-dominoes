@@ -7,8 +7,8 @@ import React from "react";
 
 function AddPlayer() {
     const [isLoading, setIsLoading] = React.useState(false);
-    const displayToast = useToast();
     const [name, setName] = React.useState("");
+    const displayToast = useToast();
 
     const submitPlayer = async () => {
         setIsLoading(true);

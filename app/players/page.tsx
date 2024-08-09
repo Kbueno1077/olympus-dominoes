@@ -31,7 +31,7 @@ export default async function ProtectedPage() {
             </div>
 
             <div className="w-full">
-                <Container>
+                <Container maxWidth="md">
                     <div
                         style={{
                             paddingTop: "40px",
@@ -42,7 +42,7 @@ export default async function ProtectedPage() {
                     </div>
                 </Container>
 
-                <Container>
+                <Container maxWidth="md">
                     <AllPlayers data={playerData ?? []} />
                 </Container>
             </div>

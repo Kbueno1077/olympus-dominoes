@@ -9,6 +9,7 @@ import {
     isGameStartedRecoil,
     matchDescriptionRecoil,
     maxPointsRecoil,
+    openMatchIdRecoil,
     player1Recoil,
     player2Recoil,
     player3Recoil,
@@ -72,6 +73,7 @@ export default function NewMatch() {
     const [player4, setPlayer4] = useRecoilState(player4Recoil);
 
     //Games Values
+    const [openMatchId, setMatchId] = useRecoilState(openMatchIdRecoil);
     const [isGameStarted, setStartGame] = useRecoilState(isGameStartedRecoil);
     const [whoWon, setWhoWon] = useRecoilState(whoWonRecoil);
     const [completedGames, setCompletedGame] =
@@ -118,6 +120,9 @@ export default function NewMatch() {
             );
             return;
         }
+
+        // Create Match in BE
+        // setMatchId(response.data.id);
 
         setStartGame(true);
     };

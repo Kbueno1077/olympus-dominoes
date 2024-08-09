@@ -1,14 +1,17 @@
 import { GeistSans } from "geist/font/sans";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
-import type { Metadata, Viewport } from "next";
-import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
 
 const defaultUrl = process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : "http://localhost:3000";
 
 export const metadata: Metadata = {
+    icons: {
+        icon: "/favicon.ico",
+        shortcut: "/favicon.ico",
+    },
     metadataBase: new URL(defaultUrl),
     title: "Olympus Dominoes",
     description: "The fastest way to write dominoes scores",

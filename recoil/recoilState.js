@@ -111,3 +111,8 @@ export const userDataRecoil = atom({
     key: "userData",
     default: null,
 });
+
+export const openMatchIdRecoil = atom({
+    key: "openMatchIdRecoil",
+    default: null,
+});
