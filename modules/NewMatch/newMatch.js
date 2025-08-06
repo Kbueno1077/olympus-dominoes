@@ -29,10 +29,12 @@ import {
   Stack,
   Typography,
   useMediaQuery,
+  IconButton,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useRecoilState } from "recoil";
 import useToast from "/hooks/useToast";
+import { ArrowBack } from "@mui/icons-material";
 
 const emptyGame = {
   t1Datas: [],
@@ -46,7 +48,7 @@ const emptyGame = {
   winner: "none",
 };
 
-export default function NewMatch() {
+export default function NewMatch({ onBackToDashboard }) {
   //CSS Settings
   const theme = useTheme();
   const displayToast = useToast();
@@ -200,6 +202,22 @@ export default function NewMatch() {
 
   return (
     <>
+      {/* Back Button */}
+      <Box sx={{ mb: 3, px: 2 }}>
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={onBackToDashboard}
+          sx={{
+            color: "text.secondary",
+            "&:hover": {
+              background: "rgba(99, 102, 241, 0.1)",
+            },
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
+
       <Box
         sx={{
           display: "flex",
@@ -241,9 +259,40 @@ export default function NewMatch() {
               />
 
               {isGameStarted && (
-                <Card elevation={10} className="p-4">
+                <Card
+                  elevation={8}
+                  className="p-4"
+                  sx={{
+                    background:
+                      "linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)",
+                    border: "1px solid rgba(99, 102, 241, 0.1)",
+                    borderRadius: 3,
+                  }}
+                >
                   <Box display="flex" justifyContent="flex-end">
-                    <Button onClick={handleNextGame}>Next Game</Button>
+                    <Button
+                      onClick={handleNextGame}
+                      variant="contained"
+                      sx={{
+                        background:
+                          "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+                        color: "white",
+                        fontWeight: "bold",
+                        px: 3,
+                        py: 1.5,
+                        borderRadius: 2,
+                        boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
+                        "&:hover": {
+                          background:
+                            "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
+                          boxShadow: "0 6px 20px rgba(99, 102, 241, 0.4)",
+                          transform: "translateY(-1px)",
+                        },
+                        transition: "all 0.3s ease",
+                      }}
+                    >
+                      Next Game
+                    </Button>
                   </Box>
                 </Card>
               )}
@@ -281,17 +330,57 @@ export default function NewMatch() {
 
             {/*LOCK GAME*/}
             {!isGameStarted && (
-              <Card className="w-full mt-4 p-4" elevation={10}>
+              <Card
+                className="w-full mt-4 p-4"
+                elevation={8}
+                sx={{
+                  background:
+                    "linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)",
+                  border: "1px solid rgba(99, 102, 241, 0.1)",
+                  borderRadius: 3,
+                }}
+              >
                 {!isGameStarted && (
                   <Box display="flex" justifyContent="flex-end">
-                    <Button onClick={handleStartGame}>Start Game</Button>
+                    <Button
+                      onClick={handleStartGame}
+                      variant="contained"
+                      sx={{
+                        background:
+                          "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                        color: "white",
+                        fontWeight: "bold",
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: 2,
+                        boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+                        "&:hover": {
+                          background:
+                            "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                          boxShadow: "0 6px 20px rgba(16, 185, 129, 0.4)",
+                          transform: "translateY(-1px)",
+                        },
+                        transition: "all 0.3s ease",
+                      }}
+                    >
+                      Start Game
+                    </Button>
                   </Box>
                 )}
               </Card>
             )}
 
             {isGameStarted && (
-              <Card className="w-full max-w-[950px] mt-4 p-4" elevation={10}>
+              <Card
+                className="w-full max-w-[950px] mt-4 p-4"
+                elevation={8}
+                sx={{
+                  background:
+                    "linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)",
+                  border: "1px solid rgba(99, 102, 241, 0.1)",
+                  borderRadius: 3,
+                }}
+              >
                 <Box display="flex" justifyContent="flex-end">
                   <ConfirmDeleteMatch onCofirm={handleCancelGame} />
                 </Box>

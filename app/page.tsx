@@ -1,23 +1,60 @@
-import NewMatch from "@/modules/NewMatch/newMatch";
-import { Container } from "@mui/material";
+"use client";
 
-export default async function Index() {
+import { useState, useEffect } from "react";
+import { Box, CssBaseline } from "@mui/material";
+import Header from "@/components/Header/Header";
+import Dashboard from "@/components/Dashboard/Dashboard";
+import NewMatch from "@/modules/NewMatch/newMatch";
+import { useRecoilValue } from "recoil";
+import { isGameStartedRecoil } from "@/recoil/recoilState";
+
+type ViewType = "dashboard" | "game";
+
+export default function Index() {
+  const [currentView, setCurrentView] = useState<ViewType>("dashboard");
+  const isGameStarted = useRecoilValue(isGameStartedRecoil);
+
+  // Check if game is in progress on page load
+  useEffect(() => {
+    if (isGameStarted) {
+      setCurrentView("game");
+    }
+  }, [isGameStarted]);
+
+  const handleStartNewGame = () => {
+    setCurrentView("game");
+  };
+
+  const handleBackToDashboard = () => {
+    setCurrentView("dashboard");
+  };
+
   return (
-    <div className="flex-1 w-full mt-10 flex flex-col items-center">
-      <div className="px-2">
-        <div className="flex-1 flex flex-col gap-6">
-          <Container maxWidth="xl" sx={{ padding: "0" }}>
-            <div
-              style={{
-                paddingTop: "10px",
-                paddingBottom: "40px",
-              }}
-            >
-              <NewMatch />
-            </div>
-          </Container>
-        </div>
-      </div>
-    </div>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <CssBaseline />
+
+      {/* Header */}
+      <Header />
+
+      {/* Main Content */}
+      <Box
+        sx={{
+          flex: 1,
+          pt: 8, // Account for fixed header
+          background: "linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)",
+          minHeight: "100vh",
+        }}
+      >
+        {currentView === "dashboard" && (
+          <Dashboard onStartNewGame={handleStartNewGame} />
+        )}
+
+        {currentView === "game" && (
+          <Box sx={{ py: 4 }}>
+            <NewMatch onBackToDashboard={handleBackToDashboard} />
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
 }

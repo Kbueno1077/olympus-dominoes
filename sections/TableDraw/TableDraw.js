@@ -1,4 +1,11 @@
-import { Box, Card, Chip, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  Card,
+  Chip,
+  useMediaQuery,
+  Typography,
+  Stack,
+} from "@mui/material";
 
 import Iconify from "@/components/Iconify";
 import { gameModeRecoil, playersAmountRecoil } from "@/recoil/recoilState";
@@ -6,208 +13,282 @@ import { useRecoilValue } from "recoil";
 import { useTheme } from "@emotion/react";
 
 export default function TableDraw() {
-    const theme = useTheme();
-    const matchesDownBreakpoint = useMediaQuery(theme.breakpoints.down("sm"));
-    const gameMode = useRecoilValue(gameModeRecoil);
-    const playersAmount = useRecoilValue(playersAmountRecoil);
+  const theme = useTheme();
+  const matchesDownBreakpoint = useMediaQuery(theme.breakpoints.down("sm"));
+  const gameMode = useRecoilValue(gameModeRecoil);
+  const playersAmount = useRecoilValue(playersAmountRecoil);
 
-    return (
-        <>
-            <Card
+  return (
+    <>
+      <Card
+        sx={{
+          p: 4,
+          background: "linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)",
+          border: "1px solid rgba(99, 102, 241, 0.1)",
+          borderRadius: 3,
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+        }}
+      >
+        <Stack spacing={2} alignItems="center" sx={{ mb: 3 }}>
+          <Typography variant="h6" fontWeight="bold" color="text.primary">
+            Table Layout
+          </Typography>
+          <Typography variant="body2" color="text.secondary" textAlign="center">
+            Visual representation of player positions and dominoes
+          </Typography>
+        </Stack>
+
+        <Box
+          sx={{
+            position: "relative",
+            width: "100%",
+            maxWidth: "400px",
+            margin: "0 auto",
+            border: "2px solid #E2E8F0",
+            borderRadius: "12px",
+            background: "linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)",
+            overflow: "hidden",
+            "&::after": {
+              content: '""',
+              display: "block",
+              paddingBottom: "100%",
+            },
+          }}
+        >
+          {/* Dominoes Icon */}
+          <Iconify
+            style={{
+              position: "absolute",
+              top: "32%",
+              left: "32%",
+              width: "36%",
+              height: "36%",
+              maxWidth: "120px",
+              maxHeight: "120px",
+              filter: "drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1))",
+            }}
+            icon="arcticons:dominos"
+          />
+
+          {/* Team 1 - Bottom */}
+          <Box
+            style={{
+              position: "absolute",
+              display: "flex",
+              gap: "8px",
+              alignItems: "center",
+              bottom: "20px",
+              left: "50%",
+              transform: "translateX(-50%)",
+            }}
+          >
+            {!matchesDownBreakpoint && (
+              <Box
                 sx={{
-                    padding: "60px",
+                  display: "flex",
+                  width: "120px",
+                  height: "24px",
+                  border: "2px solid #CBD5E1",
+                  borderRadius: "12px",
+                  background: "rgba(59, 130, 246, 0.1)",
+                  overflow: "hidden",
                 }}
-            >
-                <Box
+              >
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((item) => (
+                  <Box
+                    key={item}
                     sx={{
-                        position: "relative",
-                        width: "100%",
-                        border: "1px solid black",
-                        borderRadius: "5px",
-
-                        ":after": {
-                            content: '""',
-                            display: "block",
-                            paddingBottom: "100%",
-                        },
+                      borderRight: "1px solid #CBD5E1",
+                      width: "12px",
+                      background:
+                        item % 2 === 0
+                          ? "rgba(59, 130, 246, 0.2)"
+                          : "transparent",
                     }}
+                  />
+                ))}
+              </Box>
+            )}
+            <Chip
+              label="Team 1"
+              color="team1"
+              sx={{
+                fontWeight: "bold",
+                boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)",
+              }}
+            />
+          </Box>
+
+          {/* Team 2 - Right */}
+          {playersAmount > 2 && (
+            <Box
+              style={{
+                position: "absolute",
+                display: "flex",
+                gap: "8px",
+                flexDirection: "column",
+                bottom: "50%",
+                right: "20px",
+                transform: "translateY(50%)",
+              }}
+            >
+              <Chip
+                color="team2"
+                label="Team 2"
+                sx={{
+                  fontWeight: "bold",
+                  boxShadow: "0 2px 8px rgba(245, 158, 11, 0.3)",
+                }}
+              />
+              {!matchesDownBreakpoint && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: "24px",
+                    height: "120px",
+                    border: "2px solid #CBD5E1",
+                    borderRadius: "12px",
+                    background: "rgba(245, 158, 11, 0.1)",
+                    overflow: "hidden",
+                  }}
                 >
-                    <Iconify
-                        style={{
-                            position: "absolute",
-                            top: "32%",
-                            left: "32%",
-                            width: "40%",
-                            height: "40%",
-
-                            maxWidth: "150px",
-                            maxHeight: "150px",
-                        }}
-                        icon="arcticons:dominos"
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((item) => (
+                    <Box
+                      key={item}
+                      sx={{
+                        borderBottom: "1px solid #CBD5E1",
+                        height: "12px",
+                        background:
+                          item % 2 === 0
+                            ? "rgba(245, 158, 11, 0.2)"
+                            : "transparent",
+                      }}
                     />
-
-                    <Box
-                        style={{
-                            position: "absolute",
-                            display: "flex",
-                            gap: "5px",
-                            alignItems: "center",
-                            bottom: "15px",
-                            left: "37%",
-                        }}
-                    >
-                        {!matchesDownBreakpoint && (
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    width: "100px",
-                                    height: "30px",
-                                    border: "1px solid black",
-                                }}
-                            >
-                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((item) => (
-                                    <Box
-                                        key={item}
-                                        sx={{
-                                            border: "1px solid black",
-                                            width: "10px",
-                                        }}
-                                    />
-                                ))}
-                            </Box>
-                        )}
-                        <Chip color="team1" label={1} />
-                    </Box>
-
-                    {playersAmount > 2 && (
-                        <Box
-                            style={{
-                                position: "absolute",
-                                display: "flex",
-                                gap: "5px",
-                                flexDirection: "column",
-                                bottom: "37%",
-                                right: "15px",
-                            }}
-                        >
-                            <Chip color={`team2`} label={2} />
-                            {!matchesDownBreakpoint && (
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        width: "30px",
-                                        height: "100px",
-                                        border: "1px solid black",
-                                    }}
-                                >
-                                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(
-                                        (item) => (
-                                            <Box
-                                                key={item}
-                                                sx={{
-                                                    border: "1px solid black",
-                                                    height: "10px",
-                                                }}
-                                            />
-                                        )
-                                    )}
-                                </Box>
-                            )}
-                        </Box>
-                    )}
-
-                    <Box
-                        style={{
-                            position: "absolute",
-                            display: "flex",
-                            gap: "5px",
-                            alignItems: "center",
-                            position: "absolute",
-                            top: "15px",
-                            right: "37%",
-                        }}
-                    >
-                        <Chip
-                            color={`${
-                                gameMode?.label === "2 vs 2"
-                                    ? "team1"
-                                    : gameMode?.label === "2 vs 1"
-                                    ? "team1"
-                                    : gameMode?.label === "1 vs 1"
-                                    ? "team2"
-                                    : "team3"
-                            }`}
-                            label={`${playersAmount === 2 ? "2" : "3"} `}
-                        />
-                        {!matchesDownBreakpoint && (
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    width: "100px",
-                                    height: "30px",
-                                    border: "1px solid black",
-                                }}
-                            >
-                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((item) => (
-                                    <Box
-                                        key={item}
-                                        sx={{
-                                            border: "1px solid black",
-                                            width: "10px",
-                                        }}
-                                    />
-                                ))}
-                            </Box>
-                        )}
-                    </Box>
-
-                    {playersAmount > 3 && (
-                        <Box
-                            style={{
-                                position: "absolute",
-                                top: "37%",
-                                left: "15px",
-                                gap: "5px",
-                                display: "flex",
-                                flexDirection: "column",
-                            }}
-                        >
-                            {!matchesDownBreakpoint && (
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        width: "30px",
-                                        height: "100px",
-                                        border: "1px solid black",
-                                    }}
-                                >
-                                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(
-                                        (item) => (
-                                            <Box
-                                                key={item}
-                                                sx={{
-                                                    border: "1px solid black",
-                                                    height: "10px",
-                                                }}
-                                            />
-                                        )
-                                    )}
-                                </Box>
-                            )}
-                            <Chip
-                                color={`${
-                                    gameMode?.label === "2 vs 2"
-                                        ? "team2"
-                                        : "team4"
-                                }`}
-                                label={4}
-                            />
-                        </Box>
-                    )}
+                  ))}
                 </Box>
-            </Card>
-        </>
-    );
+              )}
+            </Box>
+          )}
+
+          {/* Team 3 - Top */}
+          <Box
+            style={{
+              position: "absolute",
+              display: "flex",
+              gap: "8px",
+              alignItems: "center",
+              top: "20px",
+              left: "50%",
+              transform: "translateX(-50%)",
+            }}
+          >
+            {!matchesDownBreakpoint && (
+              <Box
+                sx={{
+                  display: "flex",
+                  width: "120px",
+                  height: "24px",
+                  border: "2px solid #CBD5E1",
+                  borderRadius: "12px",
+                  background:
+                    gameMode?.label === "Free For All"
+                      ? "rgba(16, 185, 129, 0.1)"
+                      : "rgba(59, 130, 246, 0.1)",
+                  overflow: "hidden",
+                }}
+              >
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((item) => (
+                  <Box
+                    key={item}
+                    sx={{
+                      borderRight: "1px solid #CBD5E1",
+                      width: "12px",
+                      background:
+                        item % 2 === 0
+                          ? gameMode?.label === "Free For All"
+                            ? "rgba(16, 185, 129, 0.2)"
+                            : "rgba(59, 130, 246, 0.2)"
+                          : "transparent",
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
+            <Chip
+              color={gameMode?.label === "Free For All" ? "team3" : "team1"}
+              label={gameMode?.label === "Free For All" ? "Team 3" : "Team 1"}
+              sx={{
+                fontWeight: "bold",
+                boxShadow:
+                  gameMode?.label === "Free For All"
+                    ? "0 2px 8px rgba(16, 185, 129, 0.3)"
+                    : "0 2px 8px rgba(59, 130, 246, 0.3)",
+              }}
+            />
+          </Box>
+
+          {/* Team 4 - Left */}
+          {playersAmount > 3 && (
+            <Box
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "20px",
+                gap: "8px",
+                display: "flex",
+                flexDirection: "column",
+                transform: "translateY(-50%)",
+              }}
+            >
+              {!matchesDownBreakpoint && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: "24px",
+                    height: "120px",
+                    border: "2px solid #CBD5E1",
+                    borderRadius: "12px",
+                    background:
+                      gameMode?.label === "Free For All"
+                        ? "rgba(139, 92, 246, 0.1)"
+                        : "rgba(245, 158, 11, 0.1)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((item) => (
+                    <Box
+                      key={item}
+                      sx={{
+                        borderBottom: "1px solid #CBD5E1",
+                        height: "12px",
+                        background:
+                          item % 2 === 0
+                            ? gameMode?.label === "Free For All"
+                              ? "rgba(139, 92, 246, 0.2)"
+                              : "rgba(245, 158, 11, 0.2)"
+                            : "transparent",
+                      }}
+                    />
+                  ))}
+                </Box>
+              )}
+              <Chip
+                color={gameMode?.label === "Free For All" ? "team4" : "team2"}
+                label={gameMode?.label === "Free For All" ? "Team 4" : "Team 2"}
+                sx={{
+                  fontWeight: "bold",
+                  boxShadow:
+                    gameMode?.label === "Free For All"
+                      ? "0 2px 8px rgba(139, 92, 246, 0.3)"
+                      : "0 2px 8px rgba(245, 158, 11, 0.3)",
+                }}
+              />
+            </Box>
+          )}
+        </Box>
+      </Card>
+    </>
+  );
 }
