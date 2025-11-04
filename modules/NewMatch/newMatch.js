@@ -203,7 +203,7 @@ export default function NewMatch({ onBackToDashboard }) {
   return (
     <>
       {/* Back Button */}
-      <Box sx={{ mb: 3, px: 2 }}>
+      <Box sx={{ mb: 3 }}>
         <Button
           startIcon={<ArrowBack />}
           onClick={onBackToDashboard}

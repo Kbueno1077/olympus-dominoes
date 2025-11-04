@@ -50,7 +50,7 @@ export default function Index() {
         )}
 
         {currentView === "game" && (
-          <Box sx={{ py: 4 }}>
+          <Box sx={{ py: 2, px: 1.5 }}>
             <NewMatch onBackToDashboard={handleBackToDashboard} />
           </Box>
         )}
