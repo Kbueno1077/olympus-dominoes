@@ -8,7 +8,6 @@ import {
   isGameStartedRecoil,
   matchDescriptionRecoil,
   maxPointsRecoil,
-  openMatchIdRecoil,
   player1Recoil,
   player2Recoil,
   player3Recoil,
@@ -21,20 +20,18 @@ import MatchSettings from "@/sections/MatchSettings/MatchSettings";
 import NoteMaker from "@/sections/NoteMaker/NoteMaker";
 import NotesDone from "@/sections/NotesDone/NotesDone";
 import TableDraw from "@/sections/TableDraw/TableDraw";
-import { gameModes4 } from "@/utils/matchSettings";
+import { useTranslation } from "@/i18n/useTranslation";
 import {
-  Box,
-  Button,
-  Card,
-  Stack,
-  Typography,
-  useMediaQuery,
-  IconButton,
-} from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+  activeTeamNumbers,
+  gameModes4,
+  TEAM_KEYS,
+  teamNumberFrom,
+} from "@/utils/matchSettings";
+import { ArrowBack, ArrowForward, PlayArrow } from "@mui/icons-material";
+import { Box, Button, Card, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useRecoilState } from "recoil";
-import useToast from "/hooks/useToast";
-import { ArrowBack } from "@mui/icons-material";
+import useToast from "@/hooks/useToast";
 
 const emptyGame = {
   t1Datas: [],
@@ -48,40 +45,96 @@ const emptyGame = {
   winner: "none",
 };
 
-export default function NewMatch({ onBackToDashboard }) {
-  //CSS Settings
-  const theme = useTheme();
-  const displayToast = useToast();
-  const matchesUpBreakpoint = useMediaQuery(theme.breakpoints.up("lg"));
-  const matchesUpXLBreakpoint = useMediaQuery(theme.breakpoints.up("xl"));
-  const matchesDownBreakpoint = useMediaQuery(theme.breakpoints.down("sm"));
+/** Games won so far, so the match standing is visible without counting cards. */
+function tallyWins(completedGames, teamNumbers) {
+  return teamNumbers.map((teamNumber) => ({
+    teamNumber,
+    wins: completedGames.filter(
+      (game) => game.winner === `Team ${teamNumber}`
+    ).length,
+  }));
+}
 
-  //Game Settings
-  const [playersAmount, setPlayersAmount] = useRecoilState(playersAmountRecoil);
-  const [renderGameModes, setRenderGamesModes] = useRecoilState(
-    renderGameModesRecoil
+function MatchStanding({ standings }) {
+  const { t, teamName } = useTranslation();
+  const leaderWins = Math.max(...standings.map((s) => s.wins));
+
+  return (
+    <Card sx={{ p: 2 }}>
+      <Typography
+        variant="overline"
+        component="p"
+        sx={{ color: "text.secondary", mb: 1.25 }}
+      >
+        {t("matchStanding")}
+      </Typography>
+      <Stack direction="row" spacing={1}>
+        {standings.map(({ teamNumber, wins }) => {
+          const isLeading = wins > 0 && wins === leaderWins;
+
+          return (
+            <Box
+              key={teamNumber}
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                textAlign: "center",
+                py: 1,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: (t) =>
+                  isLeading
+                    ? alpha(t.palette[TEAM_KEYS[teamNumber]].main, 0.45)
+                    : "divider",
+                backgroundColor: (t) =>
+                  isLeading
+                    ? alpha(t.palette[TEAM_KEYS[teamNumber]].main, 0.08)
+                    : "transparent",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  lineHeight: 1.1,
+                  fontVariantNumeric: "tabular-nums",
+                  color: (t) => t.palette[TEAM_KEYS[teamNumber]].dark,
+                }}
+              >
+                {wins}
+              </Typography>
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                {teamName(teamNumber)}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Stack>
+    </Card>
   );
+}
+
+export default function NewMatch({ onBackToDashboard }) {
+  const displayToast = useToast();
+  const { t, teamName } = useTranslation();
+
+  const [playersAmount, setPlayersAmount] = useRecoilState(playersAmountRecoil);
+  const [, setRenderGamesModes] = useRecoilState(renderGameModesRecoil);
   const [gameMode, setGameMode] = useRecoilState(gameModeRecoil);
   const [maxPoints, setMaxPoints] = useRecoilState(maxPointsRecoil);
 
-  //Players
   const [player1, setPlayer1] = useRecoilState(player1Recoil);
   const [player2, setPlayer2] = useRecoilState(player2Recoil);
   const [player3, setPlayer3] = useRecoilState(player3Recoil);
   const [player4, setPlayer4] = useRecoilState(player4Recoil);
 
-  //Games Values
-  const [openMatchId, setMatchId] = useRecoilState(openMatchIdRecoil);
   const [isGameStarted, setStartGame] = useRecoilState(isGameStartedRecoil);
   const [whoWon, setWhoWon] = useRecoilState(whoWonRecoil);
   const [completedGames, setCompletedGame] =
     useRecoilState(completedGamesRecoil);
   const [currentGame, setCurrentGame] = useRecoilState(currentGameRecoil);
-  const [matchDescription, setMatchDescription] = useRecoilState(
-    matchDescriptionRecoil
-  );
+  const [, setMatchDescription] = useRecoilState(matchDescriptionRecoil);
 
-  // GAME HANDLERS
   const handleWhoWon = (winner) => {
     setWhoWon(winner);
   };
@@ -109,16 +162,14 @@ export default function NewMatch({ onBackToDashboard }) {
 
     if (layout.length < playersAmount) {
       displayToast(
-        `Match set for ${playersAmount} players, ${
-          layout.length === 0 ? "none" : `only ${layout.length}`
-        } ${layout.length === 1 ? "is" : `are`} present`,
+        t("toastMissingPlayers", {
+          expected: playersAmount,
+          present: layout.length,
+        }),
         "error"
       );
       return;
     }
-
-    // Create Match in BE
-    // setMatchId(response.data.id);
 
     setStartGame(true);
   };
@@ -127,7 +178,7 @@ export default function NewMatch({ onBackToDashboard }) {
     const tempCurrentGame = { ...currentGame };
 
     if (whoWon === "") {
-      displayToast(`Must be at least a winner`, "error");
+      displayToast(t("toastNeedWinner"), "error");
       return;
     }
 
@@ -139,11 +190,7 @@ export default function NewMatch({ onBackToDashboard }) {
     ];
 
     if (arrayOfPoints.filter((item) => item >= maxPoints).length > 1) {
-      displayToast(
-        `More than 1 Team has more or equal amount of points than the Max allowed \n
-         or the input value has errors`,
-        "error"
-      );
+      displayToast(t("toastTooManyOverTarget"), "error");
       return;
     }
 
@@ -191,209 +238,118 @@ export default function NewMatch({ onBackToDashboard }) {
       handleWhoWon(`Team ${teamNumber}`);
     }
 
-    setCurrentGame((prev) => {
-      return {
-        ...prev,
-        [teamNumberHands]: [...prev[teamNumberHands], score],
-        [teamNumberTotalPoints]: prev[teamNumberTotalPoints] + score,
-      };
-    });
+    setCurrentGame((prev) => ({
+      ...prev,
+      [teamNumberHands]: [...prev[teamNumberHands], score],
+      [teamNumberTotalPoints]: prev[teamNumberTotalPoints] + score,
+    }));
   };
 
+  const isFreeForAll = gameMode?.label === "Free For All";
+  const teamNumbers = activeTeamNumbers(playersAmount, isFreeForAll);
+  const standings = tallyWins(completedGames, teamNumbers);
+  const winningTeam = teamNumberFrom(whoWon);
+
   return (
-    <>
-      {/* Back Button */}
-      <Box sx={{ mb: 3 }}>
+    <Box sx={{ maxWidth: 1120, mx: "auto", width: "100%" }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ mb: 2 }}
+      >
         <Button
           startIcon={<ArrowBack />}
           onClick={onBackToDashboard}
-          sx={{
-            color: "text.secondary",
-            "&:hover": {
-              background: "rgba(99, 102, 241, 0.1)",
-            },
-          }}
+          color="inherit"
+          sx={{ color: "text.secondary" }}
         >
-          Back to Dashboard
+          {t("dashboard")}
         </Button>
-      </Box>
+
+        {isGameStarted && <ConfirmDeleteMatch onCofirm={handleCancelGame} />}
+      </Stack>
 
       <Box
         sx={{
-          display: "flex",
-          justifyContent: "center",
+          display: "grid",
+          gap: 2,
+          alignItems: "start",
+          gridTemplateColumns: {
+            xs: "1fr",
+            lg: isGameStarted ? "repeat(2, minmax(0, 1fr))" : "1fr",
+          },
+          maxWidth: isGameStarted ? "none" : 540,
+          mx: isGameStarted ? 0 : "auto",
         }}
       >
-        <Box
-          display="flex"
-          flexWrap={!matchesUpXLBreakpoint ? "wrap" : ""}
-          justifyContent="center"
-          gap="30px"
-        >
-          {isGameStarted && (
-            <Stack gap="10px" sx={{ maxWidth: "520px", width: "100%" }}>
-              {isGameStarted && (
-                <Typography
-                  color={"primary"}
-                  sx={{
-                    fontWeight: "bold",
-                    fontSize: "30px",
-                  }}
-                >
-                  Hello, Welcome to Olympus!
+        {/* SCOREPAD */}
+        {isGameStarted && (
+          <Stack spacing={2}>
+            {completedGames.length > 0 && (
+              <MatchStanding standings={standings} />
+            )}
+
+            <NoteMaker
+              isGameStarted={isGameStarted}
+              gameMode={gameMode}
+              playersAmount={playersAmount}
+              completedGames={completedGames}
+              whoWon={whoWon}
+              maxPoints={maxPoints}
+              handleUpateScores={handleUpateScores}
+            />
+
+            <Card sx={{ p: 2 }}>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={1.5}
+                alignItems={{ xs: "stretch", sm: "center" }}
+                justifyContent="space-between"
+              >
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  {winningTeam
+                    ? t("teamReached", {
+                        team: teamName(winningTeam),
+                        points: maxPoints,
+                      })
+                    : t("waitingForTarget", { points: maxPoints })}
                 </Typography>
-              )}
 
-              {/**NOTES ALREADY DONE */}
-              <NotesDone />
-
-              {/**CURRENT GAME */}
-              <NoteMaker
-                isGameStarted={isGameStarted}
-                gameMode={gameMode}
-                playersAmount={playersAmount}
-                completedGames={completedGames}
-                whoWon={whoWon}
-                maxPoints={maxPoints}
-                handleUpateScores={handleUpateScores}
-              />
-
-              {isGameStarted && (
-                <Card
-                  elevation={8}
-                  className="p-4"
-                  sx={{
-                    background:
-                      "linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)",
-                    border: "1px solid rgba(99, 102, 241, 0.1)",
-                    borderRadius: 3,
-                  }}
+                <Button
+                  onClick={handleNextGame}
+                  variant="contained"
+                  endIcon={<ArrowForward />}
+                  sx={{ flexShrink: 0 }}
                 >
-                  <Box display="flex" justifyContent="flex-end">
-                    <Button
-                      onClick={handleNextGame}
-                      variant="contained"
-                      sx={{
-                        background:
-                          "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-                        color: "white",
-                        fontWeight: "bold",
-                        px: 3,
-                        py: 1.5,
-                        borderRadius: 2,
-                        boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
-                        "&:hover": {
-                          background:
-                            "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
-                          boxShadow: "0 6px 20px rgba(99, 102, 241, 0.4)",
-                          transform: "translateY(-1px)",
-                        },
-                        transition: "all 0.3s ease",
-                      }}
-                    >
-                      Next Game
-                    </Button>
-                  </Box>
-                </Card>
-              )}
-            </Stack>
+                  {t("nextGame")}
+                </Button>
+              </Stack>
+            </Card>
+
+            <NotesDone />
+          </Stack>
+        )}
+
+        {/* SETUP */}
+        <Stack spacing={2}>
+          <MatchSettings />
+
+          {!isGameStarted && (
+            <Button
+              onClick={handleStartGame}
+              variant="contained"
+              size="large"
+              fullWidth
+              startIcon={<PlayArrow />}
+            >
+              {t("startPlaying")}
+            </Button>
           )}
 
-          <Box sx={{ maxWidth: "520px", width: "100%" }}>
-            {!isGameStarted && !matchesUpXLBreakpoint && (
-              <Typography
-                color={"primary"}
-                sx={{
-                  fontWeight: "bold",
-                  fontSize: "30px",
-                }}
-              >
-                Hello, Welcome to Olympus!
-              </Typography>
-            )}
-
-            {!matchesUpXLBreakpoint && (
-              <Typography
-                color={"primary"}
-                sx={{
-                  fontWeight: "bold",
-                  fontSize: "30px",
-                  marginBottom: "16px",
-                }}
-              >
-                Settings
-              </Typography>
-            )}
-
-            {/**GAME SETTINGS */}
-            <MatchSettings />
-
-            {/*LOCK GAME*/}
-            {!isGameStarted && (
-              <Card
-                className="w-full mt-4 p-4"
-                elevation={8}
-                sx={{
-                  background:
-                    "linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)",
-                  border: "1px solid rgba(99, 102, 241, 0.1)",
-                  borderRadius: 3,
-                }}
-              >
-                {!isGameStarted && (
-                  <Box display="flex" justifyContent="flex-end">
-                    <Button
-                      onClick={handleStartGame}
-                      variant="contained"
-                      sx={{
-                        background:
-                          "linear-gradient(135deg, #10B981 0%, #059669 100%)",
-                        color: "white",
-                        fontWeight: "bold",
-                        px: 4,
-                        py: 1.5,
-                        borderRadius: 2,
-                        boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
-                        "&:hover": {
-                          background:
-                            "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                          boxShadow: "0 6px 20px rgba(16, 185, 129, 0.4)",
-                          transform: "translateY(-1px)",
-                        },
-                        transition: "all 0.3s ease",
-                      }}
-                    >
-                      Start Game
-                    </Button>
-                  </Box>
-                )}
-              </Card>
-            )}
-
-            {isGameStarted && (
-              <Card
-                className="w-full max-w-[950px] mt-4 p-4"
-                elevation={8}
-                sx={{
-                  background:
-                    "linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)",
-                  border: "1px solid rgba(99, 102, 241, 0.1)",
-                  borderRadius: 3,
-                }}
-              >
-                <Box display="flex" justifyContent="flex-end">
-                  <ConfirmDeleteMatch onCofirm={handleCancelGame} />
-                </Box>
-              </Card>
-            )}
-
-            {/**TABLE SETUP */}
-            <Box mt={2}>
-              <TableDraw />
-            </Box>
-          </Box>
-        </Box>
+          <TableDraw />
+        </Stack>
       </Box>
-    </>
+    </Box>
   );
 }

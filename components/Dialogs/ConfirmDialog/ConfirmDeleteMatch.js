@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslation } from "@/i18n/useTranslation";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -6,45 +9,49 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import * as React from "react";
 
-export default function ConfirmDeleteGame({ onCofirm }) {
-    const [open, setOpen] = React.useState(false);
+export default function ConfirmDeleteMatch({ onCofirm }) {
+  const [open, setOpen] = React.useState(false);
+  const { t } = useTranslation();
 
-    const handleClickOpen = () => {
-        setOpen(true);
-    };
+  const handleClose = () => setOpen(false);
 
-    const handleClose = () => {
-        setOpen(false);
-    };
+  const handleConfirm = () => {
+    onCofirm();
+    setOpen(false);
+  };
 
-    const handleConfirm = () => {
-        onCofirm();
-        setOpen(false);
-    };
+  return (
+    <React.Fragment>
+      <Button onClick={() => setOpen(true)} color="error" size="small">
+        {t("endMatch")}
+      </Button>
 
-    return (
-        <React.Fragment>
-            <Button onClick={handleClickOpen}>Cancel Match</Button>
-
-            <Dialog
-                open={open}
-                onClose={handleClose}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-            >
-                <DialogTitle id="alert-dialog-title">
-                    Are you sure you want to delete this Match?
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description"></DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>Cancel</Button>
-                    <Button onClick={handleConfirm} autoFocus>
-                        Confirm
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </React.Fragment>
-    );
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="end-match-title"
+        aria-describedby="end-match-description"
+      >
+        <DialogTitle id="end-match-title">{t("endMatchTitle")}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="end-match-description">
+            {t("endMatchBody")}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} color="inherit">
+            {t("keepPlaying")}
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            autoFocus
+            variant="contained"
+            color="error"
+          >
+            {t("endMatch")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </React.Fragment>
+  );
 }

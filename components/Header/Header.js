@@ -1,91 +1,103 @@
 "use client";
 
-import {
-  AppBar,
-  Box,
-  Container,
-  Stack,
-  Toolbar,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
-import { useState } from "react";
+import DominoTile from "@/components/DominoTile";
+import LanguageSwitch from "@/components/Header/LanguageSwitch";
+import { useTranslation } from "@/i18n/useTranslation";
+import { AppBar, Box, Container, Stack, Toolbar, Typography } from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 export default function Header() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Handle scroll effect
-  if (typeof window !== "undefined") {
-    window.addEventListener("scroll", () => {
-      setIsScrolled(window.scrollY > 10);
-    });
-  }
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <AppBar
       position="fixed"
-      elevation={isScrolled ? 8 : 0}
+      elevation={0}
       sx={{
-        background: isScrolled
-          ? "rgba(255, 255, 255, 0.95)"
-          : "rgba(255, 255, 255, 0.8)",
-        backdropFilter: "blur(10px)",
-        borderBottom: isScrolled ? "1px solid rgba(0,0,0,0.1)" : "none",
-        transition: "all 0.3s ease",
+        backgroundColor: alpha(theme.palette.grey[100], isScrolled ? 0.92 : 0.75),
+        backdropFilter: "blur(12px)",
+        color: "text.primary",
+        borderBottom: `1px solid ${alpha(
+          theme.palette.grey[600],
+          isScrolled ? 0.24 : 0
+        )}`,
+        boxShadow: isScrolled ? theme.customShadows.z8 : "none",
+        transition: "background-color 200ms ease, border-color 200ms ease",
       }}
     >
       <Container maxWidth="xl">
-        <Toolbar sx={{ justifyContent: "center", py: 1 }}>
-          {/* Logo */}
+        <Toolbar
+          disableGutters
+          sx={{
+            position: "relative",
+            // Narrow screens have no room to centre the wordmark and clear the
+            // switch, so there the two simply sit at opposite ends.
+            justifyContent: { xs: "space-between", sm: "center" },
+            gap: 1,
+            minHeight: 64,
+          }}
+        >
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "12px",
-                  background:
-                    "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
-                }}
-              >
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              {/* The double-nine tile: the highest piece in a Cuban set. */}
+              <DominoTile top={9} bottom={9} size={17} orientation="horizontal" />
+
+              <Box>
                 <Typography
-                  variant="h6"
+                  component="h1"
                   sx={{
-                    color: "white",
-                    fontWeight: "bold",
-                    fontSize: "18px",
+                    fontFamily: (t) => t.typography.h2.fontFamily,
+                    fontWeight: 700,
+                    fontSize: { xs: 19, sm: 22 },
+                    lineHeight: 1.1,
+                    letterSpacing: "-0.01em",
+                    color: "primary.dark",
                   }}
                 >
-                  O
+                  Olympus Dominoes
+                </Typography>
+                <Typography
+                  variant="overline"
+                  sx={{
+                    display: { xs: "none", sm: "block" },
+                    color: "text.disabled",
+                    fontSize: 9,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {t("tagline")}
                 </Typography>
               </Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: "bold",
-                  background:
-                    "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Olympus Dominoes
-              </Typography>
             </Stack>
           </motion.div>
+
+          <Box
+            sx={{
+              flexShrink: 0,
+              // Anchored on wider screens so the wordmark stays truly centred.
+              position: { xs: "static", sm: "absolute" },
+              right: 0,
+              top: { sm: "50%" },
+              mt: { sm: "-15px" },
+            }}
+          >
+            <LanguageSwitch />
+          </Box>
         </Toolbar>
       </Container>
     </AppBar>

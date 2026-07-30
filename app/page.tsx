@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Box, CssBaseline } from "@mui/material";
-import Header from "@/components/Header/Header";
 import Dashboard from "@/components/Dashboard/Dashboard";
+import Header from "@/components/Header/Header";
 import NewMatch from "@/modules/NewMatch/newMatch";
-import { useRecoilValue } from "recoil";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
+import { Box } from "@mui/material";
+import { useEffect, useState } from "react";
+import { useRecoilValue } from "recoil";
 
 type ViewType = "dashboard" | "game";
 
@@ -14,7 +14,7 @@ export default function Index() {
   const [currentView, setCurrentView] = useState<ViewType>("dashboard");
   const isGameStarted = useRecoilValue(isGameStartedRecoil);
 
-  // Check if game is in progress on page load
+  // Restore the game view when a match is still in progress from a past visit.
   useEffect(() => {
     if (isGameStarted) {
       setCurrentView("game");
@@ -30,19 +30,24 @@ export default function Index() {
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <CssBaseline />
-
-      {/* Header */}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        width: "100%",
+      }}
+    >
       <Header />
 
-      {/* Main Content */}
+      {/* Generous bottom padding keeps the last card clear of a phone's
+          home indicator and leaves room to scroll past the end. */}
       <Box
+        component="section"
         sx={{
           flex: 1,
-          pt: 8, // Account for fixed header
-          background: "linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)",
-          minHeight: "100vh",
+          pt: 8,
+          pb: { xs: 14, sm: 10 },
         }}
       >
         {currentView === "dashboard" && (
@@ -50,7 +55,7 @@ export default function Index() {
         )}
 
         {currentView === "game" && (
-          <Box sx={{ py: 2, px: 1.5 }}>
+          <Box sx={{ py: { xs: 2, sm: 3 }, px: { xs: 1.5, sm: 3 } }}>
             <NewMatch onBackToDashboard={handleBackToDashboard} />
           </Box>
         )}

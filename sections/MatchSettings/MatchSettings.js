@@ -1,29 +1,24 @@
-import {
-  Autocomplete,
-  Box,
-  Card,
-  Slider,
-  TextField,
-  Typography,
-  useMediaQuery,
-  Stack,
-  Chip,
-} from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+"use client";
 
 import {
-  gameModes2,
-  gameModes3,
-  gameModes4,
-  gamePlayerCount,
-} from "@/utils/matchSettings";
-import { useRecoilState } from "recoil";
+  Box,
+  Card,
+  Chip,
+  Stack,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+  useMediaQuery,
+} from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
+import { Fragment } from "react";
+
+import { useTranslation } from "@/i18n/useTranslation";
+import { gameModes2, gameModes3, gameModes4 } from "@/utils/matchSettings";
 import {
-  completedGamesRecoil,
-  currentGameRecoil,
   gameModeRecoil,
   isGameStartedRecoil,
-  matchDescriptionRecoil,
   maxPointsRecoil,
   player1Recoil,
   player2Recoil,
@@ -31,16 +26,178 @@ import {
   player4Recoil,
   playersAmountRecoil,
   renderGameModesRecoil,
-  whoWonRecoil,
 } from "@/recoil/recoilState";
+import { useRecoilState } from "recoil";
+
+const PLAYER_COUNTS = [2, 3, 4];
+const TARGET_PRESETS = [100, 150, 200];
+
+const MODES_BY_COUNT = {
+  2: { modes: gameModes2, defaultIndex: 0 },
+  3: { modes: gameModes3, defaultIndex: 0 },
+  4: { modes: gameModes4, defaultIndex: 1 },
+};
+
+/**
+ * Group the four player slots into the teams that will actually be scored.
+ * Partners sit on the same note, so the roster must mirror the scorepad.
+ */
+function buildTeams(playersAmount, isFreeForAll, slots) {
+  const [p1, p2, p3, p4] = slots;
+
+  if (isFreeForAll) {
+    return slots.slice(0, playersAmount).map((slot, index) => ({
+      key: `team${index + 1}`,
+      number: index + 1,
+      members: [slot],
+    }));
+  }
+
+  const team1 = playersAmount > 2 ? [p1, p3] : [p1];
+  const team2 = playersAmount > 3 ? [p2, p4] : [p2];
+
+  return [
+    { key: "team1", number: 1, members: team1 },
+    { key: "team2", number: 2, members: team2 },
+  ];
+}
+
+/**
+ * Once play starts the setup is locked, so it collapses to a single strip of
+ * facts rather than a form nobody can use.
+ *
+ * Each fact carries its own trailing separator inside one nowrap span, so if
+ * the strip has to wrap on a narrow screen a line never begins with a stray
+ * dot.
+ */
+function MatchSummary({ playersAmount, modeLabel, maxPoints, teams }) {
+  const { t, teamName, modeName } = useTranslation();
+
+  const facts = [
+    { key: "players", text: t("playersCount", { n: playersAmount }) },
+    ...(modeLabel ? [{ key: "mode", text: modeName(modeLabel) }] : []),
+    { key: "target", text: t("firstTo", { n: maxPoints }) },
+    ...teams.map((team) => ({
+      key: team.key,
+      teamKey: team.key,
+      text:
+        team.members
+          .map((member) => member.value)
+          .filter(Boolean)
+          .join(" & ") || teamName(team.number),
+    })),
+  ];
+
+  return (
+    <Card sx={{ px: 2, py: 1.25 }}>
+      <Typography variant="body2" component="p" sx={{ color: "text.secondary" }}>
+        {facts.map((fact, index) => (
+          <Fragment key={fact.key}>
+            <Box component="span" sx={{ whiteSpace: "nowrap" }}>
+              {fact.teamKey && (
+                <Box
+                  component="span"
+                  sx={{
+                    display: "inline-block",
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    mr: 0.75,
+                    verticalAlign: "middle",
+                    backgroundColor: (t) => t.palette[fact.teamKey].main,
+                  }}
+                />
+              )}
+              <Box
+                component="span"
+                sx={{
+                  color: fact.teamKey ? "text.primary" : "text.secondary",
+                  fontWeight: fact.teamKey ? 600 : 400,
+                }}
+              >
+                {fact.text}
+              </Box>
+              {index < facts.length - 1 && (
+                <Box component="span" sx={{ color: "text.disabled" }}>
+                  {" ·"}
+                </Box>
+              )}
+            </Box>
+            {/* Breakable space lives outside the nowrap span, so a wrapped
+                line starts with a fact rather than a separator. */}
+            {index < facts.length - 1 && " "}
+          </Fragment>
+        ))}
+      </Typography>
+    </Card>
+  );
+}
+
+function FieldGroup({ label, children }) {
+  return (
+    <Box>
+      <Typography
+        variant="overline"
+        component="p"
+        sx={{ color: "text.secondary", mb: 1 }}
+      >
+        {label}
+      </Typography>
+      {children}
+    </Box>
+  );
+}
+
+function TeamRoster({ team, disabled }) {
+  const { t, teamName } = useTranslation();
+
+  return (
+    <Card
+      sx={{
+        flex: 1,
+        minWidth: 0,
+        p: 2.5,
+        // The chip already names the team, so the card only warms its own
+        // hairline toward that hue rather than wearing a coloured spine.
+        borderColor: (theme) => alpha(theme.palette[team.key].main, 0.32),
+      }}
+    >
+      <Stack spacing={2}>
+        <Chip
+          label={teamName(team.number)}
+          size="small"
+          sx={{
+            alignSelf: "flex-start",
+            color: (theme) => theme.palette[team.key].dark,
+            backgroundColor: (theme) =>
+              alpha(theme.palette[team.key].main, 0.12),
+          }}
+        />
+
+        {team.members.map((member) => (
+          <TextField
+            key={member.id}
+            id={member.id}
+            label={t("player", { n: member.number })}
+            placeholder={t("namePlaceholder")}
+            fullWidth
+            size="small"
+            disabled={disabled}
+            value={member.value}
+            onChange={(event) => member.onChange(event.target.value)}
+            InputLabelProps={{ shrink: true }}
+          />
+        ))}
+      </Stack>
+    </Card>
+  );
+}
 
 export default function MatchSettings() {
   const theme = useTheme();
-  const matchesUpBreakpoint = useMediaQuery(theme.breakpoints.up("lg"));
-  const matchesUpXLBreakpoint = useMediaQuery(theme.breakpoints.up("xl"));
-  const matchesDownBreakpoint = useMediaQuery(theme.breakpoints.down("sm"));
+  const isNarrow = useMediaQuery(theme.breakpoints.down("sm"));
+  const { t, modeName } = useTranslation();
 
-  //Game Settings
   const [playersAmount, setPlayersAmount] = useRecoilState(playersAmountRecoil);
   const [renderGameModes, setRenderGamesModes] = useRecoilState(
     renderGameModesRecoil
@@ -48,344 +205,187 @@ export default function MatchSettings() {
   const [gameMode, setGameMode] = useRecoilState(gameModeRecoil);
   const [maxPoints, setMaxPoints] = useRecoilState(maxPointsRecoil);
 
-  //Players
   const [player1, setPlayer1] = useRecoilState(player1Recoil);
   const [player2, setPlayer2] = useRecoilState(player2Recoil);
   const [player3, setPlayer3] = useRecoilState(player3Recoil);
   const [player4, setPlayer4] = useRecoilState(player4Recoil);
 
-  //Games Values
-  const [isGameStarted, setStartGame] = useRecoilState(isGameStartedRecoil);
-  const [whoWon, setWhoWon] = useRecoilState(whoWonRecoil);
-  const [completedGames, setCompletedGame] =
-    useRecoilState(completedGamesRecoil);
-  const [currentGame, setCurrentGame] = useRecoilState(currentGameRecoil);
-  const [matchDescription, setMatchDescription] = useRecoilState(
-    matchDescriptionRecoil
-  );
+  const [isGameStarted] = useRecoilState(isGameStartedRecoil);
 
-  const handleSliderChange = (event) => {
-    const newSlideValue = event.target.value;
+  const isFreeForAll = gameMode?.label === "Free For All";
 
-    if (newSlideValue === 2) {
-      setRenderGamesModes(gameModes2);
-      setGameMode(gameModes2[0]);
-    } else if (newSlideValue === 3) {
-      setRenderGamesModes(gameModes3);
-      setGameMode(gameModes3[0]);
-    } else if (newSlideValue === 4) {
-      setRenderGamesModes(gameModes4);
-      setGameMode(gameModes4[1]);
-    }
+  const slots = [
+    {
+      id: "Player1TextField",
+      number: 1,
+      value: player1,
+      onChange: setPlayer1,
+    },
+    {
+      id: "Player2TextField",
+      number: 2,
+      value: player2,
+      onChange: setPlayer2,
+    },
+    {
+      id: "Player3TextField",
+      number: 3,
+      value: player3,
+      onChange: setPlayer3,
+    },
+    {
+      id: "Player4TextField",
+      number: 4,
+      value: player4,
+      onChange: setPlayer4,
+    },
+  ];
 
-    setPlayersAmount(newSlideValue === "" ? "" : newSlideValue);
+  const teams = buildTeams(playersAmount, isFreeForAll, slots);
+
+  const handlePlayerCountChange = (_event, nextCount) => {
+    if (nextCount === null) return;
+
+    const { modes, defaultIndex } = MODES_BY_COUNT[nextCount];
+    setRenderGamesModes(modes);
+    setGameMode(modes[defaultIndex]);
+    setPlayersAmount(nextCount);
   };
 
-  const handlePlayers = (playerNumber, newPlayer) => {
-    if (playerNumber === "1") setPlayer1(newPlayer);
-    if (playerNumber === "2") setPlayer2(newPlayer);
-    if (playerNumber === "3") setPlayer3(newPlayer);
-    if (playerNumber === "4") setPlayer4(newPlayer);
+  const handleModeChange = (_event, nextLabel) => {
+    if (nextLabel === null) return;
+    const nextMode = renderGameModes.find((mode) => mode.label === nextLabel);
+    if (nextMode) setGameMode(nextMode);
   };
 
-  const handleMaxPoints = (newMax) => {
-    setMaxPoints(newMax);
+  const handleMaxPointsInput = (raw) => {
+    // Digits only: an empty or decimal target would break the win comparisons.
+    if (!/^\d+$/.test(raw)) return;
+    setMaxPoints(raw);
   };
 
-  const handleModeChange = (newMode) => {
-    setGameMode(newMode);
-  };
+  if (isGameStarted) {
+    return (
+      <MatchSummary
+        playersAmount={playersAmount}
+        modeLabel={gameMode?.label}
+        maxPoints={maxPoints}
+        teams={teams}
+      />
+    );
+  }
 
   return (
-    <>
-      <Box mb={3}>
-        <Card
-          elevation={8}
-          sx={{
-            p: 4,
-            background: "linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)",
-            border: "1px solid rgba(99, 102, 241, 0.1)",
-            borderRadius: 3,
-          }}
-        >
-          <Stack spacing={3}>
-            <Box>
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                sx={{
-                  color: "text.primary",
-                  mb: 1,
-                }}
-              >
-                Match Configuration
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Set up your dominoes game parameters
-              </Typography>
-            </Box>
+    <Stack spacing={2}>
+      <Card sx={{ p: { xs: 2.5, sm: 3 } }}>
+        <Stack spacing={3}>
+          <Box>
+            <Typography variant="h5" sx={{ color: "text.primary" }}>
+              {t("setupTitle")}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              {t("setupSubtitle")}
+            </Typography>
+          </Box>
 
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  color: "text.primary",
-                  mb: 2,
-                }}
-              >
-                Players: {playersAmount}
-              </Typography>
-              <Box sx={{ px: 2 }}>
-                <Slider
-                  aria-label="Player count"
-                  disabled={isGameStarted}
-                  defaultValue={4}
-                  value={playersAmount}
-                  onChange={handleSliderChange}
-                  max={4}
-                  min={2}
-                  step={1}
-                  valueLabelDisplay="auto"
-                  marks={gamePlayerCount}
-                  sx={{
-                    "& .MuiSlider-track": {
-                      background:
-                        "linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%)",
-                    },
-                    "& .MuiSlider-thumb": {
-                      background:
-                        "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-                      boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
-                    },
-                    "& .MuiSlider-mark": {
-                      backgroundColor: "#6366F1",
-                    },
-                  }}
-                />
-              </Box>
-            </Box>
-
-            <Autocomplete
-              id="game-mode-select"
-              options={renderGameModes}
-              value={gameMode}
-              disabled={isGameStarted}
-              onChange={(event, newValue) => {
-                handleModeChange(newValue);
-              }}
-              autoHighlight
+          <FieldGroup label={t("playersAtTable")}>
+            <ToggleButtonGroup
+              exclusive
               fullWidth
-              getOptionLabel={(option) => option.label}
-              renderOption={(props, option) => (
-                <Box
-                  component="li"
-                  sx={{ "& > img": { mr: 2, flexShrink: 0 } }}
-                  {...props}
+              size="small"
+              disabled={isGameStarted}
+              value={playersAmount}
+              onChange={handlePlayerCountChange}
+              aria-label={t("playersAtTable")}
+            >
+              {PLAYER_COUNTS.map((count) => (
+                <ToggleButton
+                  key={count}
+                  value={count}
+                  aria-label={t("playerCountAria", { n: count })}
                 >
-                  {option.label}
-                </Box>
-              )}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Game Mode"
-                  inputProps={{
-                    ...params.inputProps,
-                    autoComplete: "new-password",
-                  }}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                    },
-                  }}
-                />
-              )}
-            />
+                  {count}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </FieldGroup>
 
-            <TextField
-              id="max-points"
-              label="Max Points"
+          <FieldGroup label={t("format")}>
+            <ToggleButtonGroup
+              exclusive
               fullWidth
+              size="small"
               disabled={isGameStarted}
-              value={maxPoints}
-              onChange={(e) => {
-                if (Number(e.target.value > 0) && !e.target.value.includes("."))
-                  handleMaxPoints(e.target.value);
-              }}
-              type="number"
-              InputLabelProps={{
-                shrink: true,
-              }}
-              inputProps={{ pattern: "[0-9]*" }}
-              variant="outlined"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                },
-              }}
-            />
-          </Stack>
-        </Card>
-      </Box>
+              value={gameMode?.label ?? null}
+              onChange={handleModeChange}
+              aria-label={t("format")}
+            >
+              {renderGameModes.map((mode) => (
+                <ToggleButton key={mode.label} value={mode.label}>
+                  {modeName(mode.label)}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </FieldGroup>
 
-      {/**PLAYER SETUP */}
+          <FieldGroup label={t("pointsToWin")}>
+            <Stack
+              direction={isNarrow ? "column" : "row"}
+              spacing={1.5}
+              alignItems={isNarrow ? "stretch" : "center"}
+            >
+              <TextField
+                id="max-points"
+                label={t("target")}
+                size="small"
+                disabled={isGameStarted}
+                value={maxPoints}
+                onChange={(event) => handleMaxPointsInput(event.target.value)}
+                type="number"
+                InputLabelProps={{ shrink: true }}
+                inputProps={{ inputMode: "numeric", pattern: "[0-9]*", min: 1 }}
+                sx={{ width: isNarrow ? "100%" : 130 }}
+              />
+
+              <Stack direction="row" spacing={1}>
+                {TARGET_PRESETS.map((preset) => (
+                  <Chip
+                    key={preset}
+                    label={preset}
+                    size="small"
+                    clickable={!isGameStarted}
+                    disabled={isGameStarted}
+                    variant={
+                      Number(maxPoints) === preset ? "filled" : "outlined"
+                    }
+                    color={Number(maxPoints) === preset ? "primary" : "default"}
+                    onClick={() => setMaxPoints(String(preset))}
+                  />
+                ))}
+              </Stack>
+            </Stack>
+          </FieldGroup>
+        </Stack>
+      </Card>
+
+      {/* PLAYER ROSTERS */}
       <Box
-        display="flex"
-        flexWrap={matchesDownBreakpoint ? "wrap " : ""}
-        gap="20px"
-        sx={{ width: "100%" }}
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
+        }}
       >
-        <Card
-          elevation={8}
-          sx={{
-            width: matchesDownBreakpoint ? "100%" : "initial",
-            p: 3,
-            background: "linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)",
-            border: "1px solid rgba(59, 130, 246, 0.1)",
-            borderRadius: 3,
-            flex: 1,
-          }}
-        >
-          <Stack spacing={2}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Chip
-                label="Team 1"
-                color="team1"
-                size="small"
-                sx={{ fontWeight: "bold" }}
-              />
-            </Box>
-
-            <TextField
-              id="Player1TextField"
-              label="Player 1"
-              disabled={isGameStarted}
-              value={player1}
-              onChange={(event) => {
-                handlePlayers("1", event.target.value);
-              }}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              variant="outlined"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                },
-              }}
-            />
-
-            {playersAmount > 2 && (
-              <Box>
-                <Chip
-                  label={
-                    gameMode?.label === "Free For All" ? "Team 3" : "Team 1"
-                  }
-                  color={gameMode?.label === "Free For All" ? "team3" : "team1"}
-                  size="small"
-                  sx={{ mb: 1, fontWeight: "bold" }}
-                />
-                <TextField
-                  id="Player3TextField"
-                  label={`Player ${
-                    playersAmount === 3 ? playersAmount : playersAmount - 1
-                  }`}
-                  fullWidth
-                  disabled={isGameStarted}
-                  value={player3}
-                  onChange={(event) => {
-                    handlePlayers("3", event.target.value);
-                  }}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  variant="outlined"
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                    },
-                  }}
-                />
-              </Box>
-            )}
-          </Stack>
-        </Card>
-
-        <Card
-          elevation={8}
-          sx={{
-            width: matchesDownBreakpoint ? "100%" : "initial",
-            p: 3,
-            background: "linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)",
-            border: "1px solid rgba(245, 158, 11, 0.1)",
-            borderRadius: 3,
-            flex: 1,
-          }}
-        >
-          <Stack spacing={2}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Chip
-                label="Team 2"
-                color="team2"
-                size="small"
-                sx={{ fontWeight: "bold" }}
-              />
-            </Box>
-
-            <TextField
-              id="Player2TextField"
-              label={`Player ${playersAmount >= 3 ? "2" : playersAmount}`}
-              fullWidth
-              disabled={isGameStarted}
-              value={player2}
-              onChange={(event) => {
-                handlePlayers("2", event.target.value);
-              }}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              variant="outlined"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                },
-              }}
-            />
-
-            {playersAmount > 3 && (
-              <Box>
-                <Chip
-                  label={
-                    gameMode?.label === "Free For All" ? "Team 4" : "Team 2"
-                  }
-                  color={gameMode?.label === "Free For All" ? "team4" : "team2"}
-                  size="small"
-                  sx={{ mb: 1, fontWeight: "bold" }}
-                />
-                <TextField
-                  id="Player4TextField"
-                  label="Player 4"
-                  fullWidth
-                  disabled={isGameStarted}
-                  value={player4}
-                  onChange={(event) => {
-                    handlePlayers("4", event.target.value);
-                  }}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  variant="outlined"
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                    },
-                  }}
-                />
-              </Box>
-            )}
-          </Stack>
-        </Card>
+        {teams.map((team) => (
+          <TeamRoster key={team.key} team={team} disabled={isGameStarted} />
+        ))}
       </Box>
-    </>
+
+      {isFreeForAll && playersAmount > 2 && (
+        <Typography variant="caption" sx={{ color: "text.secondary", px: 0.5 }}>
+          {t("freeForAllNote")}
+        </Typography>
+      )}
+    </Stack>
   );
 }

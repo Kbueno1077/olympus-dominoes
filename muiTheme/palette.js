@@ -1,148 +1,144 @@
 import { alpha } from "@mui/material/styles";
 
 // ----------------------------------------------------------------------
+// HAVANA PALETTE
+// Drawn from the physical game: bone-coloured tiles, espresso pips, a green
+// baize table, terracotta rooftops, ochre sun and Malecon blue. Every hue is
+// desaturated to roughly the same value so they read as one set.
+// ----------------------------------------------------------------------
 
-function createGradient(color1, color2) {
-  return `linear-gradient(to bottom, ${color1}, ${color2})`;
-}
-
-// SETUP COLORS
-const GREY = {
+// Bone: the tile face, the paper of the scorepad, and every neutral in the app.
+const BONE = {
   0: "#FFFFFF",
-  100: "#F8FAFC",
-  200: "#F1F5F9",
-  300: "#E2E8F0",
-  400: "#CBD5E1",
-  500: "#94A3B8",
-  600: "#64748B",
-  700: "#475569",
-  800: "#334155",
-  900: "#1E293B",
-  500_8: alpha("#94A3B8", 0.08),
-  500_12: alpha("#94A3B8", 0.12),
-  500_16: alpha("#94A3B8", 0.16),
-  500_24: alpha("#94A3B8", 0.24),
-  500_32: alpha("#94A3B8", 0.32),
-  500_48: alpha("#94A3B8", 0.48),
-  500_56: alpha("#94A3B8", 0.56),
-  500_80: alpha("#94A3B8", 0.8),
+  100: "#FDFAF4",
+  200: "#F7F0E3",
+  300: "#EFE5D3",
+  400: "#DECFB6",
+  500: "#BCA888",
+  600: "#8C7C63",
+  700: "#5F5341",
+  800: "#3D3427",
+  900: "#241D14",
+  500_8: alpha("#BCA888", 0.08),
+  500_12: alpha("#BCA888", 0.12),
+  500_16: alpha("#BCA888", 0.16),
+  500_24: alpha("#BCA888", 0.24),
+  500_32: alpha("#BCA888", 0.32),
+  500_48: alpha("#BCA888", 0.48),
+  500_56: alpha("#BCA888", 0.56),
+  500_80: alpha("#BCA888", 0.8),
 };
 
 const PRIMARY = {
-  lighter: "#E0E7FF",
-  light: "#A5B4FC",
-  main: "#6366F1",
-  dark: "#4F46E5",
-  darker: "#3730A3",
-  contrastText: "#fff",
+  lighter: "#D7E5E0",
+  light: "#57917F",
+  main: "#1F6B58",
+  dark: "#154F41",
+  darker: "#0D382E",
+  contrastText: "#FDFAF4",
 };
+
 const SECONDARY = {
-  lighter: "#FEF3C7",
-  light: "#FDE68A",
-  main: "#F59E0B",
-  dark: "#D97706",
-  darker: "#B45309",
-  contrastText: "#000",
+  lighter: "#F5DFD4",
+  light: "#CE8465",
+  main: "#B4542F",
+  dark: "#8C3E20",
+  darker: "#652B15",
+  contrastText: "#FDFAF4",
 };
+
 const INFO = {
-  lighter: "#DBEAFE",
-  light: "#93C5FD",
-  main: "#3B82F6",
-  dark: "#2563EB",
-  darker: "#1D4ED8",
-  contrastText: "#fff",
+  lighter: "#DAE5EC",
+  light: "#6C93AE",
+  main: "#3D6C8C",
+  dark: "#2B4E68",
+  darker: "#1D374A",
+  contrastText: "#FDFAF4",
 };
+
 const SUCCESS = {
-  lighter: "#D1FAE5",
-  light: "#A7F3D0",
-  main: "#10B981",
-  dark: "#059669",
-  darker: "#047857",
-  contrastText: "#fff",
+  lighter: "#DDE8D6",
+  light: "#7A9C64",
+  main: "#4F7538",
+  dark: "#3A5828",
+  darker: "#273D1B",
+  contrastText: "#FDFAF4",
 };
+
 const WARNING = {
-  lighter: "#FEF3C7",
-  light: "#FDE68A",
-  main: "#F59E0B",
-  dark: "#D97706",
-  darker: "#B45309",
-  contrastText: "#000",
+  lighter: "#F6E7C9",
+  light: "#D9AE5E",
+  main: "#C08A2E",
+  dark: "#94681F",
+  darker: "#6B4A13",
+  contrastText: "#241D14",
 };
+
 const ERROR = {
-  lighter: "#FEE2E2",
-  light: "#FCA5A5",
-  main: "#EF4444",
-  dark: "#DC2626",
-  darker: "#B91C1C",
-  contrastText: "#fff",
+  lighter: "#F4DAD5",
+  light: "#C77465",
+  main: "#A63328",
+  dark: "#82241B",
+  darker: "#5C1712",
+  contrastText: "#FDFAF4",
 };
 
+// Four table sides. Green / terracotta / ochre / blue: distinct hues, matched
+// saturation, so no single team shouts louder than the others.
 const TEAM1 = {
-  main: "#3B82F6",
-  light: "#60A5FA",
-  dark: "#2563EB",
-  contrastText: "#fff",
+  main: "#1F6B58",
+  light: "#57917F",
+  dark: "#154F41",
+  contrastText: "#FDFAF4",
 };
-
 const TEAM2 = {
-  main: "#F59E0B",
-  light: "#FBBF24",
-  dark: "#D97706",
-  contrastText: "#000",
+  main: "#B4542F",
+  light: "#CE8465",
+  dark: "#8C3E20",
+  contrastText: "#FDFAF4",
 };
 const TEAM3 = {
-  main: "#10B981",
-  light: "#34D399",
-  dark: "#059669",
-  contrastText: "#fff",
+  main: "#B08422",
+  light: "#D0A855",
+  dark: "#8A6516",
+  contrastText: "#FDFAF4",
 };
 const TEAM4 = {
-  main: "#8B5CF6",
-  light: "#A78BFA",
-  dark: "#7C3AED",
-  contrastText: "#fff",
-};
-
-const GRADIENTS = {
-  primary: createGradient(PRIMARY.light, PRIMARY.main),
-  info: createGradient(INFO.light, INFO.main),
-  success: createGradient(SUCCESS.light, SUCCESS.main),
-  warning: createGradient(WARNING.light, WARNING.main),
-  error: createGradient(ERROR.light, ERROR.main),
-};
-
-const CHART_COLORS = {
-  violet: ["#8B5CF6", "#A78BFA", "#C4B5FD", "#DDD6FE"],
-  blue: ["#3B82F6", "#60A5FA", "#93C5FD", "#BFDBFE"],
-  green: ["#10B981", "#34D399", "#6EE7B7", "#A7F3D0"],
-  yellow: ["#F59E0B", "#FBBF24", "#FCD34D", "#FDE68A"],
-  red: ["#EF4444", "#F87171", "#FCA5A5", "#FECACA"],
+  main: "#3D6C8C",
+  light: "#6C93AE",
+  dark: "#2B4E68",
+  contrastText: "#FDFAF4",
 };
 
 const palette = {
-  common: { black: "#000", white: "#fff" },
+  common: { black: "#241D14", white: "#FFFFFF" },
   primary: { ...PRIMARY },
   secondary: { ...SECONDARY },
-
   info: { ...INFO },
   success: { ...SUCCESS },
   warning: { ...WARNING },
   error: { ...ERROR },
-  grey: GREY,
-  gradients: GRADIENTS,
-  chart: CHART_COLORS,
-  divider: GREY[500_24],
-  text: { primary: GREY[800], secondary: GREY[600], disabled: GREY[500] },
-  background: { paper: "#fff", default: GREY[100], neutral: GREY[200] },
+  grey: BONE,
+  divider: alpha(BONE[700], 0.16),
+  text: {
+    primary: BONE[900],
+    secondary: BONE[700],
+    disabled: BONE[500],
+  },
+  background: {
+    paper: BONE[100],
+    default: "#F1E7D6",
+    neutral: BONE[300],
+  },
   action: {
-    active: GREY[600],
-    hover: GREY[500_8],
-    selected: GREY[500_16],
-    disabled: GREY[500_80],
-    disabledBackground: GREY[500_24],
-    focus: GREY[500_24],
-    hoverOpacity: 0.08,
-    disabledOpacity: 0.48,
+    active: BONE[700],
+    hover: alpha(PRIMARY.main, 0.06),
+    selected: alpha(PRIMARY.main, 0.1),
+    disabled: alpha(BONE[700], 0.32),
+    disabledBackground: alpha(BONE[700], 0.12),
+    focus: alpha(PRIMARY.main, 0.16),
+    hoverOpacity: 0.06,
+    disabledOpacity: 0.4,
   },
   team1: { ...TEAM1 },
   team2: { ...TEAM2 },

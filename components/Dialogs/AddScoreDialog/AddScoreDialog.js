@@ -1,5 +1,8 @@
 "use client";
 
+import useToast from "@/hooks/useToast";
+import { useTranslation } from "@/i18n/useTranslation";
+import AddIcon from "@mui/icons-material/Add";
 import { TextField } from "@mui/material";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -7,94 +10,101 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
+import { alpha } from "@mui/material/styles";
 import * as React from "react";
-import useToast from "@/hooks/useToast";
 
-export default function AddScoreDialog({ addScore, teamNumber, disabled }) {
-    const [open, setOpen] = React.useState(false);
-    const [score, setScore] = React.useState("");
-    const displayToast = useToast();
+export default function AddScoreDialog({
+  addScore,
+  teamNumber,
+  disabled,
+  teamKey = "team1",
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [score, setScore] = React.useState("");
+  const displayToast = useToast();
+  const { t, teamName } = useTranslation();
 
-    const handleClickOpen = () => {
-        setScore("");
-        setOpen(true);
-    };
+  const handleClickOpen = () => {
+    setScore("");
+    setOpen(true);
+  };
 
-    const handleClose = () => {
-        setOpen(false);
-    };
+  const handleClose = () => setOpen(false);
 
-    const handleAddScore = () => {
-        if (score === "" || score === "0") {
-            displayToast(
-                `More than 1 Team has more or equal amount of points than the Max allowed \n
-         or the input value has errors`,
-                "error"
-            );
-            return;
-        }
-        addScore(score, teamNumber);
-        setOpen(false);
-    };
+  const handleAddScore = () => {
+    if (score === "" || Number(score) === 0 || Number.isNaN(Number(score))) {
+      displayToast(t("toastEnterPoints"), "error");
+      return;
+    }
+    addScore(score, teamNumber);
+    setOpen(false);
+  };
 
-    return (
-        <React.Fragment>
-            <Button
-                fullWidth
-                onClick={handleClickOpen}
-                variant="contained"
-                disabled={disabled}
-                color="primary"
-                className="w-full border-none rounded-md "
-            >
-                Add Score
-            </Button>
+  // Enter should submit: scoring is repetitive and the keyboard is already up.
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleAddScore();
+    }
+  };
 
-            <Dialog
-                open={open}
-                onClose={handleClose}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-            >
-                <DialogTitle id="alert-dialog-title">
-                    Add points to this team
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        <div className="mt-2">
-                            <TextField
-                                label="Points"
-                                fullWidth
-                                value={score}
-                                onChange={(e) => setScore(e.target.value)}
-                                type="number"
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                                inputProps={{
-                                    pattern: "[0-9]*",
-                                    type: "number",
-                                    min: 1,
-                                }}
-                                variant="outlined"
-                            />
-                        </div>
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose} className="mr-1">
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleAddScore}
-                        autoFocus
-                        variant="contained"
-                        className="border-none rounded-md"
-                    >
-                        Add
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </React.Fragment>
-    );
+  return (
+    <React.Fragment>
+      <Button
+        fullWidth
+        size="small"
+        onClick={handleClickOpen}
+        variant="outlined"
+        disabled={disabled}
+        startIcon={<AddIcon sx={{ fontSize: 18 }} />}
+        sx={{
+          color: (theme) => theme.palette[teamKey].dark,
+          borderColor: (theme) => alpha(theme.palette[teamKey].main, 0.4),
+          "&:hover": {
+            borderColor: (theme) => theme.palette[teamKey].main,
+            backgroundColor: (theme) =>
+              alpha(theme.palette[teamKey].main, 0.07),
+          },
+        }}
+      >
+        {t("add")}
+      </Button>
+
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        fullWidth
+        maxWidth="xs"
+        aria-labelledby="add-score-title"
+      >
+        <DialogTitle id="add-score-title">
+          {t("addPointsTitle", { team: teamName(teamNumber) })}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2, fontSize: 14 }}>
+            {t("addPointsBody")}
+          </DialogContentText>
+          <TextField
+            autoFocus
+            label={t("points")}
+            fullWidth
+            value={score}
+            onChange={(e) => setScore(e.target.value)}
+            onKeyDown={handleKeyDown}
+            type="number"
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ inputMode: "numeric", pattern: "[0-9]*", min: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} color="inherit">
+            {t("cancel")}
+          </Button>
+          <Button onClick={handleAddScore} variant="contained">
+            {t("addPoints")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </React.Fragment>
+  );
 }

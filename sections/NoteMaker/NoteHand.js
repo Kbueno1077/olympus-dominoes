@@ -1,72 +1,87 @@
 "use client";
-import React from "react";
+
 import ConfirmDeleteHand from "@/components/Dialogs/ConfirmDialog/ConfirmDeleteHand";
-import { Typography } from "@mui/material";
+import { FONT_HAND } from "@/muiTheme/typography";
+import { Box, Stack, Typography } from "@mui/material";
+import React from "react";
+
+/** Running total after this hand. The first hand has nothing before it. */
+function runningTotal(teamDatas, index) {
+  return (
+    teamDatas.slice(0, index).reduce((a, b) => a + b, 0) + teamDatas[index]
+  );
+}
 
 export default function NoteHand({
-    gameEditionMode,
-    handleRemoveDataFromGame,
-    index,
-    teamDatas,
-    teamNumber,
+  gameEditionMode,
+  handleRemoveDataFromGame,
+  index,
+  teamDatas,
+  teamNumber,
 }) {
-    if (gameEditionMode && index === 0) {
-        return (
-            <ConfirmDeleteHand
-                onCofirm={() => handleRemoveDataFromGame(teamNumber, index)}
-                teamDatas={teamDatas}
-                index={index}
-                isFirst={true}
-            />
-        );
-    }
+  const isFirst = index === 0;
 
-    if (gameEditionMode && index !== 0) {
-        return (
-            <ConfirmDeleteHand
-                onCofirm={() => handleRemoveDataFromGame(teamNumber, index)}
-                teamDatas={teamDatas}
-                index={index}
-                isFirst={false}
-            />
-        );
-    }
-
-    if (index === 0) {
-        return (
-            <Typography
-                variant="h6"
-                sx={{
-                    color: "gray",
-                    fontStyle: "italic",
-                    textAlign: "center",
-                    padding: "0 20px 0",
-                    margin: "5px 0 5px",
-                    fontWeight: "bold",
-                }}
-            >
-                {`x    -    ${teamDatas[0]}`}
-            </Typography>
-        );
-    }
-
+  if (gameEditionMode) {
     return (
-        <Typography
-            variant="h6"
-            sx={{
-                color: "gray",
-                fontStyle: "italic",
-                textAlign: "center",
-                padding: "0 20px 0",
-                margin: "5px 0 5px",
-                fontWeight: "bold",
-            }}
-        >
-            {`${teamDatas[index]}    `}-
-            {`    ${
-                teamDatas.slice(0, index).reduce((a, b) => a + b, 0) +
-                teamDatas[index]
-            }`}
-        </Typography>
+      <ConfirmDeleteHand
+        onCofirm={() => handleRemoveDataFromGame(teamNumber, index)}
+        teamDatas={teamDatas}
+        index={index}
+        isFirst={isFirst}
+      />
     );
+  }
+
+  const scored = isFirst ? "x" : teamDatas[index];
+  const total = isFirst ? teamDatas[0] : runningTotal(teamDatas, index);
+
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="center"
+      spacing={1}
+      sx={{
+        py: 0.4,
+        fontVariantNumeric: "tabular-nums",
+        borderBottom: "1px dashed",
+        borderColor: (t) => t.palette.divider,
+      }}
+    >
+      <Typography
+        component="span"
+        sx={{
+          minWidth: 34,
+          textAlign: "right",
+          fontFamily: FONT_HAND,
+          fontSize: 21,
+          fontWeight: 500,
+          lineHeight: 1,
+          color: "text.secondary",
+        }}
+      >
+        {scored}
+      </Typography>
+
+      <Box
+        component="span"
+        sx={{ width: 8, height: "1px", backgroundColor: "text.disabled" }}
+      />
+
+      <Typography
+        component="span"
+        sx={{
+          minWidth: 34,
+          textAlign: "left",
+          fontFamily: FONT_HAND,
+          fontSize: 21,
+          fontWeight: 700,
+          lineHeight: 1,
+          color: "text.primary",
+        }}
+      >
+        {total}
+      </Typography>
+    </Stack>
+  );
 }

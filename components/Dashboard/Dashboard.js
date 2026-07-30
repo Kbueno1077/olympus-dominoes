@@ -1,172 +1,141 @@
 "use client";
 
-import {
-  Box,
-  Card,
-  CardContent,
-  Container,
-  Stack,
-  Typography,
-  Button,
-  Chip,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
-import { PlayArrow, Group, EmojiEvents, BarChart } from "@mui/icons-material";
+import DominoTile from "@/components/DominoTile";
+import { useTranslation } from "@/i18n/useTranslation";
+import { EmojiEvents, Group, PhoneIphone, PlayArrow } from "@mui/icons-material";
+import { Box, Button, Card, Container, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { motion } from "framer-motion";
 
-const NewGameCard = ({ onClick }) => {
+// The opening hand: a spread of tiles that doubles as the hero art.
+const HERO_TILES = [
+  { top: 9, bottom: 9, rotate: -9 },
+  { top: 6, bottom: 3, rotate: -3 },
+  { top: 5, bottom: 5, rotate: 3 },
+  { top: 2, bottom: 7, rotate: 9 },
+];
+
+const FEATURES = [
+  { icon: Group, key: "featurePlayers" },
+  { icon: EmojiEvents, key: "featureModes" },
+  { icon: PhoneIphone, key: "featureLocal" },
+];
+
+function FeatureRow({ t }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      whileHover={{ y: -5, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+    <Stack
+      direction="row"
+      spacing={{ xs: 2, sm: 3.5 }}
+      flexWrap="wrap"
+      justifyContent="center"
+      rowGap={1.5}
     >
-      <Card
-        onClick={onClick}
-        sx={{
-          cursor: "pointer",
-          background: "linear-gradient(135deg, #6366F115 0%, #6366F105 100%)",
-          border: "1px solid #6366F120",
-          transition: "all 0.3s ease",
-          "&:hover": {
-            boxShadow: "0 8px 32px #6366F130",
-            border: "1px solid #6366F140",
-          },
-        }}
+      {FEATURES.map(({ icon: Icon, key }) => (
+        <Stack key={key} direction="row" spacing={0.75} alignItems="center">
+          <Icon sx={{ fontSize: 17, color: "primary.main" }} />
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            {t(key)}
+          </Typography>
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
+export default function Dashboard({ onStartNewGame }) {
+  const { t } = useTranslation();
+
+  return (
+    <Container maxWidth="sm" sx={{ py: { xs: 4, sm: 7 } }}>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <CardContent sx={{ p: 4, textAlign: "center" }}>
-          <Stack spacing={3} alignItems="center">
-            <Box
-              sx={{
-                width: 80,
-                height: 80,
-                borderRadius: "20px",
-                background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 4px 16px #6366F140",
-              }}
-            >
-              <PlayArrow sx={{ color: "white", fontSize: 40 }} />
-            </Box>
-            <Typography variant="h4" fontWeight="bold" color="text.primary">
-              Start New Game
+        <Stack spacing={4} alignItems="center" textAlign="center">
+          <Stack
+            direction="row"
+            spacing={-0.5}
+            justifyContent="center"
+            sx={{ pt: 1 }}
+          >
+            {HERO_TILES.map((tile, i) => (
+              <motion.div
+                key={`${tile.top}-${tile.bottom}`}
+                initial={{ opacity: 0, y: 18, rotate: 0 }}
+                animate={{ opacity: 1, y: 0, rotate: tile.rotate }}
+                transition={{
+                  duration: 0.45,
+                  delay: 0.08 * i,
+                  ease: "easeOut",
+                }}
+              >
+                <DominoTile top={tile.top} bottom={tile.bottom} size={38} />
+              </motion.div>
+            ))}
+          </Stack>
+
+          <Stack spacing={1.5} alignItems="center">
+            <Typography variant="h2" sx={{ color: "text.primary" }}>
+              {t("heroTitle")}
             </Typography>
             <Typography
               variant="body1"
-              color="text.secondary"
-              sx={{ maxWidth: 400 }}
+              sx={{ color: "text.secondary", maxWidth: 420 }}
             >
-              Set up your dominoes match with 2-4 players. Choose your game mode
-              and start scoring!
+              {t("heroSubtitle")}
             </Typography>
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<PlayArrow />}
-              sx={{
-                background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-                color: "white",
-                fontWeight: "bold",
-                px: 4,
-                py: 1.5,
-                borderRadius: 2,
-                boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
-                "&:hover": {
-                  background:
-                    "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
-                  boxShadow: "0 6px 20px rgba(99, 102, 241, 0.4)",
-                  transform: "translateY(-1px)",
-                },
-                transition: "all 0.3s ease",
-              }}
-            >
-              Start Game
-            </Button>
           </Stack>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-};
 
-export default function Dashboard({ onStartNewGame }) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+          <FeatureRow t={t} />
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Hero Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <Stack
-          spacing={3}
-          alignItems="center"
-          textAlign="center"
-          sx={{ mb: 6 }}
-        >
-          <Typography
-            variant="h2"
-            fontWeight="bold"
+          <Card
             sx={{
-              background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              fontSize: { xs: "2.5rem", md: "3.5rem" },
+              width: "100%",
+              p: { xs: 3, sm: 4 },
+              backgroundColor: "background.paper",
+              borderColor: (t) => alpha(t.palette.primary.main, 0.24),
             }}
           >
-            Welcome to Olympus
-          </Typography>
+            <Stack spacing={2.5} alignItems="center">
+              <Typography variant="h5" sx={{ color: "text.primary" }}>
+                {t("readyTitle")}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: "text.secondary", maxWidth: 340 }}
+              >
+                {t("readyBody")}
+              </Typography>
+              <Button
+                onClick={onStartNewGame}
+                variant="contained"
+                size="large"
+                fullWidth
+                startIcon={<PlayArrow />}
+                sx={{ maxWidth: 280, fontSize: 15 }}
+              >
+                {t("startMatch")}
+              </Button>
+            </Stack>
+          </Card>
+
+          <Box
+            sx={{
+              width: 44,
+              height: "2px",
+              borderRadius: 1,
+              backgroundColor: (t) => alpha(t.palette.secondary.main, 0.5),
+            }}
+          />
           <Typography
-            variant="h5"
-            color="text.secondary"
-            sx={{ maxWidth: 600, lineHeight: 1.6 }}
+            variant="overline"
+            sx={{ color: "text.disabled", fontSize: 10 }}
           >
-            The ultimate dominoes scoring experience. Track scores, manage
-            players, and enjoy the game like never before.
+            {t("madeForTheTable")}
           </Typography>
-          <Stack
-            direction="row"
-            spacing={2}
-            flexWrap="wrap"
-            justifyContent="center"
-          >
-            <Chip
-              icon={<Group />}
-              label="2-4 Players"
-              color="primary"
-              variant="outlined"
-            />
-            <Chip
-              icon={<EmojiEvents />}
-              label="Tournament Ready"
-              color="secondary"
-              variant="outlined"
-            />
-            <Chip
-              icon={<BarChart />}
-              label="Local Device Only"
-              color="success"
-              variant="outlined"
-            />
-          </Stack>
         </Stack>
       </motion.div>
-
-      {/* New Game Card */}
-      <Box sx={{ display: "flex", justifyContent: "center" }}>
-        <Box sx={{ maxWidth: 600, width: "100%" }}>
-          <NewGameCard onClick={onStartNewGame} />
-        </Box>
-      </Box>
     </Container>
   );
 }

@@ -2,108 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --------------------------------------------------------------------------
+   HAVANA TOKENS
+   These mirror muiTheme/palette.js so Tailwind classes and MUI's sx prop
+   resolve to the same colours. Values are space-separated channels so they
+   can be used with Tailwind's alpha modifier.
+   -------------------------------------------------------------------------- */
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222.2 84% 4.9%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222.2 84% 4.9%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
-  --radius: 0.5rem;
+  --bone-0: 255 255 255;
+  --bone-100: 253 250 244;
+  --bone-200: 247 240 227;
+  --bone-300: 239 229 211;
+  --bone-400: 222 207 182;
+  --bone-500: 188 168 136;
+  --bone-600: 140 124 99;
+  --bone-700: 95 83 65;
+  --bone-800: 61 52 39;
+  --bone-900: 36 29 20;
+
+  --background: 241 231 214;
+  --foreground: var(--bone-900);
+  --surface: var(--bone-100);
+
+  --primary: 31 107 88; /* Havana green */
+  --secondary: 180 84 47; /* terracotta */
+  --accent: 192 138 46; /* ochre */
+  --info: 61 108 140; /* Malecon blue */
+  --error: 166 51 40; /* muted Cuban red */
+
+  --text: var(--bone-900);
+  --text-muted: var(--bone-700);
+  --border: 210 196 172;
+
+  --radius: 0.625rem;
 }
 
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 84% 4.9%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 94.1%;
-}
-
-* {
-  border-color: hsl(var(--border));
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  color: hsl(var(--foreground));
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-    "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  color: rgb(var(--foreground));
+  background-color: rgb(var(--background));
+  /* A faint grain so the page reads as paper or table linen rather than a
+     flat screen. Fixed so it does not swim while scrolling. */
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgb(var(--bone-700) / 0.055) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+  background-attachment: fixed;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
+/* Scrollbar ---------------------------------------------------------------- */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
+  background: rgb(var(--bone-300));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: rgb(var(--bone-500));
+  border: 2px solid rgb(var(--bone-300));
+  border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgb(var(--bone-600));
 }
 
-/* Smooth transitions */
 * {
-  transition: color 0.2s ease, background-color 0.2s ease,
-    border-color 0.2s ease;
+  scrollbar-color: rgb(var(--bone-500)) rgb(var(--bone-300));
 }
 
-/* Focus styles */
+/* Focus and selection ------------------------------------------------------ */
 *:focus-visible {
-  outline: 2px solid #6366f1;
+  outline: 2px solid rgb(var(--primary));
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* Selection styles */
 ::selection {
-  background: rgba(99, 102, 241, 0.2);
-  color: inherit;
+  background: rgb(var(--accent) / 0.28);
+  color: rgb(var(--bone-900));
 }
 
-/* Custom animations */
+/* Motion ------------------------------------------------------------------- */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -111,69 +107,25 @@ body {
   }
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
 .fade-in {
   animation: fadeIn 0.3s ease-out;
 }
 
-.slide-in {
-  animation: slideIn 0.3s ease-out;
-}
-
-/* Glass morphism effect */
-.glass {
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Card hover effects */
-.card-hover {
-  transition: all 0.3s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-/* Button hover effects */
-.btn-hover {
-  transition: all 0.3s ease;
-}
-
-.btn-hover:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Responsive typography */
-@media (max-width: 768px) {
-  html {
-    font-size: 14px;
+/* Respect users who have asked the OS to reduce motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-@media (min-width: 1200px) {
-  html {
-    font-size: 16px;
-  }
+/* Numeric columns ---------------------------------------------------------- */
+/* Scores are read as stacked columns, so figures must not shift width. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }

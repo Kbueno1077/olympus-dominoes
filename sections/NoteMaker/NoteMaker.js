@@ -1,536 +1,248 @@
+"use client";
+
+import AddScoreDialog from "@/components/Dialogs/AddScoreDialog/AddScoreDialog";
+import { useTranslation } from "@/i18n/useTranslation";
 import { currentGameRecoil, gameEditionModeRecoil } from "@/recoil/recoilState";
 import { Icon } from "@iconify/react";
 import {
-    Box,
-    Button,
-    Card,
-    Checkbox,
-    Divider,
-    IconButton,
-    Typography,
+  Box,
+  Card,
+  IconButton,
+  LinearProgress,
+  Stack,
+  Tooltip,
+  Typography,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import { activeTeamNumbers, TEAM_KEYS } from "@/utils/matchSettings";
 import { useRecoilState } from "recoil";
-import AddScoreDialog from "../../components/Dialogs/AddScoreDialog/AddScoreDialog";
 import NoteHand from "./NoteHand";
 
-export default function NoteMaker({
-    isGameStarted,
-    completedGames,
-    gameMode,
-    playersAmount,
-    whoWon,
-
-    handleUpateScores,
-    maxPoints,
+function TeamColumn({
+  teamNumber,
+  hands,
+  total,
+  maxPoints,
+  isWinner,
+  isGameStarted,
+  gameEditionMode,
+  onRemoveHand,
+  onAddScore,
+  showLeftRule,
 }) {
-    const [gameEditionMode, setGameEditionMode] = useRecoilState(
-        gameEditionModeRecoil
-    );
-    const [currentGame, setCurrentGame] = useRecoilState(currentGameRecoil);
+  const { t, teamName } = useTranslation();
+  const teamKey = TEAM_KEYS[teamNumber];
+  const hasOverflowed = total >= maxPoints;
+  const progress = maxPoints > 0 ? Math.min((total / maxPoints) * 100, 100) : 0;
 
-    const handleRemoveDataFromGame = (teamNumber, index) => {
-        const newCurrentGame = { ...currentGame };
-        const teamDatasName = `t${teamNumber}Datas`;
-        const teamTotalsName = `t${teamNumber}TotalPoints`;
+  return (
+    <Box
+      sx={{
+        px: { xs: 1, sm: 1.75 },
+        // The line down the middle of a paper scorepad.
+        borderLeft: showLeftRule ? "1px solid" : "none",
+        borderColor: "divider",
+        display: "flex",
+        flexDirection: "column",
+        minWidth: 0,
+      }}
+    >
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="center"
+        spacing={0.75}
+        sx={{ mb: 1 }}
+      >
+        <Box
+          sx={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            backgroundColor: (t) => t.palette[teamKey].main,
+            flexShrink: 0,
+          }}
+        />
+        <Typography
+          variant="overline"
+          sx={{ color: "text.secondary", lineHeight: 1 }}
+        >
+          {teamName(teamNumber)}
+        </Typography>
+        {isWinner && (
+          <Icon
+            icon="ant-design:trophy-filled"
+            style={{ fontSize: 15, color: "#C08A2E" }}
+          />
+        )}
+      </Stack>
 
-        const newTeamTotalPoints =
-            newCurrentGame[teamTotalsName] -
-            newCurrentGame[teamDatasName][index];
+      <Box sx={{ borderTop: "2px solid", borderColor: "divider", mb: 1.25 }} />
 
-        let frontPart = newCurrentGame[teamDatasName].slice(0, index);
-        let lastPart = newCurrentGame[teamDatasName].slice(index + 1);
-        const newTeamDatas = [...frontPart, ...lastPart];
+      {/* Hands, oldest first, each showing this hand and the running total */}
+      <Box sx={{ flex: 1, minHeight: 32 }}>
+        {hands.map((hand, index) => (
+          <NoteHand
+            key={`${teamNumber}-${index}-${hand}`}
+            gameEditionMode={gameEditionMode}
+            handleRemoveDataFromGame={onRemoveHand}
+            index={index}
+            teamDatas={hands}
+            teamNumber={teamNumber}
+          />
+        ))}
+      </Box>
 
-        newCurrentGame[teamTotalsName] = newTeamTotalPoints;
-        newCurrentGame[teamDatasName] = newTeamDatas;
+      <Box sx={{ mt: 1.5 }}>
+        <AddScoreDialog
+          addScore={onAddScore}
+          disabled={hasOverflowed || !isGameStarted}
+          teamNumber={teamNumber}
+          teamKey={teamKey}
+        />
+      </Box>
 
-        setCurrentGame(newCurrentGame);
-    };
+      <Box sx={{ mt: 2 }}>
+        <Stack
+          direction="row"
+          alignItems="baseline"
+          justifyContent="space-between"
+          spacing={1}
+        >
+          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            {t("total")}
+          </Typography>
+          <Typography
+            sx={{
+              fontWeight: 700,
+              fontSize: 20,
+              lineHeight: 1.1,
+              fontVariantNumeric: "tabular-nums",
+              color: hasOverflowed ? "warning.dark" : "text.primary",
+            }}
+          >
+            {total}
+          </Typography>
+        </Stack>
 
-    return (
-        <>
-            <Card elevation={10} sx={{ width: "100%", padding: "16px" }}>
-                <Box display="flex" justifyContent="space-between">
-                    <Typography variant="h6" sx={{ color: "#56616A" }}>
-                        Game {completedGames.length + 1}
-                    </Typography>
+        <LinearProgress
+          variant="determinate"
+          value={progress}
+          aria-label={t("progressAria", {
+            team: teamName(teamNumber),
+            points: maxPoints,
+          })}
+          sx={{
+            mt: 0.75,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: (t) => alpha(t.palette.grey[600], 0.18),
+            "& .MuiLinearProgress-bar": {
+              borderRadius: 2,
+              backgroundColor: (t) =>
+                hasOverflowed ? t.palette.warning.main : t.palette[teamKey].main,
+            },
+          }}
+        />
+      </Box>
+    </Box>
+  );
+}
 
-                    {!gameEditionMode ? (
-                        <IconButton
-                            color="primary"
-                            onClick={() => {
-                                setGameEditionMode(true);
-                            }}
-                        >
-                            <Icon
-                                sx={{
-                                    fontSize: "22px",
-                                }}
-                                icon="ic:baseline-edit"
-                            />
-                        </IconButton>
-                    ) : (
-                        <IconButton
-                            onClick={() => {
-                                setGameEditionMode(false);
-                            }}
-                        >
-                            <Icon
-                                sx={{
-                                    fontSize: "22px",
-                                }}
-                                icon="ic:baseline-edit-off"
-                            />
-                        </IconButton>
-                    )}
-                </Box>
+export default function NoteMaker({
+  isGameStarted,
+  completedGames,
+  gameMode,
+  playersAmount,
+  whoWon,
+  handleUpateScores,
+  maxPoints,
+}) {
+  const { t } = useTranslation();
+  const [gameEditionMode, setGameEditionMode] = useRecoilState(
+    gameEditionModeRecoil
+  );
+  const [currentGame, setCurrentGame] = useRecoilState(currentGameRecoil);
 
-                <div
-                    style={{
-                        width: "100%",
-                        position: "absolute",
-                        display: "flex",
-                        justifyContent: "space-evenly",
-                        gap: "50px",
-                        left: "0",
-                    }}
-                >
-                    <Typography
-                        variant="h6"
-                        style={{ color: "#56616A", fontWeight: "bold" }}
-                    >
-                        Team 1
-                    </Typography>
-                    <Typography
-                        variant="h6"
-                        style={{ color: "#56616A", fontWeight: "bold" }}
-                    >
-                        Team 2
-                    </Typography>
-                </div>
+  const handleRemoveDataFromGame = (teamNumber, index) => {
+    const newCurrentGame = { ...currentGame };
+    const teamDatasName = `t${teamNumber}Datas`;
+    const teamTotalsName = `t${teamNumber}TotalPoints`;
 
-                <Box sx={{ margin: "50px auto 0", width: "90%" }}>
-                    <Divider />
-                    <Divider />
-                </Box>
+    const newTeamTotalPoints =
+      newCurrentGame[teamTotalsName] - newCurrentGame[teamDatasName][index];
 
-                <Box
-                    display="flex"
-                    justifyContent="space-evenly"
-                    mt={2}
-                    px={2}
-                    gap="16px"
-                >
-                    {/**TEAM 1 WRITABLE */}
-                    <Box sx={{ width: "100%" }}>
-                        {currentGame.t1Datas.map((hand, index) => {
-                            return (
-                                <NoteHand
-                                    key={`${hand} + ${index}`}
-                                    gameEditionMode={gameEditionMode}
-                                    handleRemoveDataFromGame={
-                                        handleRemoveDataFromGame
-                                    }
-                                    index={index}
-                                    teamDatas={currentGame.t1Datas}
-                                    teamNumber={1}
-                                />
-                            );
-                        })}
+    const frontPart = newCurrentGame[teamDatasName].slice(0, index);
+    const lastPart = newCurrentGame[teamDatasName].slice(index + 1);
 
-                        <AddScoreDialog
-                            addScore={handleUpateScores}
-                            disabled={currentGame.t1TotalPoints >= maxPoints}
-                            teamNumber={1}
-                        />
+    newCurrentGame[teamTotalsName] = newTeamTotalPoints;
+    newCurrentGame[teamDatasName] = [...frontPart, ...lastPart];
 
-                        <Box
-                            display="flex"
-                            justifyContent="flex-end items-end"
-                            sx={{ marginTop: "20px", alignSelf: "flex-end" }}
-                        >
-                            <Typography
-                                sx={{ fontStyle: "italic", color: "gray" }}
-                            >
-                                <Checkbox
-                                    disabled={!isGameStarted}
-                                    style={{ color: "#FFB636" }}
-                                    icon={
-                                        <Icon
-                                            style={{
-                                                fontSize: "22px",
-                                                color: "gray",
-                                            }}
-                                            icon="ant-design:trophy-outlined"
-                                        />
-                                    }
-                                    checkedIcon={
-                                        <Icon
-                                            style={{
-                                                fontSize: "22px",
-                                                color: "#FFB636",
-                                            }}
-                                            icon="ant-design:trophy-outlined"
-                                        />
-                                    }
-                                    sx={{ marginTop: "-2px" }}
-                                    checked={whoWon === "Team 1"}
-                                />
-                                Total:{" "}
-                                {currentGame.t1TotalPoints < maxPoints ? (
-                                    currentGame.t1TotalPoints
-                                ) : (
-                                    <>
-                                        <span>{currentGame.t1TotalPoints}</span>
-                                        <Typography
-                                            variant="h6"
-                                            sx={{ color: "#FFB636" }}
-                                        >
-                                            Overflow
-                                        </Typography>
-                                    </>
-                                )}
-                            </Typography>
-                        </Box>
-                    </Box>
+    setCurrentGame(newCurrentGame);
+  };
 
-                    {/**MIDDLE LINE */}
-                    <Box
-                        sx={{ border: "1px solid #E5E8EB", marginTop: "-55px" }}
-                    />
+  const isFreeForAll = gameMode?.label === "Free For All";
+  const teamNumbers = activeTeamNumbers(playersAmount, isFreeForAll);
+  const numericMax = Number(maxPoints);
 
-                    {/**TEAM 2 or 3/4 WRITABLE */}
-                    <Box
-                        sx={{
-                            width: "100%",
-                        }}
-                    >
-                        {currentGame.t2Datas.map((hand, index) => {
-                            return (
-                                <NoteHand
-                                    key={`${hand} + ${index}`}
-                                    gameEditionMode={gameEditionMode}
-                                    handleRemoveDataFromGame={
-                                        handleRemoveDataFromGame
-                                    }
-                                    index={index}
-                                    teamDatas={currentGame.t2Datas}
-                                    teamNumber={2}
-                                />
-                            );
-                        })}
+  return (
+    <Card sx={{ p: { xs: 2, sm: 2.5 } }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ mb: 2 }}
+      >
+        <Box>
+          <Typography variant="h6" sx={{ color: "text.primary" }}>
+            {t("gameNumber", { n: completedGames.length + 1 })}
+          </Typography>
+          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            {t("firstToPoints", { n: maxPoints })}
+          </Typography>
+        </Box>
 
-                        <AddScoreDialog
-                            addScore={handleUpateScores}
-                            disabled={currentGame.t2TotalPoints >= maxPoints}
-                            teamNumber={2}
-                        />
+        <Tooltip title={gameEditionMode ? t("doneEditing") : t("editHands")}>
+          <IconButton
+            color={gameEditionMode ? "default" : "primary"}
+            onClick={() => setGameEditionMode(!gameEditionMode)}
+            aria-label={
+              gameEditionMode ? t("stopEditingAria") : t("editHands")
+            }
+          >
+            <Icon
+              icon={
+                gameEditionMode ? "ic:baseline-edit-off" : "ic:baseline-edit"
+              }
+              style={{ fontSize: 20 }}
+            />
+          </IconButton>
+        </Tooltip>
+      </Stack>
 
-                        <Box
-                            display="flex"
-                            justifyContent="flex-end"
-                            sx={{ marginTop: "20px", alignSelf: "flex-end" }}
-                        >
-                            <Typography
-                                sx={{
-                                    fontStyle: "italic",
-                                    color: "gray",
-                                    marginRight: "25px",
-                                }}
-                            >
-                                <Checkbox
-                                    disabled={!isGameStarted}
-                                    style={{ color: "#FFB636" }}
-                                    icon={
-                                        <Icon
-                                            style={{
-                                                fontSize: "22px",
-                                                color: "gray",
-                                            }}
-                                            icon="ant-design:trophy-outlined"
-                                        />
-                                    }
-                                    checkedIcon={
-                                        <Icon
-                                            style={{
-                                                fontSize: "22px",
-                                                color: "#FFB636",
-                                            }}
-                                            icon="ant-design:trophy-outlined"
-                                        />
-                                    }
-                                    sx={{ marginTop: "-2px" }}
-                                    checked={whoWon === "Team 2"}
-                                />
-                                Total:{" "}
-                                {currentGame.t2TotalPoints < maxPoints ? (
-                                    currentGame.t2TotalPoints
-                                ) : (
-                                    <>
-                                        <span>{currentGame.t2TotalPoints}</span>
-                                        <Typography
-                                            variant="h6"
-                                            sx={{ color: "#FFB636" }}
-                                        >
-                                            Overflow
-                                        </Typography>
-                                    </>
-                                )}
-                            </Typography>
-                        </Box>
-                    </Box>
-                </Box>
-
-                {/**WHEN IS MORE THAN 2 AND FREE FOR ALL */}
-                {/**TEAM 3 WRITABLE */}
-                {playersAmount > 2 && gameMode?.label === "Free For All" && (
-                    <>
-                        <Box sx={{ margin: "80px auto 0", width: "90%" }}>
-                            <Divider />
-                            <Divider />
-                        </Box>
-
-                        <Box
-                            display="flex"
-                            justifyContent="space-evenly"
-                            mt={2}
-                            px={2}
-                            gap="16px"
-                        >
-                            <div
-                                style={{
-                                    width: "100%",
-                                    position: "absolute",
-                                    display: "flex",
-                                    justifyContent:
-                                        playersAmount === 4
-                                            ? "space-evenly"
-                                            : "center",
-                                    gap: "50px",
-                                    left: "0",
-                                    top: "225px",
-                                }}
-                            >
-                                <Typography
-                                    variant="h6"
-                                    style={{
-                                        color: "#56616A",
-                                        fontWeight: "bold",
-                                    }}
-                                >
-                                    Team 3
-                                </Typography>
-                                {playersAmount === 4 && (
-                                    <Typography
-                                        variant="h6"
-                                        style={{
-                                            color: "#56616A",
-                                            fontWeight: "bold",
-                                        }}
-                                    >
-                                        Team 4
-                                    </Typography>
-                                )}
-                            </div>
-
-                            <Box sx={{ width: "100%" }}>
-                                {currentGame.t3Datas.map((hand, index) => {
-                                    return (
-                                        <NoteHand
-                                            key={`${hand} + ${index}`}
-                                            gameEditionMode={gameEditionMode}
-                                            handleRemoveDataFromGame={
-                                                handleRemoveDataFromGame
-                                            }
-                                            index={index}
-                                            teamDatas={currentGame.t3Datas}
-                                            teamNumber={3}
-                                        />
-                                    );
-                                })}
-
-                                <AddScoreDialog
-                                    addScore={handleUpateScores}
-                                    disabled={
-                                        currentGame.t3TotalPoints >= maxPoints
-                                    }
-                                    teamNumber={3}
-                                />
-
-                                <Box
-                                    display="flex"
-                                    justifyContent="flex-end items-end"
-                                    sx={{
-                                        marginTop: "20px",
-                                        alignSelf: "flex-end",
-                                    }}
-                                >
-                                    <Typography
-                                        sx={{
-                                            fontStyle: "italic",
-                                            color: "gray",
-                                        }}
-                                    >
-                                        <Checkbox
-                                            disabled={!isGameStarted}
-                                            style={{ color: "#FFB636" }}
-                                            icon={
-                                                <Icon
-                                                    style={{
-                                                        fontSize: "22px",
-                                                        color: "gray",
-                                                    }}
-                                                    icon="ant-design:trophy-outlined"
-                                                />
-                                            }
-                                            checkedIcon={
-                                                <Icon
-                                                    style={{
-                                                        fontSize: "22px",
-                                                        color: "#FFB636",
-                                                    }}
-                                                    icon="ant-design:trophy-outlined"
-                                                />
-                                            }
-                                            sx={{ marginTop: "-2px" }}
-                                            checked={whoWon === "Team 3"}
-                                        />
-                                        Total:{" "}
-                                        {currentGame.t3TotalPoints <
-                                        maxPoints ? (
-                                            currentGame.t3TotalPoints
-                                        ) : (
-                                            <>
-                                                <span>
-                                                    {currentGame.t3TotalPoints}
-                                                </span>
-                                                <Typography
-                                                    variant="h6"
-                                                    sx={{ color: "#FFB636" }}
-                                                >
-                                                    Overflow
-                                                </Typography>
-                                            </>
-                                        )}
-                                    </Typography>
-                                </Box>
-                            </Box>
-
-                            {/**MIDDLE LINE */}
-                            <Box
-                                sx={{
-                                    border: `${
-                                        playersAmount === 4
-                                            ? "1px solid #E5E8EB"
-                                            : "none"
-                                    }`,
-                                    marginTop: "-55px",
-                                }}
-                            />
-
-                            {/**TEAM 4 WRITABLE */}
-                            {playersAmount === 4 ? (
-                                <Box
-                                    sx={{
-                                        width: "100%",
-                                    }}
-                                >
-                                    {currentGame.t4Datas.map((hand, index) => {
-                                        return (
-                                            <NoteHand
-                                                key={`${hand} + ${index}`}
-                                                gameEditionMode={
-                                                    gameEditionMode
-                                                }
-                                                handleRemoveDataFromGame={
-                                                    handleRemoveDataFromGame
-                                                }
-                                                index={index}
-                                                teamDatas={currentGame.t4Datas}
-                                                teamNumber={4}
-                                            />
-                                        );
-                                    })}
-
-                                    <AddScoreDialog
-                                        addScore={handleUpateScores}
-                                        disabled={
-                                            currentGame.t4TotalPoints >=
-                                            maxPoints
-                                        }
-                                        teamNumber={4}
-                                    />
-
-                                    <Box
-                                        display="flex"
-                                        justifyContent="flex-end"
-                                        sx={{
-                                            marginTop: "20px",
-                                            alignSelf: "flex-end",
-                                        }}
-                                    >
-                                        <Typography
-                                            sx={{
-                                                fontStyle: "italic",
-                                                color: "gray",
-                                                marginRight: "25px",
-                                            }}
-                                        >
-                                            <Checkbox
-                                                disabled={!isGameStarted}
-                                                style={{ color: "#FFB636" }}
-                                                icon={
-                                                    <Icon
-                                                        style={{
-                                                            fontSize: "22px",
-                                                            color: "gray",
-                                                        }}
-                                                        icon="ant-design:trophy-outlined"
-                                                    />
-                                                }
-                                                checkedIcon={
-                                                    <Icon
-                                                        style={{
-                                                            fontSize: "22px",
-                                                            color: "#FFB636",
-                                                        }}
-                                                        icon="ant-design:trophy-outlined"
-                                                    />
-                                                }
-                                                sx={{ marginTop: "-2px" }}
-                                                checked={whoWon === "Team 4"}
-                                            />
-                                            Total:{" "}
-                                            {currentGame.t4TotalPoints <
-                                            maxPoints ? (
-                                                currentGame.t4TotalPoints
-                                            ) : (
-                                                <>
-                                                    <span>
-                                                        {
-                                                            currentGame.t4TotalPoints
-                                                        }
-                                                    </span>
-                                                    <Typography
-                                                        variant="h6"
-                                                        sx={{
-                                                            color: "#FFB636",
-                                                        }}
-                                                    >
-                                                        Overflow
-                                                    </Typography>
-                                                </>
-                                            )}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            ) : (
-                                ""
-                            )}
-                        </Box>
-                    </>
-                )}
-            </Card>
-        </>
-    );
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          rowGap: 3,
+        }}
+      >
+        {teamNumbers.map((teamNumber, index) => (
+          <TeamColumn
+            key={teamNumber}
+            teamNumber={teamNumber}
+            hands={currentGame[`t${teamNumber}Datas`]}
+            total={currentGame[`t${teamNumber}TotalPoints`]}
+            maxPoints={numericMax}
+            isWinner={whoWon === `Team ${teamNumber}`}
+            isGameStarted={isGameStarted}
+            gameEditionMode={gameEditionMode}
+            onRemoveHand={handleRemoveDataFromGame}
+            onAddScore={handleUpateScores}
+            showLeftRule={index % 2 === 1}
+          />
+        ))}
+      </Box>
+    </Card>
+  );
 }
