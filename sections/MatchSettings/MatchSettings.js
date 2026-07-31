@@ -2,8 +2,11 @@
 
 import {
   Box,
+  Button,
   Card,
   Chip,
+  IconButton,
+  InputAdornment,
   Stack,
   TextField,
   ToggleButton,
@@ -16,6 +19,7 @@ import { Fragment } from "react";
 
 import { useTranslation } from "@/i18n/useTranslation";
 import { gameModes2, gameModes3, gameModes4 } from "@/utils/matchSettings";
+import { buildRandomRoster } from "@/utils/randomNames";
 import {
   gameModeRecoil,
   isGameStartedRecoil,
@@ -104,7 +108,7 @@ function MatchSummary({ playersAmount, modeLabel, maxPoints, teams }) {
                     borderRadius: "50%",
                     mr: 0.75,
                     verticalAlign: "middle",
-                    backgroundColor: (t) => t.palette[fact.teamKey].main,
+                    backgroundColor: (theme) => theme.palette[fact.teamKey].main,
                   }}
                 />
               )}
@@ -148,48 +152,157 @@ function FieldGroup({ label, children }) {
   );
 }
 
-function TeamRoster({ team, disabled }) {
-  const { t, teamName } = useTranslation();
+function PlayerNameField({ member, teamKey }) {
+  const { t } = useTranslation();
+  const isSelf = member.number === 1;
+  // Seat badge width + row gap — keeps the label over the input only.
+  const labelIndent = "46px";
 
   return (
-    <Card
-      sx={{
-        flex: 1,
-        minWidth: 0,
-        p: 2.5,
-        // The chip already names the team, so the card only warms its own
-        // hairline toward that hue rather than wearing a coloured spine.
-        borderColor: (theme) => alpha(theme.palette[team.key].main, 0.32),
-      }}
-    >
-      <Stack spacing={2}>
-        <Chip
-          label={teamName(team.number)}
-          size="small"
+    <Box>
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        sx={{ ml: labelIndent, mb: 0.625 }}
+      >
+        <Typography
+          variant="caption"
+          component="label"
+          htmlFor={member.id}
+          sx={{ color: "text.secondary", lineHeight: 1.2 }}
+        >
+          {isSelf ? t("selfPlaceholder") : t("player", { n: member.number })}
+        </Typography>
+        {isSelf && (
+          <Typography
+            component="span"
+            sx={{
+              fontWeight: 500,
+              fontSize: 10,
+              letterSpacing: 0.6,
+              textTransform: "uppercase",
+              color: (theme) => theme.palette[teamKey].main,
+              lineHeight: 1.2,
+            }}
+          >
+            {t("youBadge")}
+          </Typography>
+        )}
+      </Stack>
+
+      <Stack direction="row" spacing={1.25} alignItems="center">
+        <Box
           sx={{
-            alignSelf: "flex-start",
-            color: (theme) => theme.palette[team.key].dark,
+            width: 36,
+            height: 40,
+            borderRadius: "10px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "3px",
             backgroundColor: (theme) =>
-              alpha(theme.palette[team.key].main, 0.12),
+              alpha(theme.palette[teamKey].main, 0.14),
+            flexShrink: 0,
+          }}
+        >
+          <Box
+            sx={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              backgroundColor: (theme) => theme.palette[teamKey].main,
+            }}
+          />
+          <Typography
+            component="span"
+            sx={{
+              fontWeight: 700,
+              fontSize: 13,
+              lineHeight: 1,
+              color: (theme) => theme.palette[teamKey].main,
+            }}
+          >
+            {member.number}
+          </Typography>
+        </Box>
+
+        <TextField
+          id={member.id}
+          placeholder={isSelf ? t("selfPlaceholder") : t("namePlaceholder")}
+          fullWidth
+          size="small"
+          value={member.value}
+          onChange={(event) => member.onChange(event.target.value)}
+          inputProps={{ maxLength: 24 }}
+          sx={{
+            flex: 1,
+            "& .MuiOutlinedInput-root": { minHeight: 40 },
+          }}
+          InputProps={{
+            endAdornment: member.value ? (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label={t("clearName")}
+                  edge="end"
+                  size="small"
+                  onClick={() => member.onChange("")}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    backgroundColor: (theme) =>
+                      alpha(theme.palette.text.secondary, 0.12),
+                    "&:hover": {
+                      backgroundColor: (theme) =>
+                        alpha(theme.palette.text.secondary, 0.2),
+                    },
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{
+                      fontSize: 18,
+                      lineHeight: 1,
+                      color: "text.secondary",
+                      mt: "-1px",
+                    }}
+                  >
+                    ×
+                  </Box>
+                </IconButton>
+              </InputAdornment>
+            ) : null,
           }}
         />
-
-        {team.members.map((member) => (
-          <TextField
-            key={member.id}
-            id={member.id}
-            label={t("player", { n: member.number })}
-            placeholder={t("namePlaceholder")}
-            fullWidth
-            size="small"
-            disabled={disabled}
-            value={member.value}
-            onChange={(event) => member.onChange(event.target.value)}
-            InputLabelProps={{ shrink: true }}
-          />
-        ))}
       </Stack>
-    </Card>
+    </Box>
+  );
+}
+
+function TeamBlock({ team }) {
+  const { teamName } = useTranslation();
+
+  return (
+    <Stack spacing={1.75}>
+      <Chip
+        label={teamName(team.number)}
+        size="small"
+        sx={{
+          alignSelf: "flex-start",
+          color: (theme) => theme.palette[team.key].dark,
+          backgroundColor: (theme) => alpha(theme.palette[team.key].main, 0.12),
+        }}
+      />
+
+      {team.members.map((member) => (
+        <PlayerNameField
+          key={member.id}
+          member={member}
+          teamKey={team.key}
+        />
+      ))}
+    </Stack>
   );
 }
 
@@ -262,6 +375,17 @@ export default function MatchSettings() {
     // Digits only: an empty or decimal target would break the win comparisons.
     if (!/^\d+$/.test(raw)) return;
     setMaxPoints(raw);
+  };
+
+  const handleRandomNames = () => {
+    const [next1, next2, next3, next4] = buildRandomRoster(
+      playersAmount,
+      t("selfName")
+    );
+    setPlayer1(next1);
+    setPlayer2(next2);
+    setPlayer3(next3);
+    setPlayer4(next4);
   };
 
   if (isGameStarted) {
@@ -368,18 +492,56 @@ export default function MatchSettings() {
         </Stack>
       </Card>
 
-      {/* PLAYER ROSTERS */}
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2,
-          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
-        }}
-      >
-        {teams.map((team) => (
-          <TeamRoster key={team.key} team={team} disabled={isGameStarted} />
-        ))}
-      </Box>
+      <Card sx={{ p: { xs: 2.5, sm: 3 } }}>
+        <Stack spacing={2.25}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.5}
+            alignItems={{ xs: "stretch", sm: "center" }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ color: "text.primary", fontWeight: 600, lineHeight: 1.3 }}
+              >
+                {t("rosterTitle")}
+              </Typography>
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                {t("rosterSubtitle")}
+              </Typography>
+            </Box>
+
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleRandomNames}
+              sx={{
+                alignSelf: { xs: "stretch", sm: "center" },
+                flexShrink: 0,
+                minHeight: 38,
+                px: 1.5,
+                fontSize: 13,
+              }}
+            >
+              {t("randomNames")}
+            </Button>
+          </Stack>
+
+          {teams.map((team, index) => (
+            <Fragment key={team.key}>
+              {index > 0 && (
+                <Box
+                  sx={{
+                    height: "1px",
+                    backgroundColor: "divider",
+                  }}
+                />
+              )}
+              <TeamBlock team={team} />
+            </Fragment>
+          ))}
+        </Stack>
+      </Card>
 
       {isFreeForAll && playersAmount > 2 && (
         <Typography variant="caption" sx={{ color: "text.secondary", px: 0.5 }}>

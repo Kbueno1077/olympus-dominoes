@@ -2,7 +2,7 @@
 
 import DominoTile from "@/components/DominoTile";
 import { useTranslation } from "@/i18n/useTranslation";
-import { EmojiEvents, Group, PhoneIphone, PlayArrow } from "@mui/icons-material";
+import { PlayArrow } from "@mui/icons-material";
 import { Box, Button, Card, Container, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { motion } from "framer-motion";
@@ -15,24 +15,22 @@ const HERO_TILES = [
   { top: 2, bottom: 7, rotate: 9 },
 ];
 
-const FEATURES = [
-  { icon: Group, key: "featurePlayers" },
-  { icon: EmojiEvents, key: "featureModes" },
-  { icon: PhoneIphone, key: "featureLocal" },
-];
+const FEATURE_KEYS = ["featurePlayers", "featureModes", "featureLocal"];
 
 function FeatureRow({ t }) {
   return (
-    <Stack
-      direction="row"
-      spacing={{ xs: 2, sm: 3.5 }}
-      flexWrap="wrap"
-      justifyContent="center"
-      rowGap={1.5}
-    >
-      {FEATURES.map(({ icon: Icon, key }) => (
-        <Stack key={key} direction="row" spacing={0.75} alignItems="center">
-          <Icon sx={{ fontSize: 17, color: "primary.main" }} />
+    <Stack spacing={1} alignItems="center">
+      {FEATURE_KEYS.map((key) => (
+        <Stack key={key} direction="row" spacing={1} alignItems="center">
+          <Box
+            sx={{
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              backgroundColor: "primary.main",
+              flexShrink: 0,
+            }}
+          />
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
             {t(key)}
           </Typography>
