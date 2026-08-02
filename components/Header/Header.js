@@ -17,6 +17,9 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
+/**
+ * @param {{ onBack?: () => void, actions?: import("react").ReactNode }} [props]
+ */
 export default function Header({ onBack, actions }) {
   const theme = useTheme();
   const { t } = useTranslation();
