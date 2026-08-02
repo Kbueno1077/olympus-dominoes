@@ -9,7 +9,11 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import * as React from "react";
 
-export default function ConfirmDeleteMatch({ onCofirm }) {
+export default function ConfirmDeleteMatch({
+  onCofirm,
+  fullWidth = false,
+  variant = "text",
+}) {
   const [open, setOpen] = React.useState(false);
   const { t } = useTranslation();
 
@@ -22,7 +26,17 @@ export default function ConfirmDeleteMatch({ onCofirm }) {
 
   return (
     <React.Fragment>
-      <Button onClick={() => setOpen(true)} color="error" size="small">
+      <Button
+        onClick={() => setOpen(true)}
+        color="error"
+        size="medium"
+        variant={variant}
+        fullWidth={fullWidth}
+        sx={{
+          minHeight: 44,
+          py: 1.25,
+        }}
+      >
         {t("endMatch")}
       </Button>
 

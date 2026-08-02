@@ -66,10 +66,11 @@ const SUCCESS = {
 };
 
 const WARNING = {
-  lighter: "#F6E7C9",
-  light: "#D9AE5E",
-  main: "#C08A2E",
-  dark: "#94681F",
+  lighter: "#F8E9B8",
+  light: "#E8C34A",
+  // Richer ochre for winner progress — reads as gold, not sand.
+  main: "#D4A017",
+  dark: "#9A7510",
   darker: "#6B4A13",
   contrastText: "#241D14",
 };

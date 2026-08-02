@@ -16,6 +16,11 @@ export default function Button(theme) {
             { duration: 150 }
           ),
         },
+        sizeMedium: {
+          minHeight: 44,
+          paddingTop: theme.spacing(1.15),
+          paddingBottom: theme.spacing(1.15),
+        },
         sizeLarge: {
           height: 48,
           paddingLeft: theme.spacing(3),

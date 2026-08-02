@@ -38,7 +38,9 @@ export default function Index() {
         width: "100%",
       }}
     >
-      <Header />
+      <Header
+        onBack={currentView === "game" ? handleBackToDashboard : undefined}
+      />
 
       {/* Generous bottom padding keeps the last card clear of a phone's
           home indicator and leaves room to scroll past the end. */}
@@ -55,8 +57,13 @@ export default function Index() {
         )}
 
         {currentView === "game" && (
-          <Box sx={{ py: { xs: 2, sm: 3 }, px: { xs: 1.5, sm: 3 } }}>
-            <NewMatch onBackToDashboard={handleBackToDashboard} />
+          <Box
+            sx={{
+              py: { xs: 2, sm: 3 },
+              px: { xs: 1.5, sm: 3, md: 4, lg: 5 },
+            }}
+          >
+            <NewMatch />
           </Box>
         )}
       </Box>

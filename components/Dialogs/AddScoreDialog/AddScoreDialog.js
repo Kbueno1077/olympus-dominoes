@@ -52,12 +52,14 @@ export default function AddScoreDialog({
     <React.Fragment>
       <Button
         fullWidth
-        size="small"
+        size="medium"
         onClick={handleClickOpen}
         variant="outlined"
         disabled={disabled}
-        startIcon={<AddIcon sx={{ fontSize: 18 }} />}
+        startIcon={<AddIcon sx={{ fontSize: 20 }} />}
         sx={{
+          minHeight: 44,
+          py: 1.25,
           color: (theme) => theme.palette[teamKey].dark,
           borderColor: (theme) => alpha(theme.palette[teamKey].main, 0.4),
           "&:hover": {

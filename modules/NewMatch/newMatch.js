@@ -1,33 +1,31 @@
 "use client";
 
-import ConfirmDeleteMatch from "@/components/Dialogs/ConfirmDialog/ConfirmDeleteMatch";
+import EndMatchControl from "@/components/Header/EndMatchControl";
 import {
   completedGamesRecoil,
   currentGameRecoil,
   gameModeRecoil,
   isGameStartedRecoil,
-  matchDescriptionRecoil,
   maxPointsRecoil,
   player1Recoil,
   player2Recoil,
   player3Recoil,
   player4Recoil,
   playersAmountRecoil,
-  renderGameModesRecoil,
   whoWonRecoil,
 } from "@/recoil/recoilState";
-import MatchSettings from "@/sections/MatchSettings/MatchSettings";
+import MatchSettings, {
+  MatchSummary,
+} from "@/sections/MatchSettings/MatchSettings";
 import NoteMaker from "@/sections/NoteMaker/NoteMaker";
 import NotesDone from "@/sections/NotesDone/NotesDone";
 import TableDraw from "@/sections/TableDraw/TableDraw";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   activeTeamNumbers,
-  gameModes4,
   TEAM_KEYS,
-  teamNumberFrom,
 } from "@/utils/matchSettings";
-import { ArrowBack, ArrowForward, PlayArrow } from "@mui/icons-material";
+import { PlayArrow } from "@mui/icons-material";
 import { Box, Button, Card, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useRecoilState } from "recoil";
@@ -57,7 +55,7 @@ function tallyWins(completedGames, teamNumbers) {
 
 function MatchStanding({ standings }) {
   const { t, teamName } = useTranslation();
-  const leaderWins = Math.max(...standings.map((s) => s.wins));
+  const leaderWins = Math.max(0, ...standings.map((s) => s.wins));
 
   return (
     <Card sx={{ p: 2 }}>
@@ -68,6 +66,7 @@ function MatchStanding({ standings }) {
       >
         {t("matchStanding")}
       </Typography>
+
       <Stack direction="row" spacing={1}>
         {standings.map(({ teamNumber, wins }) => {
           const isLeading = wins > 0 && wins === leaderWins;
@@ -82,13 +81,13 @@ function MatchStanding({ standings }) {
                 py: 1,
                 borderRadius: 2,
                 border: "1px solid",
-                borderColor: (t) =>
+                borderColor: (theme) =>
                   isLeading
-                    ? alpha(t.palette[TEAM_KEYS[teamNumber]].main, 0.45)
+                    ? alpha(theme.palette[TEAM_KEYS[teamNumber]].main, 0.45)
                     : "divider",
-                backgroundColor: (t) =>
+                backgroundColor: (theme) =>
                   isLeading
-                    ? alpha(t.palette[TEAM_KEYS[teamNumber]].main, 0.08)
+                    ? alpha(theme.palette[TEAM_KEYS[teamNumber]].main, 0.08)
                     : "transparent",
               }}
             >
@@ -98,7 +97,7 @@ function MatchStanding({ standings }) {
                   fontWeight: 700,
                   lineHeight: 1.1,
                   fontVariantNumeric: "tabular-nums",
-                  color: (t) => t.palette[TEAM_KEYS[teamNumber]].dark,
+                  color: (theme) => theme.palette[TEAM_KEYS[teamNumber]].dark,
                 }}
               >
                 {wins}
@@ -110,51 +109,49 @@ function MatchStanding({ standings }) {
           );
         })}
       </Stack>
+
+      <Box
+        sx={{
+          my: 1.75,
+          borderTop: "1px solid",
+          borderColor: "divider",
+        }}
+      />
+      <MatchSummary />
+
+      <Box
+        sx={{
+          my: 1.75,
+          borderTop: "1px solid",
+          borderColor: "divider",
+        }}
+      />
+      <EndMatchControl fullWidth />
     </Card>
   );
 }
 
-export default function NewMatch({ onBackToDashboard }) {
+export default function NewMatch() {
   const displayToast = useToast();
-  const { t, teamName } = useTranslation();
+  const { t } = useTranslation();
 
-  const [playersAmount, setPlayersAmount] = useRecoilState(playersAmountRecoil);
-  const [, setRenderGamesModes] = useRecoilState(renderGameModesRecoil);
-  const [gameMode, setGameMode] = useRecoilState(gameModeRecoil);
-  const [maxPoints, setMaxPoints] = useRecoilState(maxPointsRecoil);
+  const [playersAmount] = useRecoilState(playersAmountRecoil);
+  const [gameMode] = useRecoilState(gameModeRecoil);
+  const [maxPoints] = useRecoilState(maxPointsRecoil);
 
-  const [player1, setPlayer1] = useRecoilState(player1Recoil);
-  const [player2, setPlayer2] = useRecoilState(player2Recoil);
-  const [player3, setPlayer3] = useRecoilState(player3Recoil);
-  const [player4, setPlayer4] = useRecoilState(player4Recoil);
+  const [player1] = useRecoilState(player1Recoil);
+  const [player2] = useRecoilState(player2Recoil);
+  const [player3] = useRecoilState(player3Recoil);
+  const [player4] = useRecoilState(player4Recoil);
 
   const [isGameStarted, setStartGame] = useRecoilState(isGameStartedRecoil);
   const [whoWon, setWhoWon] = useRecoilState(whoWonRecoil);
   const [completedGames, setCompletedGame] =
     useRecoilState(completedGamesRecoil);
   const [currentGame, setCurrentGame] = useRecoilState(currentGameRecoil);
-  const [, setMatchDescription] = useRecoilState(matchDescriptionRecoil);
 
   const handleWhoWon = (winner) => {
     setWhoWon(winner);
-  };
-
-  const handleCancelGame = () => {
-    setPlayersAmount(4);
-    setRenderGamesModes(gameModes4);
-    setGameMode({ label: "2 vs 2" });
-    setMaxPoints(150);
-
-    setPlayer1("");
-    setPlayer2("");
-    setPlayer3("");
-    setPlayer4("");
-
-    setStartGame(false);
-    setWhoWon("");
-    setCompletedGame([]);
-    setCurrentGame(emptyGame);
-    setMatchDescription("");
   };
 
   const handleStartGame = () => {
@@ -248,47 +245,32 @@ export default function NewMatch({ onBackToDashboard }) {
   const isFreeForAll = gameMode?.label === "Free For All";
   const teamNumbers = activeTeamNumbers(playersAmount, isFreeForAll);
   const standings = tallyWins(completedGames, teamNumbers);
-  const winningTeam = teamNumberFrom(whoWon);
 
   return (
-    <Box sx={{ maxWidth: 1120, mx: "auto", width: "100%" }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mb: 2 }}
-      >
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={onBackToDashboard}
-          color="inherit"
-          sx={{ color: "text.secondary" }}
-        >
-          {t("dashboard")}
-        </Button>
-
-        {isGameStarted && <ConfirmDeleteMatch onCofirm={handleCancelGame} />}
-      </Stack>
-
+    <Box
+      sx={{
+        maxWidth: isGameStarted ? 920 : 1280,
+        mx: "auto",
+        width: "100%",
+      }}
+    >
       <Box
         sx={{
           display: "grid",
-          gap: 2,
+          gap: { xs: 2, md: 2.5 },
           alignItems: "start",
           gridTemplateColumns: {
             xs: "1fr",
-            lg: isGameStarted ? "repeat(2, minmax(0, 1fr))" : "1fr",
+            md: isGameStarted
+              ? "minmax(0, 1fr) minmax(260px, 320px)"
+              : "minmax(0, 1.15fr) minmax(300px, 0.85fr)",
           },
-          maxWidth: isGameStarted ? "none" : 540,
-          mx: isGameStarted ? 0 : "auto",
         }}
       >
-        {/* SCOREPAD */}
-        {isGameStarted && (
+        {/* Primary column: scorepad in play, setup form before kickoff */}
+        {isGameStarted ? (
           <Stack spacing={2}>
-            {completedGames.length > 0 && (
-              <MatchStanding standings={standings} />
-            )}
+            <MatchStanding standings={standings} />
 
             <NoteMaker
               isGameStarted={isGameStarted}
@@ -298,44 +280,15 @@ export default function NewMatch({ onBackToDashboard }) {
               whoWon={whoWon}
               maxPoints={maxPoints}
               handleUpateScores={handleUpateScores}
+              handleNextGame={handleNextGame}
             />
-
-            <Card sx={{ p: 2 }}>
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={1.5}
-                alignItems={{ xs: "stretch", sm: "center" }}
-                justifyContent="space-between"
-              >
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  {winningTeam
-                    ? t("teamReached", {
-                        team: teamName(winningTeam),
-                        points: maxPoints,
-                      })
-                    : t("waitingForTarget", { points: maxPoints })}
-                </Typography>
-
-                <Button
-                  onClick={handleNextGame}
-                  variant="contained"
-                  endIcon={<ArrowForward />}
-                  sx={{ flexShrink: 0 }}
-                >
-                  {t("nextGame")}
-                </Button>
-              </Stack>
-            </Card>
 
             <NotesDone />
           </Stack>
-        )}
+        ) : (
+          <Stack spacing={2}>
+            <MatchSettings />
 
-        {/* SETUP */}
-        <Stack spacing={2}>
-          <MatchSettings />
-
-          {!isGameStarted && (
             <Button
               onClick={handleStartGame}
               variant="contained"
@@ -345,8 +298,17 @@ export default function NewMatch({ onBackToDashboard }) {
             >
               {t("startPlaying")}
             </Button>
-          )}
+          </Stack>
+        )}
 
+        {/* Sidebar: table seating stays visible during setup and play */}
+        <Stack
+          spacing={2}
+          sx={{
+            position: { md: "sticky" },
+            top: { md: 80 },
+          }}
+        >
           <TableDraw />
         </Stack>
       </Box>

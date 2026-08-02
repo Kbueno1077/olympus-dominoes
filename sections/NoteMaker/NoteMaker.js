@@ -3,9 +3,12 @@
 import AddScoreDialog from "@/components/Dialogs/AddScoreDialog/AddScoreDialog";
 import { useTranslation } from "@/i18n/useTranslation";
 import { currentGameRecoil, gameEditionModeRecoil } from "@/recoil/recoilState";
+import { activeTeamNumbers, TEAM_KEYS, teamNumberFrom } from "@/utils/matchSettings";
 import { Icon } from "@iconify/react";
+import { ArrowForward } from "@mui/icons-material";
 import {
   Box,
+  Button,
   Card,
   IconButton,
   LinearProgress,
@@ -14,7 +17,6 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { activeTeamNumbers, TEAM_KEYS } from "@/utils/matchSettings";
 import { useRecoilState } from "recoil";
 import NoteHand from "./NoteHand";
 
@@ -24,11 +26,13 @@ function TeamColumn({
   total,
   maxPoints,
   isWinner,
+  gameOver,
   isGameStarted,
   gameEditionMode,
   onRemoveHand,
   onAddScore,
-  showLeftRule,
+  index,
+  columnCount,
 }) {
   const { t, teamName } = useTranslation();
   const teamKey = TEAM_KEYS[teamNumber];
@@ -39,8 +43,18 @@ function TeamColumn({
     <Box
       sx={{
         px: { xs: 1, sm: 1.75 },
-        // The line down the middle of a paper scorepad.
-        borderLeft: showLeftRule ? "1px solid" : "none",
+        // Two-column pad: rule on odd seats. Wide free-for-all: rule after first.
+        borderLeft: {
+          xs: index % 2 === 1 ? "1px solid" : "none",
+          md:
+            columnCount > 2
+              ? index > 0
+                ? "1px solid"
+                : "none"
+              : index % 2 === 1
+                ? "1px solid"
+                : "none",
+        },
         borderColor: "divider",
         display: "flex",
         flexDirection: "column",
@@ -59,7 +73,7 @@ function TeamColumn({
             width: 8,
             height: 8,
             borderRadius: "50%",
-            backgroundColor: (t) => t.palette[teamKey].main,
+            backgroundColor: (theme) => theme.palette[teamKey].main,
             flexShrink: 0,
           }}
         />
@@ -72,7 +86,7 @@ function TeamColumn({
         {isWinner && (
           <Icon
             icon="ant-design:trophy-filled"
-            style={{ fontSize: 15, color: "#C08A2E" }}
+            style={{ fontSize: 15, color: "#D4A017" }}
           />
         )}
       </Stack>
@@ -81,12 +95,12 @@ function TeamColumn({
 
       {/* Hands, oldest first, each showing this hand and the running total */}
       <Box sx={{ flex: 1, minHeight: 32 }}>
-        {hands.map((hand, index) => (
+        {hands.map((hand, handIndex) => (
           <NoteHand
-            key={`${teamNumber}-${index}-${hand}`}
+            key={`${teamNumber}-${handIndex}-${hand}`}
             gameEditionMode={gameEditionMode}
             handleRemoveDataFromGame={onRemoveHand}
-            index={index}
+            index={handIndex}
             teamDatas={hands}
             teamNumber={teamNumber}
           />
@@ -96,7 +110,7 @@ function TeamColumn({
       <Box sx={{ mt: 1.5 }}>
         <AddScoreDialog
           addScore={onAddScore}
-          disabled={hasOverflowed || !isGameStarted}
+          disabled={gameOver || !isGameStarted}
           teamNumber={teamNumber}
           teamKey={teamKey}
         />
@@ -136,11 +150,13 @@ function TeamColumn({
             mt: 0.75,
             height: 4,
             borderRadius: 2,
-            backgroundColor: (t) => alpha(t.palette.grey[600], 0.18),
+            backgroundColor: (theme) => alpha(theme.palette.grey[600], 0.18),
             "& .MuiLinearProgress-bar": {
               borderRadius: 2,
-              backgroundColor: (t) =>
-                hasOverflowed ? t.palette.warning.main : t.palette[teamKey].main,
+              backgroundColor: (theme) =>
+                hasOverflowed
+                  ? theme.palette.warning.main
+                  : theme.palette[teamKey].main,
             },
           }}
         />
@@ -156,9 +172,10 @@ export default function NoteMaker({
   playersAmount,
   whoWon,
   handleUpateScores,
+  handleNextGame,
   maxPoints,
 }) {
-  const { t } = useTranslation();
+  const { t, teamName } = useTranslation();
   const [gameEditionMode, setGameEditionMode] = useRecoilState(
     gameEditionModeRecoil
   );
@@ -184,6 +201,9 @@ export default function NoteMaker({
   const isFreeForAll = gameMode?.label === "Free For All";
   const teamNumbers = activeTeamNumbers(playersAmount, isFreeForAll);
   const numericMax = Number(maxPoints);
+  const columnCount = teamNumbers.length;
+  const winningTeam = teamNumberFrom(whoWon);
+  const gameOver = Boolean(whoWon);
 
   return (
     <Card sx={{ p: { xs: 2, sm: 2.5 } }}>
@@ -223,7 +243,15 @@ export default function NoteMaker({
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          // Partner play stays as a classic two-column pad; free-for-all
+          // spreads across the available width once the screen can take it.
+          gridTemplateColumns: {
+            xs: "repeat(2, minmax(0, 1fr))",
+            md:
+              columnCount > 2
+                ? `repeat(${columnCount}, minmax(0, 1fr))`
+                : "repeat(2, minmax(0, 1fr))",
+          },
           rowGap: 3,
         }}
       >
@@ -235,13 +263,48 @@ export default function NoteMaker({
             total={currentGame[`t${teamNumber}TotalPoints`]}
             maxPoints={numericMax}
             isWinner={whoWon === `Team ${teamNumber}`}
+            gameOver={gameOver}
             isGameStarted={isGameStarted}
             gameEditionMode={gameEditionMode}
             onRemoveHand={handleRemoveDataFromGame}
             onAddScore={handleUpateScores}
-            showLeftRule={index % 2 === 1}
+            index={index}
+            columnCount={columnCount}
           />
         ))}
+      </Box>
+
+      <Box
+        sx={{
+          mt: 2.5,
+          pt: 2,
+          borderTop: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <Typography
+          variant="body2"
+          sx={{ color: "text.secondary", mb: 1.5 }}
+        >
+          {winningTeam
+            ? t("teamReached", {
+                team: teamName(winningTeam),
+                points: maxPoints,
+              })
+            : t("waitingForTarget", { points: maxPoints })}
+        </Typography>
+
+        <Button
+          onClick={handleNextGame}
+          variant="contained"
+          size="large"
+          fullWidth
+          disabled={!winningTeam}
+          endIcon={<ArrowForward />}
+          sx={{ minHeight: 48 }}
+        >
+          {t("nextGame")}
+        </Button>
       </Box>
     </Card>
   );

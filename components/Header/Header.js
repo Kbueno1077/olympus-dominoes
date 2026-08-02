@@ -3,12 +3,21 @@
 import DominoTile from "@/components/DominoTile";
 import LanguageSwitch from "@/components/Header/LanguageSwitch";
 import { useTranslation } from "@/i18n/useTranslation";
-import { AppBar, Box, Container, Stack, Toolbar, Typography } from "@mui/material";
+import { ArrowBack } from "@mui/icons-material";
+import {
+  AppBar,
+  Box,
+  Button,
+  Container,
+  Stack,
+  Toolbar,
+  Typography,
+} from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
-export default function Header() {
+export default function Header({ onBack, actions }) {
   const theme = useTheme();
   const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -41,13 +50,42 @@ export default function Header() {
           disableGutters
           sx={{
             position: "relative",
-            // Narrow screens have no room to centre the wordmark and clear the
-            // switch, so there the two simply sit at opposite ends.
-            justifyContent: { xs: "space-between", sm: "center" },
+            justifyContent: "space-between",
             gap: 1,
             minHeight: 64,
           }}
         >
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              minWidth: 0,
+            }}
+          >
+            {onBack && (
+              <Button
+                startIcon={<ArrowBack />}
+                onClick={onBack}
+                color="inherit"
+                size="small"
+                sx={{
+                  color: "text.secondary",
+                  ml: { xs: -0.5, sm: -1 },
+                  px: { xs: 1, sm: 1.5 },
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{ display: { xs: "none", sm: "inline" } }}
+                >
+                  {t("dashboard")}
+                </Box>
+              </Button>
+            )}
+          </Box>
+
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -61,7 +99,7 @@ export default function Header() {
                 <Typography
                   component="h1"
                   sx={{
-                    fontFamily: (t) => t.typography.h2.fontFamily,
+                    fontFamily: (theme) => theme.typography.h2.fontFamily,
                     fontWeight: 700,
                     fontSize: { xs: 19, sm: 22 },
                     lineHeight: 1.1,
@@ -86,18 +124,19 @@ export default function Header() {
             </Stack>
           </motion.div>
 
-          <Box
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
             sx={{
-              flexShrink: 0,
-              // Anchored on wider screens so the wordmark stays truly centred.
-              position: { xs: "static", sm: "absolute" },
-              right: 0,
-              top: { sm: "50%" },
-              mt: { sm: "-15px" },
+              flex: 1,
+              justifyContent: "flex-end",
+              minWidth: 0,
             }}
           >
+            {actions}
             <LanguageSwitch />
-          </Box>
+          </Stack>
         </Toolbar>
       </Container>
     </AppBar>

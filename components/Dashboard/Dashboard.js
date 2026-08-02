@@ -2,10 +2,19 @@
 
 import DominoTile from "@/components/DominoTile";
 import { useTranslation } from "@/i18n/useTranslation";
+import { isGameStartedRecoil } from "@/recoil/recoilState";
 import { PlayArrow } from "@mui/icons-material";
-import { Box, Button, Card, Container, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Card,
+  Container,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { motion } from "framer-motion";
+import { useRecoilValue } from "recoil";
 
 // The opening hand: a spread of tiles that doubles as the hero art.
 const HERO_TILES = [
@@ -17,9 +26,22 @@ const HERO_TILES = [
 
 const FEATURE_KEYS = ["featurePlayers", "featureModes", "featureLocal"];
 
+const HOW_STEPS = [
+  { title: "howStep1Title", body: "howStep1Body" },
+  { title: "howStep2Title", body: "howStep2Body" },
+  { title: "howStep3Title", body: "howStep3Body" },
+];
+
 function FeatureRow({ t }) {
   return (
-    <Stack spacing={1} alignItems="center">
+    <Stack
+      direction={{ xs: "column", sm: "row" }}
+      spacing={{ xs: 1, sm: 2.5 }}
+      alignItems={{ xs: "center", sm: "flex-start" }}
+      justifyContent={{ xs: "center", md: "flex-start" }}
+      flexWrap="wrap"
+      useFlexGap
+    >
       {FEATURE_KEYS.map((key) => (
         <Stack key={key} direction="row" spacing={1} alignItems="center">
           <Box
@@ -40,98 +62,240 @@ function FeatureRow({ t }) {
   );
 }
 
+function HowItWorks({ t }) {
+  return (
+    <Box>
+      <Typography
+        variant="overline"
+        component="p"
+        sx={{ color: "text.secondary", mb: 2 }}
+      >
+        {t("howItWorksTitle")}
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(3, minmax(0, 1fr))",
+          },
+        }}
+      >
+        {HOW_STEPS.map((step, index) => (
+          <Box key={step.title}>
+            <Typography
+              sx={{
+                fontFamily: (theme) => theme.typography.h2.fontFamily,
+                fontWeight: 700,
+                fontSize: 28,
+                lineHeight: 1,
+                color: (theme) => alpha(theme.palette.primary.main, 0.28),
+                mb: 0.75,
+              }}
+            >
+              {String(index + 1).padStart(2, "0")}
+            </Typography>
+            <Typography
+              variant="subtitle1"
+              sx={{ color: "text.primary", fontWeight: 600, mb: 0.5 }}
+            >
+              {t(step.title)}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              {t(step.body)}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
+function HistoryNotice({ t }) {
+  return (
+    <Card
+      sx={{
+        p: { xs: 2.5, sm: 3 },
+        backgroundColor: "background.neutral",
+        borderColor: "divider",
+      }}
+    >
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        justifyContent="space-between"
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ color: "text.primary", fontWeight: 600, mb: 0.5 }}
+          >
+            {t("webHistoryTitle")}
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            {t("webHistoryBody")}
+          </Typography>
+        </Box>
+        <Typography
+          variant="overline"
+          sx={{
+            flexShrink: 0,
+            color: "text.disabled",
+            fontSize: 10,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {t("webHistoryNote")}
+        </Typography>
+      </Stack>
+    </Card>
+  );
+}
+
 export default function Dashboard({ onStartNewGame }) {
   const { t } = useTranslation();
+  const isGameStarted = useRecoilValue(isGameStartedRecoil);
 
   return (
-    <Container maxWidth="sm" sx={{ py: { xs: 4, sm: 7 } }}>
+    <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 6, md: 7 } }}>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <Stack spacing={4} alignItems="center" textAlign="center">
-          <Stack
-            direction="row"
-            spacing={-0.5}
-            justifyContent="center"
-            sx={{ pt: 1 }}
-          >
-            {HERO_TILES.map((tile, i) => (
-              <motion.div
-                key={`${tile.top}-${tile.bottom}`}
-                initial={{ opacity: 0, y: 18, rotate: 0 }}
-                animate={{ opacity: 1, y: 0, rotate: tile.rotate }}
-                transition={{
-                  duration: 0.45,
-                  delay: 0.08 * i,
-                  ease: "easeOut",
-                }}
-              >
-                <DominoTile top={tile.top} bottom={tile.bottom} size={38} />
-              </motion.div>
-            ))}
-          </Stack>
-
-          <Stack spacing={1.5} alignItems="center">
-            <Typography variant="h2" sx={{ color: "text.primary" }}>
-              {t("heroTitle")}
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ color: "text.secondary", maxWidth: 420 }}
-            >
-              {t("heroSubtitle")}
-            </Typography>
-          </Stack>
-
-          <FeatureRow t={t} />
-
-          <Card
+        <Stack spacing={{ xs: 4, md: 5 }}>
+          <Box
             sx={{
-              width: "100%",
-              p: { xs: 3, sm: 4 },
-              backgroundColor: "background.paper",
-              borderColor: (t) => alpha(t.palette.primary.main, 0.24),
+              display: "grid",
+              gap: { xs: 4, md: 5 },
+              alignItems: "center",
+              gridTemplateColumns: { xs: "1fr", md: "1.15fr 0.85fr" },
             }}
           >
-            <Stack spacing={2.5} alignItems="center">
-              <Typography variant="h5" sx={{ color: "text.primary" }}>
-                {t("readyTitle")}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ color: "text.secondary", maxWidth: 340 }}
+            <Stack
+              spacing={3}
+              alignItems={{ xs: "center", md: "flex-start" }}
+              textAlign={{ xs: "center", md: "left" }}
+            >
+              <Stack
+                direction="row"
+                spacing={-0.5}
+                justifyContent={{ xs: "center", md: "flex-start" }}
+                sx={{ pt: 1 }}
               >
-                {t("readyBody")}
-              </Typography>
-              <Button
-                onClick={onStartNewGame}
-                variant="contained"
-                size="large"
-                fullWidth
-                startIcon={<PlayArrow />}
-                sx={{ maxWidth: 280, fontSize: 15 }}
+                {HERO_TILES.map((tile, i) => (
+                  <motion.div
+                    key={`${tile.top}-${tile.bottom}`}
+                    initial={{ opacity: 0, y: 18, rotate: 0 }}
+                    animate={{ opacity: 1, y: 0, rotate: tile.rotate }}
+                    transition={{
+                      duration: 0.45,
+                      delay: 0.08 * i,
+                      ease: "easeOut",
+                    }}
+                  >
+                    <DominoTile top={tile.top} bottom={tile.bottom} size={38} />
+                  </motion.div>
+                ))}
+              </Stack>
+
+              <Stack
+                spacing={1.5}
+                alignItems={{ xs: "center", md: "flex-start" }}
               >
-                {t("startMatch")}
-              </Button>
+                <Typography variant="h2" sx={{ color: "text.primary" }}>
+                  {t("heroTitle")}
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{ color: "text.secondary", maxWidth: 480 }}
+                >
+                  {t("heroSubtitle")}
+                </Typography>
+              </Stack>
+
+              <FeatureRow t={t} />
             </Stack>
-          </Card>
+
+            <Card
+              sx={{
+                width: "100%",
+                p: { xs: 3, sm: 4 },
+                backgroundColor: "background.paper",
+                borderColor: (theme) =>
+                  alpha(
+                    theme.palette[isGameStarted ? "secondary" : "primary"].main,
+                    0.24
+                  ),
+              }}
+            >
+              <Stack spacing={2.5} alignItems="center">
+                <Typography variant="h5" sx={{ color: "text.primary" }}>
+                  {t(isGameStarted ? "continueReadyTitle" : "readyTitle")}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    maxWidth: 340,
+                    textAlign: "center",
+                  }}
+                >
+                  {t(isGameStarted ? "continueReadyBody" : "readyBody")}
+                </Typography>
+                <Button
+                  onClick={onStartNewGame}
+                  variant="contained"
+                  size="large"
+                  fullWidth
+                  startIcon={<PlayArrow />}
+                  sx={{ maxWidth: 280, fontSize: 15 }}
+                >
+                  {t(isGameStarted ? "continueMatch" : "startMatch")}
+                </Button>
+              </Stack>
+            </Card>
+          </Box>
 
           <Box
             sx={{
+              display: { xs: "none", md: "block" },
               width: 44,
               height: "2px",
               borderRadius: 1,
-              backgroundColor: (t) => alpha(t.palette.secondary.main, 0.5),
+              mx: "auto",
+              backgroundColor: (theme) =>
+                alpha(theme.palette.secondary.main, 0.5),
             }}
           />
-          <Typography
-            variant="overline"
-            sx={{ color: "text.disabled", fontSize: 10 }}
-          >
-            {t("madeForTheTable")}
-          </Typography>
+
+          <Box sx={{ display: { xs: "none", md: "block" } }}>
+            <HowItWorks t={t} />
+          </Box>
+
+          <HistoryNotice t={t} />
+
+          <Stack spacing={1.5} alignItems="center" sx={{ pt: 1 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: "2px",
+                borderRadius: 1,
+                backgroundColor: (theme) =>
+                  alpha(theme.palette.secondary.main, 0.5),
+                display: { md: "none" },
+              }}
+            />
+            <Typography
+              variant="overline"
+              sx={{ color: "text.disabled", fontSize: 10 }}
+            >
+              {t("madeForTheTable")}
+            </Typography>
+          </Stack>
         </Stack>
       </motion.div>
     </Container>

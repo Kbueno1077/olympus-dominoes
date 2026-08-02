@@ -245,7 +245,7 @@ export default function TableDraw() {
       {/* Wooden rail around the baize */}
       <Box
         sx={{
-          maxWidth: 380,
+          maxWidth: { xs: 380, md: 440 },
           mx: "auto",
           p: "10px",
           borderRadius: "18px",

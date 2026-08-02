@@ -27,6 +27,7 @@ export default function NotesDone() {
 
   const isFreeForAll = gameMode?.label === "Free For All";
   const teamNumbers = activeTeamNumbers(playersAmount, isFreeForAll);
+  const columnCount = teamNumbers.length;
 
   return (
     <>
@@ -68,7 +69,13 @@ export default function NotesDone() {
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gridTemplateColumns: {
+                  xs: "repeat(2, minmax(0, 1fr))",
+                  md:
+                    columnCount > 2
+                      ? `repeat(${columnCount}, minmax(0, 1fr))`
+                      : "repeat(2, minmax(0, 1fr))",
+                },
                 rowGap: 2,
                 borderTop: "2px solid",
                 borderColor: "divider",
@@ -80,7 +87,17 @@ export default function NotesDone() {
                   key={teamNumber}
                   sx={{
                     px: 1,
-                    borderLeft: index % 2 === 1 ? "1px solid" : "none",
+                    borderLeft: {
+                      xs: index % 2 === 1 ? "1px solid" : "none",
+                      md:
+                        columnCount > 2
+                          ? index > 0
+                            ? "1px solid"
+                            : "none"
+                          : index % 2 === 1
+                            ? "1px solid"
+                            : "none",
+                    },
                     borderColor: "divider",
                   }}
                 >

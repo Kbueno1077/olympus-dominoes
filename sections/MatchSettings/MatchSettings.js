@@ -67,19 +67,37 @@ function buildTeams(playersAmount, isFreeForAll, slots) {
 }
 
 /**
- * Once play starts the setup is locked, so it collapses to a single strip of
- * facts rather than a form nobody can use.
+ * Compact config line for an in-progress match (lives inside Match Standing).
  *
  * Each fact carries its own trailing separator inside one nowrap span, so if
  * the strip has to wrap on a narrow screen a line never begins with a stray
  * dot.
  */
-function MatchSummary({ playersAmount, modeLabel, maxPoints, teams }) {
+export function MatchSummary() {
   const { t, teamName, modeName } = useTranslation();
+
+  const [playersAmount] = useRecoilState(playersAmountRecoil);
+  const [gameMode] = useRecoilState(gameModeRecoil);
+  const [maxPoints] = useRecoilState(maxPointsRecoil);
+  const [player1] = useRecoilState(player1Recoil);
+  const [player2] = useRecoilState(player2Recoil);
+  const [player3] = useRecoilState(player3Recoil);
+  const [player4] = useRecoilState(player4Recoil);
+
+  const isFreeForAll = gameMode?.label === "Free For All";
+  const slots = [
+    { number: 1, value: player1 },
+    { number: 2, value: player2 },
+    { number: 3, value: player3 },
+    { number: 4, value: player4 },
+  ];
+  const teams = buildTeams(playersAmount, isFreeForAll, slots);
 
   const facts = [
     { key: "players", text: t("playersCount", { n: playersAmount }) },
-    ...(modeLabel ? [{ key: "mode", text: modeName(modeLabel) }] : []),
+    ...(gameMode?.label
+      ? [{ key: "mode", text: modeName(gameMode.label) }]
+      : []),
     { key: "target", text: t("firstTo", { n: maxPoints }) },
     ...teams.map((team) => ({
       key: team.key,
@@ -93,53 +111,49 @@ function MatchSummary({ playersAmount, modeLabel, maxPoints, teams }) {
   ];
 
   return (
-    <Card sx={{ px: 2, py: 1.25 }}>
-      <Typography variant="body2" component="p" sx={{ color: "text.secondary" }}>
-        {facts.map((fact, index) => (
-          <Fragment key={fact.key}>
-            <Box component="span" sx={{ whiteSpace: "nowrap" }}>
-              {fact.teamKey && (
-                <Box
-                  component="span"
-                  sx={{
-                    display: "inline-block",
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    mr: 0.75,
-                    verticalAlign: "middle",
-                    backgroundColor: (theme) => theme.palette[fact.teamKey].main,
-                  }}
-                />
-              )}
+    <Typography variant="body2" component="p" sx={{ color: "text.secondary" }}>
+      {facts.map((fact, index) => (
+        <Fragment key={fact.key}>
+          <Box component="span" sx={{ whiteSpace: "nowrap" }}>
+            {fact.teamKey && (
               <Box
                 component="span"
                 sx={{
-                  color: fact.teamKey ? "text.primary" : "text.secondary",
-                  fontWeight: fact.teamKey ? 600 : 400,
+                  display: "inline-block",
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  mr: 0.75,
+                  verticalAlign: "middle",
+                  backgroundColor: (theme) => theme.palette[fact.teamKey].main,
                 }}
-              >
-                {fact.text}
-              </Box>
-              {index < facts.length - 1 && (
-                <Box component="span" sx={{ color: "text.disabled" }}>
-                  {" ·"}
-                </Box>
-              )}
+              />
+            )}
+            <Box
+              component="span"
+              sx={{
+                color: fact.teamKey ? "text.primary" : "text.secondary",
+                fontWeight: fact.teamKey ? 600 : 400,
+              }}
+            >
+              {fact.text}
             </Box>
-            {/* Breakable space lives outside the nowrap span, so a wrapped
-                line starts with a fact rather than a separator. */}
-            {index < facts.length - 1 && " "}
-          </Fragment>
-        ))}
-      </Typography>
-    </Card>
+            {index < facts.length - 1 && (
+              <Box component="span" sx={{ color: "text.disabled" }}>
+                {" ·"}
+              </Box>
+            )}
+          </Box>
+          {index < facts.length - 1 && " "}
+        </Fragment>
+      ))}
+    </Typography>
   );
 }
 
-function FieldGroup({ label, children }) {
+function FieldGroup({ label, children, sx }) {
   return (
-    <Box>
+    <Box sx={sx}>
       <Typography
         variant="overline"
         component="p"
@@ -389,15 +403,14 @@ export default function MatchSettings() {
   };
 
   if (isGameStarted) {
-    return (
-      <MatchSummary
-        playersAmount={playersAmount}
-        modeLabel={gameMode?.label}
-        maxPoints={maxPoints}
-        teams={teams}
-      />
-    );
+    return null;
   }
+
+  // Free-for-all with 3+ solo seats needs more columns than partner play.
+  const rosterColumns =
+    isFreeForAll && playersAmount > 2
+      ? { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", lg: `repeat(${Math.min(playersAmount, 4)}, minmax(0, 1fr))` }
+      : { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" };
 
   return (
     <Stack spacing={2}>
@@ -412,83 +425,99 @@ export default function MatchSettings() {
             </Typography>
           </Box>
 
-          <FieldGroup label={t("playersAtTable")}>
-            <ToggleButtonGroup
-              exclusive
-              fullWidth
-              size="small"
-              disabled={isGameStarted}
-              value={playersAmount}
-              onChange={handlePlayerCountChange}
-              aria-label={t("playersAtTable")}
-            >
-              {PLAYER_COUNTS.map((count) => (
-                <ToggleButton
-                  key={count}
-                  value={count}
-                  aria-label={t("playerCountAria", { n: count })}
-                >
-                  {count}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </FieldGroup>
-
-          <FieldGroup label={t("format")}>
-            <ToggleButtonGroup
-              exclusive
-              fullWidth
-              size="small"
-              disabled={isGameStarted}
-              value={gameMode?.label ?? null}
-              onChange={handleModeChange}
-              aria-label={t("format")}
-            >
-              {renderGameModes.map((mode) => (
-                <ToggleButton key={mode.label} value={mode.label}>
-                  {modeName(mode.label)}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </FieldGroup>
-
-          <FieldGroup label={t("pointsToWin")}>
-            <Stack
-              direction={isNarrow ? "column" : "row"}
-              spacing={1.5}
-              alignItems={isNarrow ? "stretch" : "center"}
-            >
-              <TextField
-                id="max-points"
-                label={t("target")}
+          <Box
+            sx={{
+              display: "grid",
+              gap: 3,
+              gridTemplateColumns: {
+                xs: "1fr",
+                md: "1fr 1fr",
+              },
+            }}
+          >
+            <FieldGroup label={t("playersAtTable")}>
+              <ToggleButtonGroup
+                exclusive
+                fullWidth
                 size="small"
                 disabled={isGameStarted}
-                value={maxPoints}
-                onChange={(event) => handleMaxPointsInput(event.target.value)}
-                type="number"
-                InputLabelProps={{ shrink: true }}
-                inputProps={{ inputMode: "numeric", pattern: "[0-9]*", min: 1 }}
-                sx={{ width: isNarrow ? "100%" : 130 }}
-              />
-
-              <Stack direction="row" spacing={1}>
-                {TARGET_PRESETS.map((preset) => (
-                  <Chip
-                    key={preset}
-                    label={preset}
-                    size="small"
-                    clickable={!isGameStarted}
-                    disabled={isGameStarted}
-                    variant={
-                      Number(maxPoints) === preset ? "filled" : "outlined"
-                    }
-                    color={Number(maxPoints) === preset ? "primary" : "default"}
-                    onClick={() => setMaxPoints(String(preset))}
-                  />
+                value={playersAmount}
+                onChange={handlePlayerCountChange}
+                aria-label={t("playersAtTable")}
+              >
+                {PLAYER_COUNTS.map((count) => (
+                  <ToggleButton
+                    key={count}
+                    value={count}
+                    aria-label={t("playerCountAria", { n: count })}
+                  >
+                    {count}
+                  </ToggleButton>
                 ))}
+              </ToggleButtonGroup>
+            </FieldGroup>
+
+            <FieldGroup label={t("format")}>
+              <ToggleButtonGroup
+                exclusive
+                fullWidth
+                size="small"
+                disabled={isGameStarted}
+                value={gameMode?.label ?? null}
+                onChange={handleModeChange}
+                aria-label={t("format")}
+              >
+                {renderGameModes.map((mode) => (
+                  <ToggleButton key={mode.label} value={mode.label}>
+                    {modeName(mode.label)}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </FieldGroup>
+
+            <FieldGroup
+              label={t("pointsToWin")}
+              sx={{ gridColumn: { md: "1 / -1" } }}
+            >
+              <Stack
+                direction={isNarrow ? "column" : "row"}
+                spacing={1.5}
+                alignItems={isNarrow ? "stretch" : "center"}
+              >
+                <TextField
+                  id="max-points"
+                  label={t("target")}
+                  size="small"
+                  disabled={isGameStarted}
+                  value={maxPoints}
+                  onChange={(event) => handleMaxPointsInput(event.target.value)}
+                  type="number"
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ inputMode: "numeric", pattern: "[0-9]*", min: 1 }}
+                  sx={{ width: isNarrow ? "100%" : 130 }}
+                />
+
+                <Stack direction="row" spacing={1}>
+                  {TARGET_PRESETS.map((preset) => (
+                    <Chip
+                      key={preset}
+                      label={preset}
+                      size="small"
+                      clickable={!isGameStarted}
+                      disabled={isGameStarted}
+                      variant={
+                        Number(maxPoints) === preset ? "filled" : "outlined"
+                      }
+                      color={
+                        Number(maxPoints) === preset ? "primary" : "default"
+                      }
+                      onClick={() => setMaxPoints(String(preset))}
+                    />
+                  ))}
+                </Stack>
               </Stack>
-            </Stack>
-          </FieldGroup>
+            </FieldGroup>
+          </Box>
         </Stack>
       </Card>
 
@@ -527,19 +556,18 @@ export default function MatchSettings() {
             </Button>
           </Stack>
 
-          {teams.map((team, index) => (
-            <Fragment key={team.key}>
-              {index > 0 && (
-                <Box
-                  sx={{
-                    height: "1px",
-                    backgroundColor: "divider",
-                  }}
-                />
-              )}
-              <TeamBlock team={team} />
-            </Fragment>
-          ))}
+          <Box
+            sx={{
+              display: "grid",
+              gap: { xs: 2.25, sm: 2.5 },
+              gridTemplateColumns: rosterColumns,
+              alignItems: "start",
+            }}
+          >
+            {teams.map((team) => (
+              <TeamBlock key={team.key} team={team} />
+            ))}
+          </Box>
         </Stack>
       </Card>
 

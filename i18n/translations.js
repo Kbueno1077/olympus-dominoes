@@ -48,12 +48,27 @@ const en = {
     "A clean scorepad for Cuban dominoes. Set the table, tally each hand, and let the app call the winner.",
   featurePlayers: "2 to 4 players",
   featureModes: "Partners or free for all",
-  featureLocal: "Saved on this device",
+  featureLocal: "Active match kept in this browser",
   readyTitle: "Ready to play?",
   readyBody:
     "Name the players, pick a mode and a target score. Takes about twenty seconds.",
+  continueReadyTitle: "Match in progress",
+  continueReadyBody:
+    "Pick up where you left off. Scores and the table stay until you end the match.",
   startMatch: "Start a new match",
+  continueMatch: "Continue match",
   madeForTheTable: "Made for the table",
+  howItWorksTitle: "How it works",
+  howStep1Title: "Set the table",
+  howStep1Body: "Name the players, choose partners or free for all, and pick a target.",
+  howStep2Title: "Tally each hand",
+  howStep2Body: "Add the leftover pips after every hand. The pad keeps the running total.",
+  howStep3Title: "Call the winner",
+  howStep3Body: "When a team hits the target, lock the game and start the next one.",
+  webHistoryTitle: "No match history on the web",
+  webHistoryBody:
+    "Past matches are not saved here. History with export and import will arrive later on the mobile app.",
+  webHistoryNote: "Mobile only, coming later",
 
   // Setup
   setupTitle: "Match setup",
@@ -151,12 +166,27 @@ const es = {
     "Una libreta limpia para el dominó cubano. Arma la mesa, anota cada mano y deja que la app cante al ganador.",
   featurePlayers: "De 2 a 4 jugadores",
   featureModes: "En parejas o todos contra todos",
-  featureLocal: "Guardado en este dispositivo",
+  featureLocal: "La partida activa se guarda en este navegador",
   readyTitle: "¿Listos para jugar?",
   readyBody:
     "Pon los nombres, elige el modo y los puntos. Toma unos veinte segundos.",
+  continueReadyTitle: "Partida en curso",
+  continueReadyBody:
+    "Sigue donde la dejaste. Los puntos y la mesa se quedan hasta que termines la partida.",
   startMatch: "Empezar una partida",
+  continueMatch: "Continuar partida",
   madeForTheTable: "Hecho para la mesa",
+  howItWorksTitle: "Cómo funciona",
+  howStep1Title: "Arma la mesa",
+  howStep1Body: "Pon los nombres, elige parejas o todos contra todos, y fija la meta.",
+  howStep2Title: "Anota cada mano",
+  howStep2Body: "Suma los puntos que quedaron. La libreta lleva el total.",
+  howStep3Title: "Canta al ganador",
+  howStep3Body: "Cuando un equipo llega a la meta, cierra el juego y empieza el siguiente.",
+  webHistoryTitle: "Sin historial en la web",
+  webHistoryBody:
+    "Las partidas pasadas no se guardan aquí. El historial con exportar e importar llegará después en la app móvil.",
+  webHistoryNote: "Solo en móvil, próximamente",
 
   // Setup
   setupTitle: "Configuración de la partida",
