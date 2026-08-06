@@ -23,8 +23,13 @@ const defaultUrl = process.env.VERCEL_URL
     : "http://localhost:3000";
 
 export const metadata: Metadata = {
+    // app/icon.png + app/apple-icon.png are picked up by the App Router.
+    // public/favicon.ico covers the hard-coded /favicon.ico browser request.
     icons: {
-        icon: "/favicon.ico",
+        icon: [
+            { url: "/favicon.ico", sizes: "any" },
+            { url: "/favicon.png", type: "image/png", sizes: "48x48" },
+        ],
         shortcut: "/favicon.ico",
     },
     metadataBase: new URL(defaultUrl),

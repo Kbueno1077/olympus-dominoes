@@ -1,55 +1,66 @@
 "use client";
 
-import ConfirmDeleteGame from "@/components/Dialogs/ConfirmDialog/ConfirmDeleteGame";
 import Note from "@/components/Notes/Note";
-import { useMatchTeamLabel } from "@/hooks/useMatchTeamLabel";
-import {
-  completedGamesRecoil,
-  gameModeRecoil,
-  playersAmountRecoil,
-} from "@/recoil/recoilState";
+import type { HistoryGame } from "@/lib/analytics/history";
 import { useTranslation } from "@/i18n/useTranslation";
-import { activeTeamNumbers, teamNumberFrom } from "@/utils/matchSettings";
+import {
+  activeTeamNumbers,
+  teamNumberFrom,
+} from "@/utils/matchSettings";
+import { teamInitialLabelsByNumber } from "@/utils/teams";
 import { Box, Card, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
-import { useRecoilState, useRecoilValue } from "recoil";
 
-export default function NotesDone() {
-  const { t } = useTranslation();
-  const teamLabel = useMatchTeamLabel();
-  const [completedGames, setCompletedGame] =
-    useRecoilState(completedGamesRecoil);
+type Props = {
+  games: HistoryGame[];
+  playersAmount: number;
+  modeLabel: string;
+  seatNames: string[];
+};
 
-  const playersAmount = useRecoilValue(playersAmountRecoil);
-  const gameMode = useRecoilValue(gameModeRecoil);
-
-  const removeGame = (index) => {
-    const remaining = completedGames.filter((_, i) => i !== index);
-    setCompletedGame(remaining);
-  };
-
-  const isFreeForAll = gameMode?.label === "Free For All";
+/**
+ * Read-only completed-game notes for imported history (newest first).
+ */
+export default function HistoryGamesNotes({
+  games,
+  playersAmount,
+  modeLabel,
+  seatNames,
+}: Props) {
+  const { t, teamName } = useTranslation();
+  const isFreeForAll = modeLabel === "Free For All";
   const teamNumbers = activeTeamNumbers(playersAmount, isFreeForAll);
   const columnCount = teamNumbers.length;
 
-  // Most recent completed game first; keep original index for numbering/delete.
+  const labelsByNumber = useMemo(
+    () =>
+      teamInitialLabelsByNumber(
+        playersAmount,
+        modeLabel,
+        seatNames
+      ) as Record<number, string>,
+    [playersAmount, modeLabel, seatNames]
+  );
+
+  const labelFor = (teamNumber: number) =>
+    labelsByNumber[teamNumber] || teamName(teamNumber);
+
   const ordered = useMemo(
     () =>
-      completedGames
+      games
         .map((game, index) => ({ game, index }))
         .slice()
         .reverse(),
-    [completedGames]
+    [games]
   );
 
   return (
-    <>
+    <Stack spacing={1.75}>
       {ordered.map(({ game, index: gameIndex }) => {
         const winningTeam = teamNumberFrom(game.winner);
 
         return (
           <Card
-            // Completed games carry no id, so position is the only stable key.
             key={`game-${gameIndex}`}
             sx={{
               p: { xs: 2, sm: 2.5 },
@@ -58,25 +69,18 @@ export default function NotesDone() {
           >
             <Stack
               direction="row"
-              alignItems="center"
-              justifyContent="space-between"
+              alignItems="baseline"
+              spacing={1}
               sx={{ mb: 1.5 }}
             >
-              <Stack direction="row" alignItems="baseline" spacing={1}>
-                <Typography variant="subtitle1" sx={{ color: "text.primary" }}>
-                  {t("gameNumber", { n: gameIndex + 1 })}
+              <Typography variant="subtitle1" sx={{ color: "text.primary" }}>
+                {t("gameNumber", { n: gameIndex + 1 })}
+              </Typography>
+              {winningTeam ? (
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  {t("tookIt", { team: labelFor(winningTeam) })}
                 </Typography>
-                {winningTeam && (
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "text.secondary" }}
-                  >
-                    {t("tookIt", { team: teamLabel(winningTeam) })}
-                  </Typography>
-                )}
-              </Stack>
-
-              <ConfirmDeleteGame onCofirm={removeGame} index={gameIndex} />
+              ) : null}
             </Stack>
 
             <Box
@@ -115,10 +119,14 @@ export default function NotesDone() {
                   }}
                 >
                   <Note
-                    hands={game[`t${teamNumber}Datas`] ?? []}
+                    hands={
+                      (game[
+                        `t${teamNumber}Datas` as keyof HistoryGame
+                      ] as number[]) ?? []
+                    }
                     isWinner={winningTeam === teamNumber}
                     teamNumber={teamNumber}
-                    label={teamLabel(teamNumber)}
+                    label={labelFor(teamNumber)}
                   />
                 </Box>
               ))}
@@ -126,6 +134,6 @@ export default function NotesDone() {
           </Card>
         );
       })}
-    </>
+    </Stack>
   );
 }

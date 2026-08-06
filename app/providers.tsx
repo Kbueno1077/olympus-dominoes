@@ -1,6 +1,7 @@
 "use client";
 
 import LanguageProvider from "@/i18n/LanguageProvider";
+import { AnalyticsProvider } from "@/lib/analytics/AnalyticsProvider";
 import { SnackbarProvider } from "notistack";
 import { RecoilRoot } from "recoil";
 import ThemeConfig from "../muiTheme";
@@ -22,7 +23,9 @@ export function Providers({
           }}
           maxSnack={3}
         >
-          <RecoilRoot>{children}</RecoilRoot>
+          <RecoilRoot>
+            <AnalyticsProvider>{children}</AnalyticsProvider>
+          </RecoilRoot>
         </SnackbarProvider>
       </ThemeConfig>
     </LanguageProvider>

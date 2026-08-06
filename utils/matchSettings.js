@@ -29,3 +29,36 @@ export function teamNumberFrom(winner) {
   const match = /^Team ([1-4])$/.exec(winner ?? "");
   return match ? Number(match[1]) : null;
 }
+
+export const gameHands = (game, team) => game?.[`t${team}Datas`] ?? [];
+
+/** Games won so far, so the match standing is visible without counting. */
+export function tallyWins(completedGames, teamNumbers) {
+  return teamNumbers.map((teamNumber) => ({
+    teamNumber,
+    wins: completedGames.filter((game) => game.winner === `Team ${teamNumber}`)
+      .length,
+  }));
+}
+
+/**
+ * Pollos / zapatos each team dealt while winning (opponent had 0 / 1 hands).
+ */
+export function tallyPollosZapatos(completedGames, teamNumbers) {
+  return teamNumbers.map((teamNumber) => {
+    let pollosFor = 0;
+    let zapatosFor = 0;
+
+    for (const game of completedGames) {
+      if (teamNumberFrom(game.winner) !== teamNumber) continue;
+      for (const other of teamNumbers) {
+        if (other === teamNumber) continue;
+        const handCount = gameHands(game, other).length;
+        if (handCount === 0) pollosFor += 1;
+        else if (handCount === 1) zapatosFor += 1;
+      }
+    }
+
+    return { teamNumber, pollosFor, zapatosFor };
+  });
+}

@@ -18,11 +18,13 @@ export default function AddScoreDialog({
   teamNumber,
   disabled,
   teamKey = "team1",
+  teamLabel,
 }) {
   const [open, setOpen] = React.useState(false);
   const [score, setScore] = React.useState("");
   const displayToast = useToast();
   const { t, teamName } = useTranslation();
+  const label = teamLabel || teamName(teamNumber);
 
   const handleClickOpen = () => {
     setScore("");
@@ -80,7 +82,7 @@ export default function AddScoreDialog({
         aria-labelledby="add-score-title"
       >
         <DialogTitle id="add-score-title">
-          {t("addPointsTitle", { team: teamName(teamNumber) })}
+          {t("addPointsTitle", { team: label })}
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2, fontSize: 14 }}>
