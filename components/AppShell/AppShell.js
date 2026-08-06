@@ -4,7 +4,7 @@ import Header from "@/components/Header/Header";
 import { Box } from "@mui/material";
 import { usePathname } from "next/navigation";
 
-const FULL_BLEED_PATHS = new Set(["/stats", "/compare", "/history"]);
+const FULL_BLEED_PATHS = new Set(["/stats", "/compare", "/history", "/podium"]);
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
@@ -17,7 +17,9 @@ export default function AppShell({ children }) {
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
+        height: fullBleed ? "100vh" : "auto",
         width: "100%",
+        overflow: fullBleed ? "hidden" : "visible",
       }}
     >
       <Header />
@@ -28,8 +30,10 @@ export default function AppShell({ children }) {
           display: "flex",
           flexDirection: "column",
           pt: 8,
-          // Dashboard pages own their bottom edge so the sidebar can reach it.
+          minHeight: 0,
+          // Dashboard pages own their bottom edge; panes scroll inside.
           pb: fullBleed ? 0 : { xs: 14, sm: 10 },
+          overflow: fullBleed ? "hidden" : "visible",
         }}
       >
         {children}

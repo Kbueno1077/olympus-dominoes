@@ -89,33 +89,37 @@ export function formatJosesCoefficient(
 export function recalculateAllJosesCoefficients(
   data: OlympusExportData
 ): OlympusExportData {
+  const rows = Array.isArray(data.player_stats) ? data.player_stats : [];
+
   return {
     ...data,
-    player_stats: data.player_stats.map((row) => {
-      const hands_for = row.hands_for;
-      const hands_against = row.hands_against;
+    player_stats: rows.map((row) => {
+      const hands_for = Number(row.hands_for) || 0;
+      const hands_against = Number(row.hands_against) || 0;
       const hands_won = hands_for;
       const hands_lost = hands_against;
-      const hands_played =
-        row.hands_played > 0 ? row.hands_played : hands_won + hands_lost;
+      const played = Number(row.hands_played) || 0;
+      const hands_played = played > 0 ? played : hands_won + hands_lost;
 
       return {
         ...row,
+        hands_for,
+        hands_against,
         hands_won,
         hands_lost,
         hands_played,
         joses_coefficient: computeJosesCoefficient({
-          gamesPlayed: row.games_played,
-          gamesWon: row.games_won,
-          gamesLost: row.games_lost,
+          gamesPlayed: Number(row.games_played) || 0,
+          gamesWon: Number(row.games_won) || 0,
+          gamesLost: Number(row.games_lost) || 0,
           handsFor: hands_for,
           handsAgainst: hands_against,
-          pointsFor: row.points_for,
-          pointsAgainst: row.points_against,
-          pollosFor: row.pollos_for,
-          pollosAgainst: row.pollos_against,
-          zapatosFor: row.zapatos_for,
-          zapatosAgainst: row.zapatos_against,
+          pointsFor: Number(row.points_for) || 0,
+          pointsAgainst: Number(row.points_against) || 0,
+          pollosFor: Number(row.pollos_for) || 0,
+          pollosAgainst: Number(row.pollos_against) || 0,
+          zapatosFor: Number(row.zapatos_for) || 0,
+          zapatosAgainst: Number(row.zapatos_against) || 0,
         }),
       };
     }),

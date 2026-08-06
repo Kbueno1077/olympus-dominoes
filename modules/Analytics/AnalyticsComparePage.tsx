@@ -69,8 +69,9 @@ export default function AnalyticsComparePage() {
         display: "flex",
         flexDirection: "column",
         flex: 1,
-        minHeight: { md: "calc(100vh - 64px)" },
+        minHeight: 0,
         width: "100%",
+        overflow: { md: "hidden" },
       }}
     >
       <Stack
@@ -79,6 +80,7 @@ export default function AnalyticsComparePage() {
         justifyContent="space-between"
         spacing={1.5}
         sx={{
+          flexShrink: 0,
           px: { xs: 1.5, sm: 2.5 },
           pt: { xs: 2.5, md: 3 },
           pb: 1.75,
@@ -99,7 +101,11 @@ export default function AnalyticsComparePage() {
             noWrap
             title={datasetLabel}
           >
-            {datasetLabel} · {data.players.length} · {data.matches.length}
+            {t("analyticsLoadedMeta", {
+              name: datasetLabel,
+              players: data.players.length,
+              matches: data.matches.length,
+            })}
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -117,21 +123,23 @@ export default function AnalyticsComparePage() {
         </Stack>
       </Stack>
 
-      {modes.length === 0 ? (
-        <Card sx={{ m: 2, p: 3 }}>
-          <Typography sx={{ color: "text.secondary" }}>
-            {t("statsNoData")}
-          </Typography>
-        </Card>
-      ) : (
-        <AnalyticsCompare
-          key={compareKey}
-          data={data}
-          modes={modes}
-          initialMode={compareLaunch?.modeLabel ?? modes[0] ?? null}
-          initialLaunch={compareLaunch}
-        />
-      )}
+      <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        {modes.length === 0 ? (
+          <Card sx={{ m: 2, p: 3 }}>
+            <Typography sx={{ color: "text.secondary" }}>
+              {t("statsNoData")}
+            </Typography>
+          </Card>
+        ) : (
+          <AnalyticsCompare
+            key={compareKey}
+            data={data}
+            modes={modes}
+            initialMode={compareLaunch?.modeLabel ?? modes[0] ?? null}
+            initialLaunch={compareLaunch}
+          />
+        )}
+      </Box>
 
       <StatsDataDrawer
         open={dataDrawerOpen}

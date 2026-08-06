@@ -1,9 +1,9 @@
 "use client";
 
-import History from "@/modules/History/History";
+import Podium from "@/modules/Analytics/Podium";
 import { Box } from "@mui/material";
 
-export default function HistoryPage() {
+export default function PodiumPage() {
   return (
     <Box
       sx={{
@@ -14,7 +14,7 @@ export default function HistoryPage() {
         minHeight: 0,
       }}
     >
-      <History />
+      <Podium />
     </Box>
   );
 }

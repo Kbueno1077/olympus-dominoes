@@ -3,6 +3,9 @@
 import AnalyticsCompareCharts from "@/modules/Analytics/AnalyticsCompareCharts";
 import {
   ControlSection,
+  dashboardAsideSx,
+  dashboardMainSx,
+  dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import {
@@ -438,36 +441,12 @@ export default function AnalyticsCompare({
     (!matchupMode || (alignmentReady && !matchupLoading));
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: { xs: "column", md: "row" },
-        gap: 0,
-        width: "100%",
-        flex: 1,
-        minHeight: { md: 0 },
-        alignItems: "stretch",
-      }}
-    >
+    <Box sx={dashboardShellSx}>
       <Box
         component="aside"
         sx={{
-          width: { xs: "100%", md: 300 },
-          flexShrink: 0,
-          borderRight: {
-            xs: "none",
-            md: "1px solid #C0C0C0",
-          },
-          borderBottom: {
-            xs: "1px solid #C0C0C0",
-            md: "none",
-          },
-          backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.75),
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          p: 2,
-          pt: { xs: 2.5, md: 3 },
-          alignSelf: "stretch",
+          ...dashboardAsideSx,
+          p: 0,
         }}
       >
         <Stack
@@ -482,6 +461,14 @@ export default function AnalyticsCompare({
               }}
             />
           }
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "auto",
+            overscrollBehavior: "contain",
+            p: 2,
+            pt: { xs: 2.5, md: 3 },
+          }}
         >
         <ControlSection
           label={t("statsComparePlayers")}
@@ -640,8 +627,7 @@ export default function AnalyticsCompare({
       <Box
         component="main"
         sx={{
-          flex: 1,
-          minWidth: 0,
+          ...dashboardMainSx,
           px: { xs: 1.5, sm: 2.5 },
           py: { xs: 2, sm: 2.5 },
         }}

@@ -20,3 +20,22 @@ export function perHandAverage(points: number, hands: number): number | null {
   if (hands <= 0) return null;
   return points / hands;
 }
+
+/** Count per game as a percentage of games played (e.g. pollos / G). */
+export function perGameRatePct(
+  count: number,
+  gamesPlayed: number
+): number | null {
+  if (gamesPlayed <= 0) return null;
+  return (count / gamesPlayed) * 100;
+}
+
+export function formatPerGameRatePct(
+  count: number,
+  gamesPlayed: number,
+  fractionDigits = 0
+): string {
+  const pct = perGameRatePct(count, gamesPlayed);
+  if (pct == null) return "—";
+  return `${pct.toFixed(fractionDigits)}%`;
+}

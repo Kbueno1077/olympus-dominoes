@@ -3,6 +3,11 @@
 import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import HistoryGamesNotes from "@/modules/History/HistoryGamesNotes";
+import {
+  dashboardAsideSx,
+  dashboardMainSx,
+  dashboardShellSx,
+} from "@/modules/Analytics/dashboardChrome";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { buildHistoryMatchCompareLaunch } from "@/lib/analytics/compareLaunch";
 import {
@@ -334,11 +339,7 @@ function HistoryDetailView({
   );
 }
 
-type Props = {
-  onOpenAnalytics?: () => void;
-};
-
-export default function History({ onOpenAnalytics }: Props) {
+export default function History() {
   const { t, language, modeName } = useTranslation();
   const router = useRouter();
   const params = useParams();
@@ -488,60 +489,15 @@ export default function History({ onOpenAnalytics }: Props) {
   }
 
   if (!data) {
-    return (
-      <DashboardEmptyState
-        page="history"
-        onOpenStats={onOpenAnalytics}
-      />
-    );
+    return <DashboardEmptyState page="history" />;
   }
 
-  const datasetLabel = activeDataset?.displayName || data.fileName;
-
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: { xs: "column", md: "row" },
-        flex: 1,
-        minHeight: { md: "calc(100vh - 64px)" },
-        width: "100%",
-        backgroundColor: "background.default",
-        alignItems: "stretch",
-      }}
-    >
-      <Box
-        component="aside"
-        sx={{
-          width: { xs: "100%", md: 300 },
-          flexShrink: 0,
-          borderRight: {
-            xs: "none",
-            md: "1px solid #C0C0C0",
-          },
-          borderBottom: {
-            xs: "1px solid #C0C0C0",
-            md: "none",
-          },
-          backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.75),
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          display: "flex",
-          flexDirection: "column",
-          alignSelf: "stretch",
-        }}
-      >
+    <Box sx={dashboardShellSx}>
+      <Box component="aside" sx={dashboardAsideSx}>
         <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 2 }}>
-          <Typography variant="h5" sx={{ mb: 0.25 }}>
+          <Typography variant="h5" sx={{ mb: 1.5 }}>
             {t("historyTitle")}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ color: "text.secondary", display: "block", mb: 1.5 }}
-            noWrap
-            title={datasetLabel}
-          >
-            {datasetLabel}
           </Typography>
 
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -575,6 +531,7 @@ export default function History({ onOpenAnalytics }: Props) {
               flex: 1,
               minHeight: 0,
               overflow: "auto",
+              overscrollBehavior: "contain",
             }}
           >
             <Box
@@ -847,17 +804,7 @@ export default function History({ onOpenAnalytics }: Props) {
         ) : null}
       </Box>
 
-      <Box
-        component="main"
-        sx={{
-          flex: 1,
-          minWidth: 0,
-          px: { xs: 1.5, sm: 2.5, lg: 3 },
-          pt: { xs: 2.5, md: 3 },
-          pb: { xs: 3, sm: 4 },
-          overflow: "auto",
-        }}
-      >
+      <Box component="main" sx={dashboardMainSx}>
         {routeMatchId == null ? (
           <HistoryList
             items={filteredItems}

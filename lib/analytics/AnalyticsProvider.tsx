@@ -91,14 +91,16 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   const applyParsedToActive = useCallback(
     (parsed: OlympusExportData, current: DatasetRegistry) => {
+      // Exports often omit joses_coefficient — persist the current formula.
+      const withJose = recalculateAllJosesCoefficients(parsed);
       const touched = touchDatasetInRegistry(
         current,
         current.activeDatasetId,
-        parsed.fileName
+        withJose.fileName
       );
-      saveDatasetData(current.activeDatasetId, parsed);
+      saveDatasetData(current.activeDatasetId, withJose);
       persistRegistry(touched);
-      setData(parsed);
+      setData(withJose);
       setError(null);
     },
     [persistRegistry]
@@ -129,7 +131,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const importAsNew = useCallback(
     async (file: File, displayName?: string) => {
       const contents = await file.text();
-      const parsed = parseOlympusExport(contents, file.name);
+      const parsed = recalculateAllJosesCoefficients(
+        parseOlympusExport(contents, file.name)
+      );
       const name =
         displayName?.trim() ||
         suggestedDatasetNameFromFile(file.name) ||
@@ -189,7 +193,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   );
 
   const syncJosesCoefficients = useCallback(() => {
-    if (!data) return;
+    if (!data) {
+      throw new Error("no_data");
+    }
     const next = recalculateAllJosesCoefficients(data);
     const touched = touchDatasetInRegistry(
       registry,
