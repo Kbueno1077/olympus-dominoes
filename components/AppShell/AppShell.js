@@ -2,8 +2,14 @@
 
 import Header from "@/components/Header/Header";
 import { Box } from "@mui/material";
+import { usePathname } from "next/navigation";
+
+const FULL_BLEED_PATHS = new Set(["/stats", "/compare"]);
 
 export default function AppShell({ children }) {
+  const pathname = usePathname();
+  const fullBleed = FULL_BLEED_PATHS.has(pathname);
+
   return (
     <Box
       sx={{
@@ -18,8 +24,11 @@ export default function AppShell({ children }) {
         component="section"
         sx={{
           flex: 1,
+          display: "flex",
+          flexDirection: "column",
           pt: 8,
-          pb: { xs: 14, sm: 10 },
+          // Dashboard pages own their bottom edge so the sidebar can reach it.
+          pb: fullBleed ? 0 : { xs: 14, sm: 10 },
         }}
       >
         {children}
