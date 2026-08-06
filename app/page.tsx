@@ -79,16 +79,21 @@ export default function Index() {
         width: "100%",
       }}
     >
-      <Header navItems={navItems} />
+      <Header
+        navItems={navItems}
+        tone={currentView === "dashboard" ? "mesa" : "default"}
+      />
 
-      {/* Generous bottom padding keeps the last card clear of a phone's
-          home indicator and leaves room to scroll past the end. */}
+      {/* Dashboard fills the viewport under the bar; other views keep room to scroll. */}
       <Box
         component="section"
         sx={{
           flex: 1,
           pt: 8,
-          pb: { xs: 14, sm: 10 },
+          pb:
+            currentView === "dashboard"
+              ? 0
+              : { xs: 14, sm: 10 },
         }}
       >
         {currentView === "dashboard" && (

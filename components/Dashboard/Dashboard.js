@@ -5,316 +5,253 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
 import { PlayArrow } from "@mui/icons-material";
-import {
-  Box,
-  Button,
-  Card,
-  Container,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { motion } from "framer-motion";
+import { Bebas_Neue } from "next/font/google";
 import { useRecoilValue } from "recoil";
 
-// The opening hand: a spread of tiles that doubles as the hero art.
-const HERO_TILES = [
-  { top: 9, bottom: 9, rotate: -9 },
-  { top: 6, bottom: 3, rotate: -3 },
-  { top: 5, bottom: 5, rotate: 3 },
-  { top: 2, bottom: 7, rotate: 9 },
+const brandFont = Bebas_Neue({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+/** Baize under the lamp — deeper than UI primary so bones pop. */
+const FELT = "#143D32";
+const FELT_EDGE = "#0A2820";
+const IVORY = "#F7F0E3";
+const IVORY_MUTED = alpha("#F7F0E3", 0.72);
+
+/**
+ * Scattered bones on the table — positions are % of the tile field so the
+ * composition holds on phone and desktop without a media card.
+ */
+const TABLE_TILES = [
+  { top: 9, bottom: 9, x: 8, y: 12, rotate: -18, size: 56 },
+  { top: 6, bottom: 3, x: 28, y: 6, rotate: 8, size: 52 },
+  { top: 5, bottom: 5, x: 48, y: 18, rotate: -6, size: 58 },
+  { top: 2, bottom: 7, x: 68, y: 4, rotate: 14, size: 50 },
+  { top: 8, bottom: 1, x: 14, y: 48, rotate: 22, size: 48 },
+  { top: 4, bottom: 4, x: 38, y: 42, rotate: -12, size: 54 },
+  { top: 0, bottom: 6, x: 58, y: 52, rotate: 4, size: 46 },
+  { top: 9, bottom: 3, x: 78, y: 38, rotate: -20, size: 52 },
+  { top: 7, bottom: 7, x: 72, y: 68, rotate: 10, size: 48 },
+  { top: 3, bottom: 8, x: 22, y: 72, rotate: -8, size: 44 },
 ];
-
-const FEATURE_KEYS = ["featurePlayers", "featureModes", "featureLocal"];
-
-const HOW_STEPS = [
-  { title: "howStep1Title", body: "howStep1Body" },
-  { title: "howStep2Title", body: "howStep2Body" },
-  { title: "howStep3Title", body: "howStep3Body" },
-];
-
-function FeatureRow({ t }) {
-  return (
-    <Stack
-      direction={{ xs: "column", sm: "row" }}
-      spacing={{ xs: 1, sm: 2.5 }}
-      alignItems={{ xs: "center", sm: "flex-start" }}
-      justifyContent={{ xs: "center", md: "flex-start" }}
-      flexWrap="wrap"
-      useFlexGap
-    >
-      {FEATURE_KEYS.map((key) => (
-        <Stack key={key} direction="row" spacing={1} alignItems="center">
-          <Box
-            sx={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              backgroundColor: "primary.main",
-              flexShrink: 0,
-            }}
-          />
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            {t(key)}
-          </Typography>
-        </Stack>
-      ))}
-    </Stack>
-  );
-}
-
-function HowItWorks({ t }) {
-  return (
-    <Box>
-      <Typography
-        variant="overline"
-        component="p"
-        sx={{ color: "text.secondary", mb: 2 }}
-      >
-        {t("howItWorksTitle")}
-      </Typography>
-
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2,
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(3, minmax(0, 1fr))",
-          },
-        }}
-      >
-        {HOW_STEPS.map((step, index) => (
-          <Box key={step.title}>
-            <Typography
-              sx={{
-                fontFamily: (theme) => theme.typography.h2.fontFamily,
-                fontWeight: 700,
-                fontSize: 28,
-                lineHeight: 1,
-                color: (theme) => alpha(theme.palette.primary.main, 0.28),
-                mb: 0.75,
-              }}
-            >
-              {String(index + 1).padStart(2, "0")}
-            </Typography>
-            <Typography
-              variant="subtitle1"
-              sx={{ color: "text.primary", fontWeight: 600, mb: 0.5 }}
-            >
-              {t(step.title)}
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              {t(step.body)}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-    </Box>
-  );
-}
-
-function HistoryNotice({ t, onOpenAnalytics }) {
-  return (
-    <Card
-      sx={{
-        p: { xs: 2.5, sm: 3 },
-        backgroundColor: "background.neutral",
-        borderColor: "divider",
-      }}
-    >
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        alignItems={{ xs: "flex-start", sm: "center" }}
-        justifyContent="space-between"
-      >
-        <Box sx={{ minWidth: 0 }}>
-          <Typography
-            variant="subtitle1"
-            sx={{ color: "text.primary", fontWeight: 600, mb: 0.5 }}
-          >
-            {t("webHistoryTitle")}
-          </Typography>
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            {t("webHistoryBody")}
-          </Typography>
-        </Box>
-        <Stack
-          direction={{ xs: "row", sm: "column" }}
-          spacing={1}
-          alignItems={{ xs: "center", sm: "flex-end" }}
-          sx={{ flexShrink: 0 }}
-        >
-          <Typography
-            variant="overline"
-            sx={{
-              color: "text.disabled",
-              fontSize: 10,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {t("webHistoryNote")}
-          </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={onOpenAnalytics}
-          >
-            {t("webHistoryCta")}
-          </Button>
-        </Stack>
-      </Stack>
-    </Card>
-  );
-}
 
 export default function Dashboard({ onStartNewGame, onOpenAnalytics }) {
   const { t } = useTranslation();
   const hasMounted = useHasMounted();
   const isGameStarted = useRecoilValue(isGameStartedRecoil);
-  // Persist only after mount so SSR HTML matches the first client paint.
   const matchInProgress = hasMounted && isGameStarted;
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 6, md: 7 } }}>
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+    <Box
+      sx={{
+        position: "relative",
+        minHeight: { xs: "calc(100dvh - 64px)", md: "calc(100dvh - 64px)" },
+        overflow: "hidden",
+        color: IVORY,
+        background: `
+          radial-gradient(ellipse 90% 70% at 70% 40%, ${alpha("#1F6B58", 0.55)} 0%, transparent 55%),
+          radial-gradient(ellipse 60% 50% at 15% 80%, ${alpha("#0D382E", 0.9)} 0%, transparent 50%),
+          linear-gradient(160deg, ${FELT} 0%, ${FELT_EDGE} 100%)
+        `,
+        // Soft felt grain
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          opacity: 0.35,
+          backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(
+            `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.05 0 0 0 0 0.12 0 0 0 0 0.09 0 0 0 0.45 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`
+          )}")`,
+          mixBlendMode: "overlay",
+        },
+        // Wood rail at the outer edge
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          boxShadow: `
+            inset 0 0 0 10px ${alpha("#3D3427", 0.55)},
+            inset 0 0 0 12px ${alpha("#241D14", 0.35)},
+            inset 0 0 80px ${alpha("#000", 0.35)}
+          `,
+        },
+      }}
+    >
+      <Box
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 0.95fr) minmax(0, 1.05fr)" },
+          gap: { xs: 3, md: 2 },
+          alignItems: "center",
+          minHeight: "inherit",
+          px: { xs: 2.5, sm: 4, md: 6, lg: 8 },
+          py: { xs: 4, md: 5 },
+          pb: { xs: 8, md: 5 },
+        }}
       >
-        <Stack spacing={{ xs: 4, md: 5 }}>
-          <Box
-            sx={{
-              display: "grid",
-              gap: { xs: 4, md: 5 },
-              alignItems: "center",
-              gridTemplateColumns: { xs: "1fr", md: "1.15fr 0.85fr" },
+        <Stack
+          spacing={3}
+          sx={{
+            position: "relative",
+            zIndex: 2,
+            maxWidth: 440,
+            pt: { xs: 1, md: 0 },
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Typography
+              component="h1"
+              className={brandFont.className}
+              sx={{
+                fontSize: { xs: "4.25rem", sm: "5.5rem", md: "6.75rem" },
+                lineHeight: 0.9,
+                letterSpacing: "0.02em",
+                color: IVORY,
+                textShadow: `0 2px 24px ${alpha("#000", 0.35)}`,
+                mb: 1.5,
+              }}
+            >
+              {t("brandName")}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: { xs: 16, sm: 17 },
+                lineHeight: 1.45,
+                color: IVORY_MUTED,
+                maxWidth: 320,
+                fontWeight: 400,
+              }}
+            >
+              {t("heroSubtitle")}
+            </Typography>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.5,
+              delay: 0.18,
+              ease: [0.22, 1, 0.36, 1],
             }}
           >
-            <Stack
-              spacing={3}
-              alignItems={{ xs: "center", md: "flex-start" }}
-              textAlign={{ xs: "center", md: "left" }}
-            >
-              <Stack
-                direction="row"
-                spacing={-0.5}
-                justifyContent={{ xs: "center", md: "flex-start" }}
-                sx={{ pt: 1 }}
+            <Stack spacing={1.25} alignItems="flex-start">
+              <Button
+                onClick={onStartNewGame}
+                variant="contained"
+                size="large"
+                startIcon={<PlayArrow />}
+                sx={{
+                  px: 3,
+                  py: 1.35,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  backgroundColor: IVORY,
+                  color: FELT_EDGE,
+                  boxShadow: `0 8px 28px ${alpha("#000", 0.35)}`,
+                  "&:hover": {
+                    backgroundColor: "#FDFAF4",
+                    boxShadow: `0 10px 32px ${alpha("#000", 0.4)}`,
+                  },
+                }}
               >
-                {HERO_TILES.map((tile, i) => (
-                  <motion.div
-                    key={`${tile.top}-${tile.bottom}`}
-                    initial={{ opacity: 0, y: 18, rotate: 0 }}
-                    animate={{ opacity: 1, y: 0, rotate: tile.rotate }}
-                    transition={{
-                      duration: 0.45,
-                      delay: 0.08 * i,
-                      ease: "easeOut",
-                    }}
-                  >
-                    <DominoTile top={tile.top} bottom={tile.bottom} size={38} />
-                  </motion.div>
-                ))}
-              </Stack>
-
-              <Stack
-                spacing={1.5}
-                alignItems={{ xs: "center", md: "flex-start" }}
-              >
-                <Typography variant="h2" sx={{ color: "text.primary" }}>
-                  {t("heroTitle")}
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{ color: "text.secondary", maxWidth: 480 }}
-                >
-                  {t("heroSubtitle")}
-                </Typography>
-              </Stack>
-
-              <FeatureRow t={t} />
-            </Stack>
-
-            <Card
-              sx={{
-                width: "100%",
-                p: { xs: 3, sm: 4 },
-                backgroundColor: "background.paper",
-                borderColor: (theme) =>
-                  alpha(
-                    theme.palette[matchInProgress ? "secondary" : "primary"].main,
-                    0.24
-                  ),
-              }}
-            >
-              <Stack spacing={2.5} alignItems="center">
-                <Typography variant="h5" sx={{ color: "text.primary" }}>
-                  {t(matchInProgress ? "continueReadyTitle" : "readyTitle")}
-                </Typography>
+                {t(matchInProgress ? "continueMatch" : "startMatch")}
+              </Button>
+              {matchInProgress ? (
                 <Typography
                   variant="body2"
-                  sx={{
-                    color: "text.secondary",
-                    maxWidth: 340,
-                    textAlign: "center",
-                  }}
+                  sx={{ color: alpha(IVORY, 0.55), pl: 0.5 }}
                 >
-                  {t(matchInProgress ? "continueReadyBody" : "readyBody")}
+                  {t("continueReadyBody")}
                 </Typography>
-                <Button
-                  onClick={onStartNewGame}
-                  variant="contained"
-                  size="large"
-                  fullWidth
-                  startIcon={<PlayArrow />}
-                  sx={{ maxWidth: 280, fontSize: 15 }}
-                >
-                  {t(matchInProgress ? "continueMatch" : "startMatch")}
-                </Button>
-              </Stack>
-            </Card>
-          </Box>
+              ) : null}
+            </Stack>
+          </motion.div>
 
-          <Box
-            sx={{
-              display: { xs: "none", md: "block" },
-              width: 44,
-              height: "2px",
-              borderRadius: 1,
-              mx: "auto",
-              backgroundColor: (theme) =>
-                alpha(theme.palette.secondary.main, 0.5),
-            }}
-          />
-
-          <Box sx={{ display: { xs: "none", md: "block" } }}>
-            <HowItWorks t={t} />
-          </Box>
-
-          <HistoryNotice t={t} onOpenAnalytics={onOpenAnalytics} />
-
-          <Stack spacing={1.5} alignItems="center" sx={{ pt: 1 }}>
-            <Box
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.45 }}
+          >
+            <Button
+              onClick={onOpenAnalytics}
+              variant="text"
+              size="small"
               sx={{
-                width: 44,
-                height: "2px",
-                borderRadius: 1,
-                backgroundColor: (theme) =>
-                  alpha(theme.palette.secondary.main, 0.5),
-                display: { md: "none" },
+                color: alpha(IVORY, 0.55),
+                px: 0.5,
+                minWidth: 0,
+                fontWeight: 500,
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+                textDecorationColor: alpha(IVORY, 0.25),
+                "&:hover": {
+                  color: IVORY,
+                  backgroundColor: "transparent",
+                  textDecorationColor: alpha(IVORY, 0.5),
+                },
               }}
-            />
-            <Typography
-              variant="overline"
-              sx={{ color: "text.disabled", fontSize: 10 }}
             >
-              {t("madeForTheTable")}
-            </Typography>
-          </Stack>
+              {t("mesaAnalyticsLink")}
+            </Button>
+          </motion.div>
         </Stack>
-      </motion.div>
-    </Container>
+
+        {/* Tile field — dominant visual plane, not a card */}
+        <Box
+          aria-hidden
+          sx={{
+            position: "relative",
+            width: "100%",
+            height: { xs: 280, sm: 340, md: "min(62vh, 520px)" },
+            minHeight: { md: 380 },
+            mt: { xs: 1, md: 0 },
+          }}
+        >
+          {TABLE_TILES.map((tile, i) => (
+            <motion.div
+              key={`${tile.top}-${tile.bottom}-${i}`}
+              initial={{ opacity: 0, y: 28, rotate: 0, scale: 0.92 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                rotate: tile.rotate,
+                scale: 1,
+              }}
+              transition={{
+                duration: 0.55,
+                delay: 0.12 + i * 0.045,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              style={{
+                position: "absolute",
+                left: `${tile.x}%`,
+                top: `${tile.y}%`,
+                filter: `drop-shadow(0 10px 18px ${alpha("#000", 0.45)})`,
+              }}
+            >
+              <DominoTile
+                top={tile.top}
+                bottom={tile.bottom}
+                size={tile.size}
+              />
+            </motion.div>
+          ))}
+        </Box>
+      </Box>
+    </Box>
   );
 }

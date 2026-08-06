@@ -19,12 +19,15 @@ import { useEffect, useState } from "react";
 /**
  * @param {{
  *   navItems?: Array<{ id: string, label: string, active?: boolean, onClick: () => void }>,
+ *   tone?: "default" | "mesa",
  * }} [props]
  */
-export default function Header({ navItems = [] }) {
+export default function Header({ navItems = [], tone = "default" }) {
   const theme = useTheme();
   const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
+  const mesa = tone === "mesa";
+  const ivory = "#F7F0E3";
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 8);
@@ -38,13 +41,16 @@ export default function Header({ navItems = [] }) {
       position="fixed"
       elevation={0}
       sx={{
-        backgroundColor: alpha(theme.palette.grey[100], isScrolled ? 0.92 : 0.75),
+        backgroundColor: mesa
+          ? alpha("#0A2820", isScrolled ? 0.92 : 0.45)
+          : alpha(theme.palette.grey[100], isScrolled ? 0.92 : 0.75),
         backdropFilter: "blur(12px)",
-        color: "text.primary",
-        borderBottom: `1px solid ${alpha(
-          theme.palette.grey[600],
-          isScrolled ? 0.24 : 0
-        )}`,
+        color: mesa ? ivory : "text.primary",
+        borderBottom: `1px solid ${
+          mesa
+            ? alpha(ivory, isScrolled ? 0.12 : 0)
+            : alpha(theme.palette.grey[600], isScrolled ? 0.24 : 0)
+        }`,
         boxShadow: isScrolled ? theme.customShadows.z8 : "none",
         transition: "background-color 200ms ease, border-color 200ms ease",
       }}
@@ -77,16 +83,26 @@ export default function Header({ navItems = [] }) {
                 color="inherit"
                 onClick={item.onClick}
                 sx={{
-                  color: item.active ? "primary.dark" : "text.secondary",
+                  color: mesa
+                    ? item.active
+                      ? ivory
+                      : alpha(ivory, 0.65)
+                    : item.active
+                      ? "primary.dark"
+                      : "text.secondary",
                   fontWeight: item.active ? 600 : 500,
                   px: { xs: 1, sm: 1.5 },
                   minWidth: 0,
                   backgroundColor: item.active
-                    ? (muiTheme) => alpha(muiTheme.palette.primary.main, 0.08)
+                    ? mesa
+                      ? alpha(ivory, 0.1)
+                      : (muiTheme) => alpha(muiTheme.palette.primary.main, 0.08)
                     : "transparent",
                   "&:hover": {
-                    backgroundColor: (muiTheme) =>
-                      alpha(muiTheme.palette.primary.main, 0.1),
+                    backgroundColor: mesa
+                      ? alpha(ivory, 0.12)
+                      : (muiTheme) =>
+                          alpha(muiTheme.palette.primary.main, 0.1),
                   },
                 }}
               >
@@ -106,14 +122,15 @@ export default function Header({ navItems = [] }) {
 
               <Box>
                 <Typography
-                  component="h1"
+                  component="p"
                   sx={{
-                    fontFamily: (theme) => theme.typography.h2.fontFamily,
+                    fontFamily: (muiTheme) =>
+                      muiTheme.typography.h2.fontFamily,
                     fontWeight: 700,
                     fontSize: { xs: 19, sm: 22 },
                     lineHeight: 1.1,
                     letterSpacing: "-0.01em",
-                    color: "primary.dark",
+                    color: mesa ? ivory : "primary.dark",
                   }}
                 >
                   Olympus Dominoes
@@ -122,7 +139,7 @@ export default function Header({ navItems = [] }) {
                   variant="overline"
                   sx={{
                     display: { xs: "none", sm: "block" },
-                    color: "text.disabled",
+                    color: mesa ? alpha(ivory, 0.45) : "text.disabled",
                     fontSize: 9,
                     lineHeight: 1.4,
                   }}
@@ -143,7 +160,7 @@ export default function Header({ navItems = [] }) {
               minWidth: 0,
             }}
           >
-            <LanguageSwitch />
+            <LanguageSwitch tone={tone} />
           </Stack>
         </Toolbar>
       </Container>

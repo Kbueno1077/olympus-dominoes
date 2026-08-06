@@ -42,10 +42,10 @@ const en = {
   mode2v2: "2 vs 2",
   modeFreeForAll: "Free for all",
 
-  // Dashboard
+  // Dashboard — mesa-first home
+  brandName: "Olympus",
   heroTitle: "Keep score, not arguments",
-  heroSubtitle:
-    "A clean scorepad for Cuban dominoes. Set the table, tally each hand, and let the app call the winner.",
+  heroSubtitle: "Cuban double-nine scorepad for the table.",
   featurePlayers: "2 to 4 players",
   featureModes: "Partners or free for all",
   featureLocal: "Active match kept in this browser",
@@ -54,8 +54,8 @@ const en = {
     "Name the players, pick a mode and a target score. Takes about twenty seconds.",
   continueReadyTitle: "Match in progress",
   continueReadyBody:
-    "Pick up where you left off. Scores and the table stay until you end the match.",
-  startMatch: "Start a new match",
+    "Scores and the table stay until you end the match.",
+  startMatch: "Start a match",
   continueMatch: "Continue match",
   madeForTheTable: "Made for the table",
   howItWorksTitle: "How it works",
@@ -70,6 +70,7 @@ const en = {
     "Export a save from the mobile app (CSV or SQL), then open Analytics to load it. History and player stats use that same save.",
   webHistoryNote: "Upload a save",
   webHistoryCta: "Open analytics",
+  mesaAnalyticsLink: "Bring a save from the app →",
 
   // Analytics
   analyticsTitle: "Analytics",
@@ -299,10 +300,10 @@ const es = {
   mode2v2: "2 vs 2",
   modeFreeForAll: "Todos contra todos",
 
-  // Dashboard
+  // Dashboard — mesa-first home
+  brandName: "Olympus",
   heroTitle: "Anota los puntos, no las discusiones",
-  heroSubtitle:
-    "Una libreta limpia para el dominó cubano. Arma la mesa, anota cada mano y deja que la app cante al ganador.",
+  heroSubtitle: "Libreta de dominó cubano doble nueve.",
   featurePlayers: "De 2 a 4 jugadores",
   featureModes: "En parejas o todos contra todos",
   featureLocal: "La partida activa se guarda en este navegador",
@@ -311,8 +312,8 @@ const es = {
     "Pon los nombres, elige el modo y los puntos. Toma unos veinte segundos.",
   continueReadyTitle: "Partida en curso",
   continueReadyBody:
-    "Sigue donde la dejaste. Los puntos y la mesa se quedan hasta que termines la partida.",
-  startMatch: "Empezar una partida",
+    "Los puntos y la mesa se quedan hasta que termines la partida.",
+  startMatch: "Empezar partida",
   continueMatch: "Continuar partida",
   madeForTheTable: "Hecho para la mesa",
   howItWorksTitle: "Cómo funciona",
@@ -327,6 +328,7 @@ const es = {
     "Exporta un respaldo desde la app móvil (CSV o SQL) y ábrelo en Analítica. El historial y las estadísticas usan ese mismo archivo.",
   webHistoryNote: "Sube un respaldo",
   webHistoryCta: "Abrir analítica",
+  mesaAnalyticsLink: "Trae un respaldo de la app →",
 
   // Analytics
   analyticsTitle: "Analítica",
