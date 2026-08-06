@@ -1,12 +1,14 @@
 "use client";
 
-import AnalyticsCharts from "@/modules/Analytics/AnalyticsCharts";
-import DatasetsPanel from "@/modules/Analytics/DatasetsPanel";
+import StatsDashboardCharts from "@/modules/Analytics/StatsDashboardCharts";
+import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
+import {
+  DashboardPanel,
+  MetricTile,
+} from "@/modules/Analytics/dashboardChrome";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { buildH2HCompareLaunch } from "@/lib/analytics/compareLaunch";
-import {
-  formatJosesCoefficient,
-} from "@/lib/analytics/joseCoefficient";
+import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import {
   formatSignedDiff,
   perHandAverage,
@@ -19,6 +21,8 @@ import {
 } from "@/lib/analytics/selectors";
 import { useTranslation } from "@/i18n/useTranslation";
 import useToast from "@/hooks/useToast";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import SyncIcon from "@mui/icons-material/Sync";
 import {
   CloudUpload,
   InsertDriveFile,
@@ -27,6 +31,7 @@ import {
   Box,
   Button,
   Card,
+  Chip,
   CircularProgress,
   Stack,
   ToggleButton,
@@ -34,9 +39,29 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ComponentType,
+} from "react";
+
+const LazyCharts = dynamic(
+  () => import("@/modules/Analytics/StatsDashboardCharts"),
+  {
+    ssr: false,
+    loading: () => (
+      <Box sx={{ display: "grid", placeItems: "center", minHeight: 280 }}>
+        <CircularProgress size={28} />
+      </Box>
+    ),
+  }
+) as ComponentType<ComponentProps<typeof StatsDashboardCharts>>;
 
 function StatLine({
   label,
@@ -52,7 +77,7 @@ function StatLine({
       direction="row"
       justifyContent="space-between"
       alignItems="center"
-      sx={{ py: 0.5 }}
+      sx={{ py: 0.45 }}
     >
       <Typography variant="body2" sx={{ color: "text.secondary" }}>
         {label}
@@ -201,9 +226,11 @@ export default function Analytics() {
     importFile,
     syncJosesCoefficients,
     setPendingCompare,
+    activeDataset,
   } = useAnalytics();
   const [busy, setBusy] = useState(false);
   const [syncingCoef, setSyncingCoef] = useState(false);
+  const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
   const [modeLabel, setModeLabel] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<number | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -288,6 +315,10 @@ export default function Analytics() {
     router.push("/compare");
   };
 
+  const selectPlayer = (id: number) => {
+    startTransition(() => setPlayerId(id));
+  };
+
   const errorMessage = (() => {
     const code = localError || error;
     if (!code) return null;
@@ -299,7 +330,7 @@ export default function Analytics() {
 
   if (loading) {
     return (
-      <Box sx={{ display: "grid", placeItems: "center", py: 10 }}>
+      <Box sx={{ display: "grid", placeItems: "center", minHeight: "60vh" }}>
         <CircularProgress />
       </Box>
     );
@@ -307,7 +338,15 @@ export default function Analytics() {
 
   if (!data) {
     return (
-      <Box sx={{ maxWidth: 720, mx: "auto", width: "100%" }}>
+      <Box
+        sx={{
+          maxWidth: 720,
+          mx: "auto",
+          width: "100%",
+          px: { xs: 2, sm: 3 },
+          py: 3,
+        }}
+      >
         <Stack spacing={2}>
           <Box>
             <Typography variant="h4" sx={{ mb: 0.75 }}>
@@ -318,213 +357,385 @@ export default function Analytics() {
             </Typography>
           </Box>
           <UploadPanel onFile={handleUpload} busy={busy} />
-          <DatasetsPanel />
+          <Button
+            variant="outlined"
+            startIcon={<FolderOpenIcon />}
+            onClick={() => setDataDrawerOpen(true)}
+          >
+            {t("statsManageData")}
+          </Button>
           {errorMessage ? (
             <Typography variant="body2" sx={{ color: "error.main" }}>
               {errorMessage}
             </Typography>
           ) : null}
         </Stack>
+        <StatsDataDrawer
+          open={dataDrawerOpen}
+          onClose={() => setDataDrawerOpen(false)}
+        />
       </Box>
     );
   }
 
-  return (
-    <Box sx={{ maxWidth: 960, mx: "auto", width: "100%" }}>
-      <Stack spacing={2}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          spacing={1.5}
-        >
-          <Box>
-            <Typography variant="h4" sx={{ mb: 0.5 }}>
-              {t("statsTitle")}
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              {t("analyticsLoadedMeta", {
-                file: data.fileName,
-                players: data.players.length,
-                matches: data.matches.length,
-              })}
-            </Typography>
-          </Box>
-          <Button component={Link} href="/compare" variant="outlined">
-            {t("statsCompare")}
-          </Button>
-        </Stack>
+  const datasetLabel = activeDataset?.displayName || data.fileName;
 
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        flex: 1,
+        // Fill the shell under the header; grow with content.
+        minHeight: { md: "calc(100vh - 64px)" },
+        width: "100%",
+        backgroundColor: "background.default",
+        alignItems: "stretch",
+      }}
+    >
+      {/* Sidebar */}
+      <Box
+        component="aside"
+        sx={{
+          width: { xs: "100%", md: 300 },
+          flexShrink: 0,
+          // Full shorthand — MUI ignores borderColor when borderRight is only "1px solid".
+          borderRight: {
+            xs: "none",
+            md: "1px solid #C0C0C0",
+          },
+          borderBottom: {
+            xs: "1px solid #C0C0C0",
+            md: "none",
+          },
+          // Same frosted bone as the navbar (grey[100] @ 75%).
+          backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.75),
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          display: "flex",
+          flexDirection: "column",
+          alignSelf: "stretch",
+        }}
+      >
+        <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 1.5 }}>
+          <Stack
+            direction="row"
+            alignItems="flex-start"
+            justifyContent="space-between"
+            spacing={1}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h5" sx={{ mb: 0.25 }}>
+                {t("statsTitle")}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: "text.secondary", display: "block" }}
+                noWrap
+                title={datasetLabel}
+              >
+                {datasetLabel}
+              </Typography>
+            </Box>
+            <Button
+              component={Link}
+              href="/compare"
+              size="small"
+              variant="outlined"
+              sx={{ flexShrink: 0 }}
+            >
+              {t("statsCompareShort")}
+            </Button>
+          </Stack>
+
+          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
+            <Chip
+              size="small"
+              icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
+              label={t("statsManageData")}
+              onClick={() => setDataDrawerOpen(true)}
+              variant="outlined"
+              clickable
+            />
+            <Chip
+              size="small"
+              icon={<SyncIcon sx={{ fontSize: 16 }} />}
+              label={t("syncJosesCoefficientShort")}
+              onClick={handleSyncJoses}
+              disabled={syncingCoef}
+              variant="outlined"
+              clickable
+            />
+          </Stack>
+        </Box>
+
+        {modes.length > 0 ? (
+          <Box sx={{ px: 2, pb: 1.5 }}>
+            <Typography
+              variant="overline"
+              component="p"
+              sx={{ color: "text.secondary", mb: 0.75 }}
+            >
+              {t("format")}
+            </Typography>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              fullWidth
+              value={activeMode}
+              onChange={(_, value) => {
+                if (value) setModeLabel(value);
+              }}
+              sx={{ flexWrap: "wrap" }}
+            >
+              {modes.map((mode) => (
+                <ToggleButton key={mode} value={mode} sx={{ flex: 1 }}>
+                  {modeName(mode)}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
+        ) : null}
+
+        <Box
+          sx={{
+            flex: 1,
+            overflow: "auto",
+            px: 1,
+            pb: 2,
+            contentVisibility: "auto",
+          }}
+        >
+          <Typography
+            variant="overline"
+            component="p"
+            sx={{ color: "text.secondary", px: 1, mb: 0.5 }}
+          >
+            {t("statsLeaderboard")}
+          </Typography>
+          {leaderboard.length === 0 ? (
+            <Typography
+              variant="body2"
+              sx={{ color: "text.secondary", px: 1, py: 2 }}
+            >
+              {t("statsNoData")}
+            </Typography>
+          ) : (
+            <Stack>
+              {leaderboard.map((row, index) => {
+                const selected = row.playerId === selectedPlayerId;
+                return (
+                  <Box
+                    key={row.playerId}
+                    component="button"
+                    type="button"
+                    onClick={() => selectPlayer(row.playerId)}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.25,
+                      width: "100%",
+                      textAlign: "left",
+                      border: 0,
+                      borderBottom: "1px solid",
+                      borderColor: (theme) =>
+                        alpha(theme.palette.grey[600], 0.12),
+                      backgroundColor: "transparent",
+                      borderRadius: 0,
+                      px: 1,
+                      py: 1.05,
+                      cursor: "pointer",
+                      color: "inherit",
+                      font: "inherit",
+                      opacity: selected ? 1 : 0.72,
+                      "&:hover": {
+                        opacity: 1,
+                        backgroundColor: (theme) =>
+                          alpha(theme.palette.grey[700], 0.04),
+                      },
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        width: 20,
+                        color: "text.secondary",
+                        fontVariantNumeric: "tabular-nums",
+                        fontSize: 13,
+                      }}
+                    >
+                      {index + 1}
+                    </Typography>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        sx={{
+                          fontWeight: selected ? 600 : 500,
+                          color: selected ? "text.primary" : "text.secondary",
+                        }}
+                        noWrap
+                      >
+                        {row.playerName}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary" }}
+                      >
+                        {t("statsRecord", {
+                          wins: row.gamesWon,
+                          losses: row.gamesLost,
+                        })}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontWeight: selected ? 700 : 500,
+                        color: selected ? "text.primary" : "text.secondary",
+                        fontVariantNumeric: "tabular-nums",
+                        fontSize: 14,
+                      }}
+                    >
+                      {formatJosesCoefficient(row.josesCoefficient)}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Stack>
+          )}
+        </Box>
+      </Box>
+
+      {/* Main dashboard */}
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          px: { xs: 1.5, sm: 2.5, lg: 3 },
+          pt: { xs: 2.5, md: 3 },
+          pb: { xs: 3, sm: 4 },
+          overflow: "auto",
+        }}
+      >
         {errorMessage ? (
-          <Typography variant="body2" sx={{ color: "error.main" }}>
+          <Typography variant="body2" sx={{ color: "error.main", mb: 2 }}>
             {errorMessage}
           </Typography>
         ) : null}
 
         {modes.length === 0 ? (
-          <>
-            <DatasetsPanel />
-            <Card sx={{ p: 3 }}>
-              <Typography sx={{ color: "text.secondary" }}>
-                {t("statsNoData")}
-              </Typography>
-            </Card>
-          </>
+          <Card sx={{ p: 3 }}>
+            <Typography sx={{ color: "text.secondary" }}>
+              {t("statsNoData")}
+            </Typography>
+          </Card>
         ) : (
-          <>
-            <DatasetsPanel />
+          <Stack spacing={2.5}>
+            {selectedPlayer && activeStats ? (
+              <Box>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: "flex-start", sm: "center" }}
+                  spacing={1}
+                  sx={{ mb: 1.5 }}
+                >
+                  <Box>
+                    <Typography variant="h5" sx={{ mb: 0.25 }}>
+                      {selectedPlayer.name}
+                      {selectedPlayer.is_myself ? (
+                        <Typography
+                          component="span"
+                          variant="overline"
+                          sx={{ ml: 1, color: "primary.main" }}
+                        >
+                          {t("youBadge")}
+                        </Typography>
+                      ) : null}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      {modeName(activeMode ?? "")} ·{" "}
+                      {t("analyticsLoadedMeta", {
+                        file: data.fileName,
+                        players: data.players.length,
+                        matches: data.matches.length,
+                      })}
+                    </Typography>
+                  </Box>
+                </Stack>
 
-            <Card sx={{ p: 2 }}>
-              <Typography
-                variant="overline"
-                component="p"
-                sx={{ color: "text.secondary", mb: 1 }}
-              >
-                {t("format")}
-              </Typography>
-              <ToggleButtonGroup
-                exclusive
-                size="small"
-                value={activeMode}
-                onChange={(_, value) => {
-                  if (value) setModeLabel(value);
-                }}
-                sx={{ flexWrap: "wrap" }}
-              >
-                {modes.map((mode) => (
-                  <ToggleButton key={mode} value={mode}>
-                    {modeName(mode)}
-                  </ToggleButton>
-                ))}
-              </ToggleButtonGroup>
-            </Card>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "repeat(2, minmax(0, 1fr))",
+                      sm: "repeat(3, minmax(0, 1fr))",
+                      lg: "repeat(6, minmax(0, 1fr))",
+                    },
+                    gap: 1,
+                  }}
+                >
+                  <MetricTile
+                    label={t("statsJosesCoefficient")}
+                    value={formatJosesCoefficient(activeStats.josesCoefficient)}
+                    valueColor="primary.main"
+                  />
+                  <MetricTile
+                    label={t("statsRecord", {
+                      wins: activeStats.gamesWon,
+                      losses: activeStats.gamesLost,
+                    })}
+                    value={`${activeStats.gamesWon}–${activeStats.gamesLost}`}
+                  />
+                  <MetricTile
+                    label={t("statsHandsTotal")}
+                    value={activeStats.handsPlayed}
+                  />
+                  <MetricTile
+                    label={t("statsAbbrHandsWon")}
+                    value={activeStats.handsWon}
+                  />
+                  <MetricTile
+                    label={t("statsAbbrHandsLost")}
+                    value={activeStats.handsLost}
+                  />
+                  <MetricTile
+                    label={t("statsAbbrGameDifference")}
+                    value={formatSignedDiff(
+                      activeStats.gamesWon - activeStats.gamesLost
+                    )}
+                    valueColor={
+                      activeStats.gamesWon - activeStats.gamesLost > 0
+                        ? "primary.main"
+                        : activeStats.gamesWon - activeStats.gamesLost < 0
+                          ? "error.main"
+                          : "text.primary"
+                    }
+                  />
+                </Box>
+              </Box>
+            ) : null}
 
-            <AnalyticsCharts
+            <LazyCharts
               leaderboard={leaderboard}
               activeStats={activeStats}
               playerName={selectedPlayer?.name ?? null}
-              syncing={syncingCoef}
-              onSync={handleSyncJoses}
               t={t}
             />
 
-            <Card sx={{ p: 2 }}>
-              <Typography
-                variant="overline"
-                component="p"
-                sx={{ color: "text.secondary", mb: 1 }}
-              >
-                {t("statsLeaderboard")}
-              </Typography>
-              {leaderboard.length === 0 ? (
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  {t("statsNoData")}
-                </Typography>
-              ) : (
-                <Stack>
-                  {leaderboard.map((row, index) => {
-                    const selected = row.playerId === selectedPlayerId;
-                    return (
-                      <Box
-                        key={row.playerId}
-                        component="button"
-                        type="button"
-                        onClick={() => setPlayerId(row.playerId)}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.5,
-                          width: "100%",
-                          textAlign: "left",
-                          border: 0,
-                          borderTop: "1px solid",
-                          borderColor: selected ? "transparent" : "divider",
-                          backgroundColor: selected
-                            ? (theme) =>
-                                alpha(theme.palette.primary.main, 0.08)
-                            : "transparent",
-                          borderRadius: selected ? 1.5 : 0,
-                          px: selected ? 1 : 0.5,
-                          py: 1.25,
-                          cursor: "pointer",
-                          color: "inherit",
-                          font: "inherit",
-                          "&:hover": {
-                            backgroundColor: (theme) =>
-                              alpha(theme.palette.primary.main, 0.06),
-                          },
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            width: 22,
-                            color: "text.secondary",
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {index + 1}
-                        </Typography>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <Typography sx={{ fontWeight: 600 }}>
-                              {row.playerName}
-                            </Typography>
-                            {row.isMyself ? (
-                              <Typography
-                                variant="overline"
-                                sx={{
-                                  color: "primary.main",
-                                  fontSize: 10,
-                                  lineHeight: 1,
-                                }}
-                              >
-                                {t("youBadge")}
-                              </Typography>
-                            ) : null}
-                          </Stack>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "text.secondary" }}
-                          >
-                            {t("statsRecord", {
-                              wins: row.gamesWon,
-                              losses: row.gamesLost,
-                            })}
-                          </Typography>
-                        </Box>
-                        <Typography
-                          sx={{
-                            fontWeight: 700,
-                            color: "primary.main",
-                            minWidth: 48,
-                            textAlign: "right",
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {formatJosesCoefficient(row.josesCoefficient)}
-                        </Typography>
-                      </Box>
-                    );
-                  })}
-                </Stack>
-              )}
-            </Card>
-
             {selectedPlayer && activeStats ? (
-              <>
-                <Card sx={{ p: 2 }}>
-                  <Typography
-                    variant="overline"
-                    component="p"
-                    sx={{ color: "text.secondary", mb: 1 }}
-                  >
-                    {selectedPlayer.name}
-                    {selectedPlayer.is_myself ? ` · ${t("youBadge")}` : ""}
-                  </Typography>
-                  <StatLine
-                    label={t("statsJosesCoefficient")}
-                    value={formatJosesCoefficient(activeStats.josesCoefficient)}
-                  />
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 2,
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    lg: "minmax(0, 1.2fr) minmax(0, 1fr)",
+                  },
+                }}
+              >
+                <DashboardPanel title={t("statsDetailTitle")}>
                   <StatLine
                     label={t("statsGamesPlayed")}
                     value={activeStats.gamesPlayed}
@@ -644,22 +855,12 @@ export default function Analytics() {
                     favor={activeStats.zapatosFor}
                     against={activeStats.zapatosAgainst}
                   />
-                </Card>
+                </DashboardPanel>
 
-                <Card sx={{ p: 2 }}>
-                  <Typography
-                    variant="overline"
-                    component="p"
-                    sx={{ color: "text.secondary", mb: 1 }}
-                  >
-                    {t("statsH2HTitle")}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "text.secondary", display: "block", mb: 1 }}
-                  >
-                    {t("statsH2HCompareHint")}
-                  </Typography>
+                <DashboardPanel
+                  title={t("statsH2HTitle")}
+                  hint={t("statsH2HCompareHint")}
+                >
                   {h2h.length === 0 ? (
                     <Typography
                       variant="body2"
@@ -715,12 +916,17 @@ export default function Analytics() {
                       ))}
                     </Stack>
                   )}
-                </Card>
-              </>
+                </DashboardPanel>
+              </Box>
             ) : null}
-          </>
+          </Stack>
         )}
-      </Stack>
+      </Box>
+
+      <StatsDataDrawer
+        open={dataDrawerOpen}
+        onClose={() => setDataDrawerOpen(false)}
+      />
     </Box>
   );
 }

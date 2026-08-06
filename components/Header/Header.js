@@ -33,16 +33,20 @@ export default function Header() {
     <AppBar
       position="fixed"
       elevation={0}
+      color="inherit"
       sx={{
-        backgroundColor: alpha(theme.palette.grey[100], isScrolled ? 0.92 : 0.75),
+        // Frosted bone chrome — shared with Stats/Compare sidebars.
+        backgroundColor: alpha(theme.palette.grey[100], 0.75),
+        backgroundImage: "none",
         backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
         color: "text.primary",
         borderBottom: `1px solid ${alpha(
           theme.palette.grey[600],
           isScrolled ? 0.24 : 0
         )}`,
         boxShadow: isScrolled ? theme.customShadows.z8 : "none",
-        transition: "background-color 200ms ease, border-color 200ms ease",
+        transition: "border-color 200ms ease, box-shadow 200ms ease",
       }}
     >
       <Container maxWidth="xl">

@@ -19,7 +19,11 @@ import {
 import { alpha } from "@mui/material/styles";
 import { useRef, useState } from "react";
 
-export default function DatasetsPanel() {
+export default function DatasetsPanel({
+  embedded = false,
+}: {
+  embedded?: boolean;
+}) {
   const { t } = useTranslation();
   const {
     data,
@@ -63,16 +67,21 @@ export default function DatasetsPanel() {
     }
   };
 
-  return (
-    <Card sx={{ p: 2 }}>
+  const content = (
+    <>
+      {!embedded ? (
+        <Typography
+          variant="overline"
+          component="p"
+          sx={{ color: "text.secondary", mb: 0.75 }}
+        >
+          {t("datasetsTitle")}
+        </Typography>
+      ) : null}
       <Typography
-        variant="overline"
-        component="p"
-        sx={{ color: "text.secondary", mb: 0.75 }}
+        variant="body2"
+        sx={{ color: "text.secondary", mb: 1.5 }}
       >
-        {t("datasetsTitle")}
-      </Typography>
-      <Typography variant="body2" sx={{ color: "text.secondary", mb: 1.5 }}>
         {t("datasetsHint")}
       </Typography>
 
@@ -353,6 +362,9 @@ export default function DatasetsPanel() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Card>
+    </>
   );
+
+  if (embedded) return content;
+  return <Card sx={{ p: 2 }}>{content}</Card>;
 }

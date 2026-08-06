@@ -1,6 +1,9 @@
 "use client";
 
 import AnalyticsCompareCharts from "@/modules/Analytics/AnalyticsCompareCharts";
+import {
+  ControlSection,
+} from "@/modules/Analytics/dashboardChrome";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import {
   matchupAlignmentReady,
@@ -435,186 +438,221 @@ export default function AnalyticsCompare({
     (!matchupMode || (alignmentReady && !matchupLoading));
 
   return (
-    <Stack spacing={2}>
-      <Card sx={{ p: 2 }}>
-        <Typography
-          variant="overline"
-          component="p"
-          sx={{ color: "text.secondary", mb: 0.75 }}
-        >
-          {t("statsComparePlayers")}
-        </Typography>
-        <Typography variant="body2" sx={{ color: "text.secondary", mb: 1.5 }}>
-          {matchupMode ? t("statsMatchupAssignHint") : t("statsCompareHint")}
-        </Typography>
-
-        {selectedPlayers.length === 0 ? null : matchupMode ? (
-          <Stack spacing={0.5} sx={{ mb: 1.5 }}>
-            {selectedPlayers.map((player) => (
-              <Stack
-                key={player.id}
-                direction="row"
-                alignItems="center"
-                spacing={1.25}
-                sx={{ minHeight: 36 }}
-              >
-                <Typography sx={{ flex: 1, minWidth: 0 }} noWrap>
-                  {player.name}
-                </Typography>
-                <Stack direction="row" spacing={1}>
-                  {(
-                    [
-                      {
-                        value: 1 as const,
-                        color: SIDE_A,
-                        label: t("statsMatchupTeamA"),
-                      },
-                      {
-                        value: 2 as const,
-                        color: SIDE_B,
-                        label: t("statsMatchupTeamB"),
-                      },
-                    ] as const
-                  ).map((option) => {
-                    const selected = teams[player.id] === option.value;
-                    return (
-                      <Box
-                        key={option.value}
-                        component="button"
-                        type="button"
-                        aria-label={option.label}
-                        aria-pressed={selected}
-                        onClick={() => setPlayerTeam(player.id, option.value)}
-                        sx={{
-                          width: 18,
-                          height: 18,
-                          borderRadius: "50%",
-                          border: `2px solid ${option.color}`,
-                          backgroundColor: selected
-                            ? option.color
-                            : "transparent",
-                          p: 0,
-                          cursor: "pointer",
-                        }}
-                      />
-                    );
-                  })}
-                </Stack>
-                <Button
-                  size="small"
-                  color="inherit"
-                  onClick={() => togglePlayer(player.id)}
-                  aria-label={t("statsCompareRemove", { name: player.name })}
-                  sx={{ minWidth: 0, px: 1, color: "text.secondary" }}
-                >
-                  ×
-                </Button>
-              </Stack>
-            ))}
-          </Stack>
-        ) : (
-          <Stack
-            direction="row"
-            flexWrap="wrap"
-            useFlexGap
-            spacing={1}
-            sx={{ mb: 1.5 }}
-          >
-            {selectedPlayers.map((player) => (
-              <Chip
-                key={player.id}
-                label={player.name}
-                onDelete={() => togglePlayer(player.id)}
-                sx={{
-                  borderColor: (theme) =>
-                    alpha(theme.palette.primary.main, 0.35),
-                  backgroundColor: (theme) =>
-                    alpha(theme.palette.primary.main, 0.08),
-                }}
-                variant="outlined"
-              />
-            ))}
-          </Stack>
-        )}
-
-        <Button variant="outlined" onClick={() => setPickerOpen(true)}>
-          {t("statsComparePick")}
-        </Button>
-
-        {matchupMode && selectedPlayers.length < 2 ? (
-          <Typography
-            variant="body2"
-            sx={{ color: "text.secondary", mt: 1.25 }}
-          >
-            {t("statsMatchupNeedPlayers")}
-          </Typography>
-        ) : null}
-        {matchupMode &&
-        selectedPlayers.length >= 2 &&
-        !alignmentReady ? (
-          <Typography
-            variant="body2"
-            sx={{ color: "text.secondary", mt: 1.25 }}
-          >
-            {t("statsMatchupNeedBothSides")}
-          </Typography>
-        ) : null}
-      </Card>
-
-      {modes.length > 0 ? (
-        <Card sx={{ p: 2 }}>
-          <Typography
-            variant="overline"
-            component="p"
-            sx={{ color: "text.secondary", mb: 1 }}
-          >
-            {t("format")}
-          </Typography>
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={modeLabel}
-            onChange={(_, value) => {
-              if (value) setModeLabel(value);
-            }}
-            sx={{ flexWrap: "wrap" }}
-          >
-            {modes.map((mode) => (
-              <ToggleButton key={mode} value={mode}>
-                {modeName(mode)}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Card>
-      ) : null}
-
-      <Card sx={{ p: 2 }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        gap: 0,
+        width: "100%",
+        flex: 1,
+        minHeight: { md: 0 },
+        alignItems: "stretch",
+      }}
+    >
+      <Box
+        component="aside"
+        sx={{
+          width: { xs: "100%", md: 300 },
+          flexShrink: 0,
+          borderRight: {
+            xs: "none",
+            md: "1px solid #C0C0C0",
+          },
+          borderBottom: {
+            xs: "1px solid #C0C0C0",
+            md: "none",
+          },
+          backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.75),
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          p: 2,
+          pt: { xs: 2.5, md: 3 },
+          alignSelf: "stretch",
+        }}
+      >
         <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1.5}
-          justifyContent="space-between"
+          spacing={0}
+          divider={
+            <Box
+              sx={{
+                my: 2,
+                borderTop: "1px solid",
+                borderColor: (theme) =>
+                  alpha(theme.palette.grey[700], 0.12),
+              }}
+            />
+          }
         >
-          <Box sx={{ minWidth: 0, pr: 1 }}>
-            <Typography sx={{ fontWeight: 600, mb: 0.5 }}>
-              {t("statsMatchupToggle")}
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              {t("statsMatchupHint")}
-            </Typography>
-          </Box>
-          <Switch
-            checked={matchupMode}
-            onChange={(_, checked) => setMatchupMode(checked)}
-            color="primary"
-          />
-        </Stack>
-      </Card>
+        <ControlSection
+          label={t("statsComparePlayers")}
+          hint={
+            matchupMode ? t("statsMatchupAssignHint") : t("statsCompareHint")
+          }
+        >
+          {selectedPlayers.length === 0 ? null : matchupMode ? (
+            <Stack spacing={0.5} sx={{ mb: 1.5 }}>
+              {selectedPlayers.map((player) => (
+                <Stack
+                  key={player.id}
+                  direction="row"
+                  alignItems="center"
+                  spacing={1.25}
+                  sx={{ minHeight: 36 }}
+                >
+                  <Typography sx={{ flex: 1, minWidth: 0 }} noWrap>
+                    {player.name}
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
+                    {(
+                      [
+                        {
+                          value: 1 as const,
+                          color: SIDE_A,
+                          label: t("statsMatchupTeamA"),
+                        },
+                        {
+                          value: 2 as const,
+                          color: SIDE_B,
+                          label: t("statsMatchupTeamB"),
+                        },
+                      ] as const
+                    ).map((option) => {
+                      const selected = teams[player.id] === option.value;
+                      return (
+                        <Box
+                          key={option.value}
+                          component="button"
+                          type="button"
+                          aria-label={option.label}
+                          aria-pressed={selected}
+                          onClick={() => setPlayerTeam(player.id, option.value)}
+                          sx={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: "50%",
+                            border: `2px solid ${option.color}`,
+                            backgroundColor: selected
+                              ? option.color
+                              : "transparent",
+                            p: 0,
+                            cursor: "pointer",
+                          }}
+                        />
+                      );
+                    })}
+                  </Stack>
+                  <Button
+                    size="small"
+                    color="inherit"
+                    onClick={() => togglePlayer(player.id)}
+                    aria-label={t("statsCompareRemove", { name: player.name })}
+                    sx={{ minWidth: 0, px: 1, color: "text.secondary" }}
+                  >
+                    ×
+                  </Button>
+                </Stack>
+              ))}
+            </Stack>
+          ) : (
+            <Stack
+              direction="row"
+              flexWrap="wrap"
+              useFlexGap
+              spacing={1}
+              sx={{ mb: 1.5 }}
+            >
+              {selectedPlayers.map((player) => (
+                <Chip
+                  key={player.id}
+                  label={player.name}
+                  onDelete={() => togglePlayer(player.id)}
+                  sx={{
+                    borderColor: (theme) =>
+                      alpha(theme.palette.primary.main, 0.35),
+                    backgroundColor: (theme) =>
+                      alpha(theme.palette.primary.main, 0.08),
+                  }}
+                  variant="outlined"
+                />
+              ))}
+            </Stack>
+          )}
 
+          <Button variant="outlined" onClick={() => setPickerOpen(true)}>
+            {t("statsComparePick")}
+          </Button>
+
+          {matchupMode && selectedPlayers.length < 2 ? (
+            <Typography
+              variant="body2"
+              sx={{ color: "text.secondary", mt: 1.25 }}
+            >
+              {t("statsMatchupNeedPlayers")}
+            </Typography>
+          ) : null}
+          {matchupMode &&
+          selectedPlayers.length >= 2 &&
+          !alignmentReady ? (
+            <Typography
+              variant="body2"
+              sx={{ color: "text.secondary", mt: 1.25 }}
+            >
+              {t("statsMatchupNeedBothSides")}
+            </Typography>
+          ) : null}
+        </ControlSection>
+
+        {modes.length > 0 ? (
+          <ControlSection label={t("format")}>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              fullWidth
+              value={modeLabel}
+              onChange={(_, value) => {
+                if (value) setModeLabel(value);
+              }}
+              sx={{ flexWrap: "wrap" }}
+            >
+              {modes.map((mode) => (
+                <ToggleButton key={mode} value={mode} sx={{ flex: 1 }}>
+                  {modeName(mode)}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </ControlSection>
+        ) : null}
+
+        <ControlSection
+          label={t("statsMatchupToggle")}
+          hint={t("statsMatchupHint")}
+          trailing={
+            <Switch
+              checked={matchupMode}
+              onChange={(_, checked) => setMatchupMode(checked)}
+              color="primary"
+            />
+          }
+        />
+        </Stack>
+      </Box>
+
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          px: { xs: 1.5, sm: 2.5 },
+          py: { xs: 2, sm: 2.5 },
+        }}
+      >
+        <Stack spacing={2.5}>
       {selectedPlayers.length === 0 ? (
-        <Typography variant="body2" sx={{ color: "text.secondary" }}>
-          {t("statsCompareEmpty")}
-        </Typography>
+        <Card sx={{ p: 3 }}>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            {t("statsCompareEmpty")}
+          </Typography>
+        </Card>
       ) : matchupMode && matchupLoading ? (
         <Card sx={{ p: 4, textAlign: "center" }}>
           <CircularProgress size={28} sx={{ mb: 1.5 }} />
@@ -755,6 +793,8 @@ export default function AnalyticsCompare({
           )}
         </>
       ) : null}
+        </Stack>
+      </Box>
 
       <Dialog
         open={pickerOpen}
@@ -802,6 +842,6 @@ export default function AnalyticsCompare({
           </Button>
         </DialogActions>
       </Dialog>
-    </Stack>
+    </Box>
   );
 }

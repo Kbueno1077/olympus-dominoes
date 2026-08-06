@@ -7,8 +7,11 @@ export default function ComparePage() {
   return (
     <Box
       sx={{
-        py: { xs: 2, sm: 3 },
-        px: { xs: 1.5, sm: 3, md: 4, lg: 5 },
+        width: "100%",
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
       }}
     >
       <AnalyticsComparePage />
