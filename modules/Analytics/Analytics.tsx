@@ -5,12 +5,17 @@ import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import {
   DashboardPanel,
+  JOSES_ACCENT,
   MetricTile,
+  dashboardAsideSx,
+  dashboardMainSx,
+  dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { buildH2HCompareLaunch } from "@/lib/analytics/compareLaunch";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import {
+  formatPerGameRatePct,
   formatSignedDiff,
   perHandAverage,
 } from "@/lib/analytics/signedDiff";
@@ -122,17 +127,14 @@ export default function Analytics() {
     data,
     error,
     loading,
-    importFile,
     syncJosesCoefficients,
     setPendingCompare,
     activeDataset,
   } = useAnalytics();
-  const [busy, setBusy] = useState(false);
   const [syncingCoef, setSyncingCoef] = useState(false);
   const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
   const [modeLabel, setModeLabel] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<number | null>(null);
-  const [localError, setLocalError] = useState<string | null>(null);
 
   const modes = useMemo(
     () => (data ? listStatModes(data) : []),
@@ -175,28 +177,14 @@ export default function Analytics() {
     return getPlayerH2H(data, selectedPlayerId, activeMode);
   }, [data, selectedPlayerId, activeMode]);
 
-  const handleUpload = async (file: File) => {
-    setBusy(true);
-    setLocalError(null);
-    try {
-      await importFile(file);
-      setModeLabel(null);
-      setPlayerId(null);
-    } catch (err) {
-      const code = err instanceof Error ? err.message : "parse_failed";
-      setLocalError(code);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const handleSyncJoses = () => {
     setSyncingCoef(true);
     try {
       syncJosesCoefficients();
       displayToast(t("toastJosesSynced"), "success");
-    } catch {
-      displayToast(t("analyticsErrorGeneric"), "error");
+    } catch (err) {
+      console.error("syncJosesCoefficients failed", err);
+      displayToast(t("toastJosesSyncFailed"), "error");
     } finally {
       setSyncingCoef(false);
     }
@@ -219,7 +207,7 @@ export default function Analytics() {
   };
 
   const errorMessage = (() => {
-    const code = localError || error;
+    const code = error;
     if (!code) return null;
     if (code.startsWith("unknown_table:")) return t("analyticsErrorUnknownTable");
     if (code === "empty_export") return t("analyticsErrorEmpty");
@@ -237,54 +225,16 @@ export default function Analytics() {
 
   if (!data) {
     return (
-      <DashboardEmptyState
-        page="stats"
-        onUploadFile={handleUpload}
-        uploadBusy={busy}
-        errorMessage={errorMessage}
-      />
+      <DashboardEmptyState page="stats" errorMessage={errorMessage} />
     );
   }
 
   const datasetLabel = activeDataset?.displayName || data.fileName;
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: { xs: "column", md: "row" },
-        flex: 1,
-        // Fill the shell under the header; grow with content.
-        minHeight: { md: "calc(100vh - 64px)" },
-        width: "100%",
-        backgroundColor: "background.default",
-        alignItems: "stretch",
-      }}
-    >
+    <Box sx={dashboardShellSx}>
       {/* Sidebar */}
-      <Box
-        component="aside"
-        sx={{
-          width: { xs: "100%", md: 300 },
-          flexShrink: 0,
-          // Full shorthand — MUI ignores borderColor when borderRight is only "1px solid".
-          borderRight: {
-            xs: "none",
-            md: "1px solid #C0C0C0",
-          },
-          borderBottom: {
-            xs: "1px solid #C0C0C0",
-            md: "none",
-          },
-          // Same frosted bone as the navbar (grey[100] @ 75%).
-          backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.75),
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          display: "flex",
-          flexDirection: "column",
-          alignSelf: "stretch",
-        }}
-      >
+      <Box component="aside" sx={dashboardAsideSx}>
         <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 1.5 }}>
           <Stack
             direction="row"
@@ -295,14 +245,6 @@ export default function Analytics() {
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="h5" sx={{ mb: 0.25 }}>
                 {t("statsTitle")}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: "text.secondary", display: "block" }}
-                noWrap
-                title={datasetLabel}
-              >
-                {datasetLabel}
               </Typography>
             </Box>
             <Button
@@ -368,7 +310,9 @@ export default function Analytics() {
         <Box
           sx={{
             flex: 1,
+            minHeight: 0,
             overflow: "auto",
+            overscrollBehavior: "contain",
             px: 1,
             pb: 2,
             contentVisibility: "auto",
@@ -456,7 +400,7 @@ export default function Analytics() {
                     <Typography
                       sx={{
                         fontWeight: selected ? 700 : 500,
-                        color: selected ? "text.primary" : "text.secondary",
+                        color: selected ? JOSES_ACCENT : alpha(JOSES_ACCENT, 0.72),
                         fontVariantNumeric: "tabular-nums",
                         fontSize: 14,
                       }}
@@ -472,17 +416,7 @@ export default function Analytics() {
       </Box>
 
       {/* Main dashboard */}
-      <Box
-        component="main"
-        sx={{
-          flex: 1,
-          minWidth: 0,
-          px: { xs: 1.5, sm: 2.5, lg: 3 },
-          pt: { xs: 2.5, md: 3 },
-          pb: { xs: 3, sm: 4 },
-          overflow: "auto",
-        }}
-      >
+      <Box component="main" sx={dashboardMainSx}>
         {errorMessage ? (
           <Typography variant="body2" sx={{ color: "error.main", mb: 2 }}>
             {errorMessage}
@@ -525,7 +459,7 @@ export default function Analytics() {
                     >
                       {modeName(activeMode ?? "")} ·{" "}
                       {t("analyticsLoadedMeta", {
-                        file: data.fileName,
+                        name: datasetLabel,
                         players: data.players.length,
                         matches: data.matches.length,
                       })}
@@ -547,26 +481,15 @@ export default function Analytics() {
                   <MetricTile
                     label={t("statsJosesCoefficient")}
                     value={formatJosesCoefficient(activeStats.josesCoefficient)}
-                    valueColor="primary.main"
+                    valueColor={JOSES_ACCENT}
                   />
                   <MetricTile
-                    label={t("statsRecord", {
-                      wins: activeStats.gamesWon,
-                      losses: activeStats.gamesLost,
-                    })}
+                    label={t("statsStreak")}
                     value={`${activeStats.gamesWon}–${activeStats.gamesLost}`}
                   />
                   <MetricTile
-                    label={t("statsHandsTotal")}
-                    value={activeStats.handsPlayed}
-                  />
-                  <MetricTile
-                    label={t("statsAbbrHandsWon")}
-                    value={activeStats.handsWon}
-                  />
-                  <MetricTile
-                    label={t("statsAbbrHandsLost")}
-                    value={activeStats.handsLost}
+                    label={t("statsAbbrGamesPlayed")}
+                    value={activeStats.gamesPlayed}
                   />
                   <MetricTile
                     label={t("statsAbbrGameDifference")}
@@ -574,11 +497,24 @@ export default function Analytics() {
                       activeStats.gamesWon - activeStats.gamesLost
                     )}
                     valueColor={
-                      activeStats.gamesWon - activeStats.gamesLost > 0
-                        ? "primary.main"
-                        : activeStats.gamesWon - activeStats.gamesLost < 0
-                          ? "error.main"
-                          : "text.primary"
+                      activeStats.gamesWon - activeStats.gamesLost < 0
+                        ? "error.main"
+                        : "primary.main"
+                    }
+                  />
+                  <MetricTile
+                    label={t("statsAbbrHandsTotal")}
+                    value={activeStats.handsPlayed}
+                  />
+                  <MetricTile
+                    label={t("statsAbbrHandsDifference")}
+                    value={formatSignedDiff(
+                      activeStats.handsWon - activeStats.handsLost
+                    )}
+                    valueColor={
+                      activeStats.handsWon - activeStats.handsLost < 0
+                        ? "error.main"
+                        : "primary.main"
                     }
                   />
                 </Box>
@@ -604,6 +540,11 @@ export default function Analytics() {
                 }}
               >
                 <DashboardPanel title={t("statsDetailTitle")}>
+                  <StatLine
+                    label={t("statsJosesCoefficient")}
+                    value={formatJosesCoefficient(activeStats.josesCoefficient)}
+                    valueColor={JOSES_ACCENT}
+                  />
                   <StatLine
                     label={t("statsGamesPlayed")}
                     value={activeStats.gamesPlayed}
@@ -711,6 +652,13 @@ export default function Analytics() {
                     against={activeStats.pollosAgainst}
                   />
                   <StatLine
+                    label={t("statsPollosRate")}
+                    value={formatPerGameRatePct(
+                      activeStats.pollosFor,
+                      activeStats.gamesPlayed
+                    )}
+                  />
+                  <StatLine
                     label={t("statsZapatosFor")}
                     value={activeStats.zapatosFor}
                   />
@@ -722,6 +670,13 @@ export default function Analytics() {
                     label={t("statsZapatosDifference")}
                     favor={activeStats.zapatosFor}
                     against={activeStats.zapatosAgainst}
+                  />
+                  <StatLine
+                    label={t("statsZapatosRate")}
+                    value={formatPerGameRatePct(
+                      activeStats.zapatosFor,
+                      activeStats.gamesPlayed
+                    )}
                   />
                 </DashboardPanel>
 

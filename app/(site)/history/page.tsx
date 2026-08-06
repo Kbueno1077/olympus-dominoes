@@ -2,11 +2,8 @@
 
 import History from "@/modules/History/History";
 import { Box } from "@mui/material";
-import { useRouter } from "next/navigation";
 
 export default function HistoryPage() {
-  const router = useRouter();
-
   return (
     <Box
       sx={{
@@ -17,7 +14,7 @@ export default function HistoryPage() {
         minHeight: 0,
       }}
     >
-      <History onOpenAnalytics={() => router.push("/stats")} />
+      <History />
     </Box>
   );
 }

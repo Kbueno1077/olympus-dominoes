@@ -3,6 +3,62 @@
 import { Box, Card, Divider, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 
+/** Viewport under the fixed 64px header. */
+export const DASHBOARD_VIEWPORT_HEIGHT = "calc(100vh - 64px)";
+
+/** Outer Stats / History / Compare row — fills parent; panes scroll alone. */
+export const dashboardShellSx = {
+  display: "flex",
+  flexDirection: { xs: "column", md: "row" },
+  flex: 1,
+  width: "100%",
+  minHeight: 0,
+  height: { md: "100%" },
+  maxHeight: { md: "100%" },
+  backgroundColor: "background.default",
+  alignItems: "stretch",
+  overflow: { md: "hidden" },
+};
+
+/** Accent for Jose's Coefficient — distinct from forest green diffs. */
+export const JOSES_ACCENT = "#6B4F8A";
+
+/** Left chrome — height-locked; scrolls on its own (not with main). */
+export const dashboardAsideSx = {
+  width: { xs: "100%", md: 300 },
+  flexShrink: 0,
+  borderRight: { xs: "none", md: "1px solid #C0C0C0" },
+  borderBottom: { xs: "1px solid #C0C0C0", md: "none" },
+  backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.75),
+  backdropFilter: "blur(12px)",
+  WebkitBackdropFilter: "blur(12px)",
+  display: "flex",
+  flexDirection: "column",
+  alignSelf: "stretch",
+  height: { md: "100%" },
+  maxHeight: { md: "100%" },
+  minHeight: 0,
+  overflowX: "hidden",
+  // Inner panels (leaderboard, filters) own scroll; keep chrome from moving with main.
+  overflowY: { xs: "visible", md: "hidden" },
+  overscrollBehavior: "contain",
+};
+
+/** Main pane — scrolls independently of the sidebar. */
+export const dashboardMainSx = {
+  flex: 1,
+  minWidth: 0,
+  minHeight: 0,
+  height: { md: "100%" },
+  maxHeight: { md: "100%" },
+  overflowX: "hidden",
+  overflowY: { xs: "visible", md: "auto" },
+  overscrollBehavior: "contain",
+  px: { xs: 1.5, sm: 2.5, lg: 3 },
+  pt: { xs: 2.5, md: 3 },
+  pb: { xs: 3, sm: 4 },
+};
+
 /**
  * @param {{
  *   title: import("react").ReactNode,

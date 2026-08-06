@@ -6,8 +6,12 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
-import { perHandAverage } from "@/lib/analytics/signedDiff";
+import {
+  perGameRatePct,
+  perHandAverage,
+} from "@/lib/analytics/signedDiff";
 import type { LeaderboardRow, PlayerStatsView } from "@/lib/analytics/types";
+import { JOSES_ACCENT } from "@/modules/Analytics/dashboardChrome";
 import { Box, Card, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
 import {
@@ -15,6 +19,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   Pie,
   PieChart,
@@ -26,6 +31,7 @@ const COLORS = {
   primary: "rgb(31, 107, 88)",
   secondary: "rgb(180, 84, 47)",
   info: "rgb(61, 108, 140)",
+  joses: JOSES_ACCENT,
 };
 
 type Props = {
@@ -160,6 +166,29 @@ export default function StatsDashboardCharts({
     ];
   }, [activeStats, t]);
 
+  const shutoutRateData = useMemo(() => {
+    if (!activeStats) return [];
+    const G = activeStats.gamesPlayed;
+    const polloPct = perGameRatePct(activeStats.pollosFor, G);
+    const zapatoPct = perGameRatePct(activeStats.zapatosFor, G);
+    return [
+      {
+        name: t("pollo"),
+        pct: polloPct == null ? 0 : Number(polloPct.toFixed(1)),
+        label: polloPct == null ? "—" : `${polloPct.toFixed(0)}%`,
+        count: activeStats.pollosFor,
+        fill: COLORS.primary,
+      },
+      {
+        name: t("zapato"),
+        pct: zapatoPct == null ? 0 : Number(zapatoPct.toFixed(1)),
+        label: zapatoPct == null ? "—" : `${zapatoPct.toFixed(0)}%`,
+        count: activeStats.zapatosFor,
+        fill: COLORS.secondary,
+      },
+    ];
+  }, [activeStats, t]);
+
   const perHandData = useMemo(() => {
     if (!activeStats) return [];
     const forAvg = perHandAverage(activeStats.pointsFor, activeStats.handsFor);
@@ -210,7 +239,7 @@ export default function StatsDashboardCharts({
               config={{
                 coefficient: {
                   label: t("statsJosesCoefficient"),
-                  color: COLORS.primary,
+                  color: COLORS.joses,
                 },
               }}
               className="h-[240px] w-full"
@@ -443,6 +472,96 @@ export default function StatsDashboardCharts({
               />
             </BarChart>
           </ChartContainer>
+        )}
+      </ChartCard>
+
+      <ChartCard title={t("statsChartShutoutRates")}>
+        {!activeStats ? (
+          empty
+        ) : (
+          <Stack
+            alignItems="center"
+            justifyContent="center"
+            sx={{ height: "100%" }}
+            spacing={1}
+          >
+            <ChartContainer
+              config={{
+                pct: {
+                  label: t("statsChartShutoutRates"),
+                  color: COLORS.info,
+                },
+              }}
+              className="h-[150px] w-full"
+            >
+              <BarChart
+                data={shutoutRateData}
+                margin={{ top: 22, right: 8, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                <YAxis
+                  domain={[0, "auto"]}
+                  tickFormatter={(v) => `${v}%`}
+                  tickLine={false}
+                  axisLine={false}
+                  width={40}
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value) => `${Number(value).toFixed(0)}%`}
+                    />
+                  }
+                />
+                <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
+                  {shutoutRateData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.fill} />
+                  ))}
+                  <LabelList
+                    dataKey="label"
+                    position="top"
+                    style={{
+                      fill: "currentColor",
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  />
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+            <Stack
+              direction="row"
+              spacing={2}
+              justifyContent="center"
+              flexWrap="wrap"
+              useFlexGap
+            >
+              {shutoutRateData.map((entry) => (
+                <Typography
+                  key={entry.name}
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {entry.name}:{" "}
+                  <Box
+                    component="span"
+                    sx={{ fontWeight: 700, color: "text.primary" }}
+                  >
+                    {entry.label}
+                  </Box>
+                  {" · "}
+                  {t("statsShutoutRateHint", {
+                    n: entry.count,
+                    games: activeStats.gamesPlayed,
+                  })}
+                </Typography>
+              ))}
+            </Stack>
+          </Stack>
         )}
       </ChartCard>
     </Box>

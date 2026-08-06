@@ -119,14 +119,6 @@ export default function DatasetsPanel({
                     </Typography>
                   ) : null}
                 </Typography>
-                {ds.fileName ? (
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "text.secondary" }}
-                  >
-                    {ds.fileName}
-                  </Typography>
-                ) : null}
               </Box>
               <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
                 {!active ? (

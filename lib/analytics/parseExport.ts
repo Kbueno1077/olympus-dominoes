@@ -288,8 +288,10 @@ export function parseOlympusExport(
   contents: string,
   fileName: string
 ): OlympusExportData {
-  const source = detectFormat(fileName, contents);
-  const tables = source === "csv" ? parseCsv(contents) : parseSql(contents);
+  const normalized = contents.replace(/^\uFEFF/, "");
+  const source = detectFormat(fileName, normalized);
+  const tables =
+    source === "csv" ? parseCsv(normalized) : parseSql(normalized);
 
   const players = normalizePlayers(tables.players ?? []);
   const player_stats = normalizeStats(tables.player_stats ?? []);

@@ -49,7 +49,7 @@ export default function Header() {
         transition: "border-color 200ms ease, box-shadow 200ms ease",
       }}
     >
-      <Container maxWidth="xl">
+      <Container maxWidth={false}>
         <Toolbar
           disableGutters
           sx={{
