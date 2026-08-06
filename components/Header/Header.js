@@ -2,11 +2,11 @@
 
 import DominoTile from "@/components/DominoTile";
 import LanguageSwitch from "@/components/Header/LanguageSwitch";
+import NavMenu from "@/components/Header/NavMenu";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   AppBar,
   Box,
-  Button,
   Container,
   Stack,
   Toolbar,
@@ -14,14 +14,10 @@ import {
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
-/**
- * @param {{
- *   navItems?: Array<{ id: string, label: string, active?: boolean, onClick: () => void }>,
- * }} [props]
- */
-export default function Header({ navItems = [] }) {
+export default function Header() {
   const theme = useTheme();
   const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -53,62 +49,34 @@ export default function Header({ navItems = [] }) {
         <Toolbar
           disableGutters
           sx={{
-            position: "relative",
             justifyContent: "space-between",
-            gap: 1,
+            gap: 2,
             minHeight: 64,
           }}
         >
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={{ xs: 0.25, sm: 0.5 }}
-            sx={{
-              flex: 1,
-              justifyContent: "flex-start",
-              minWidth: 0,
-              flexWrap: "wrap",
-            }}
-          >
-            {navItems.map((item) => (
-              <Button
-                key={item.id}
-                size="small"
-                color="inherit"
-                onClick={item.onClick}
-                sx={{
-                  color: item.active ? "primary.dark" : "text.secondary",
-                  fontWeight: item.active ? 600 : 500,
-                  px: { xs: 1, sm: 1.5 },
-                  minWidth: 0,
-                  backgroundColor: item.active
-                    ? (muiTheme) => alpha(muiTheme.palette.primary.main, 0.08)
-                    : "transparent",
-                  "&:hover": {
-                    backgroundColor: (muiTheme) =>
-                      alpha(muiTheme.palette.primary.main, 0.1),
-                  },
-                }}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </Stack>
-
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <Stack direction="row" alignItems="center" spacing={1.5}>
-              {/* The double-nine tile: the highest piece in a Cuban set. */}
+            <Stack
+              component={Link}
+              href="/"
+              direction="row"
+              alignItems="center"
+              spacing={1.5}
+              sx={{
+                textDecoration: "none",
+                color: "inherit",
+              }}
+            >
               <DominoTile top={9} bottom={9} size={17} orientation="horizontal" />
-
               <Box>
                 <Typography
-                  component="h1"
+                  component="p"
                   sx={{
-                    fontFamily: (theme) => theme.typography.h2.fontFamily,
+                    fontFamily: (muiTheme) =>
+                      muiTheme.typography.h2.fontFamily,
                     fontWeight: 700,
                     fontSize: { xs: 19, sm: 22 },
                     lineHeight: 1.1,
@@ -136,13 +104,14 @@ export default function Header({ navItems = [] }) {
           <Stack
             direction="row"
             alignItems="center"
-            spacing={1}
+            spacing={{ xs: 0.5, sm: 1 }}
             sx={{
-              flex: 1,
-              justifyContent: "flex-end",
               minWidth: 0,
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
             }}
           >
+            <NavMenu />
             <LanguageSwitch />
           </Stack>
         </Toolbar>

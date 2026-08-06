@@ -31,6 +31,7 @@ import {
   type DatasetRegistry,
 } from "./datasets";
 import { parseOlympusExport } from "./parseExport";
+import { recalculateAllJosesCoefficients } from "./joseCoefficient";
 import type { OlympusExportData } from "./types";
 
 type AnalyticsContextValue = {
@@ -48,6 +49,8 @@ type AnalyticsContextValue = {
   switchDataset: (id: string) => void;
   renameDataset: (id: string, displayName: string) => void;
   deleteDataset: (id: string) => void;
+  /** Recompute Jose's Coefficient for every player from saved aggregates. */
+  syncJosesCoefficients: () => void;
   setPendingCompare: (launch: CompareLaunch | null) => void;
   peekPendingCompare: () => CompareLaunch | null;
   clearPendingCompare: () => void;
@@ -185,6 +188,20 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     [persistRegistry, registry]
   );
 
+  const syncJosesCoefficients = useCallback(() => {
+    if (!data) return;
+    const next = recalculateAllJosesCoefficients(data);
+    const touched = touchDatasetInRegistry(
+      registry,
+      registry.activeDatasetId,
+      next.fileName
+    );
+    saveDatasetData(registry.activeDatasetId, next);
+    persistRegistry(touched);
+    setData(next);
+    setError(null);
+  }, [data, persistRegistry, registry]);
+
   const activeDataset =
     registry.datasets.find((d) => d.id === registry.activeDatasetId) ?? null;
 
@@ -202,6 +219,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       switchDataset,
       renameDataset,
       deleteDataset,
+      syncJosesCoefficients,
       setPendingCompare,
       peekPendingCompare,
       clearPendingCompare,
@@ -219,6 +237,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       switchDataset,
       renameDataset,
       deleteDataset,
+      syncJosesCoefficients,
       setPendingCompare,
       peekPendingCompare,
       clearPendingCompare,

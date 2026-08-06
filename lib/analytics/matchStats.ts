@@ -45,6 +45,7 @@ export type PlayerStatDelta = {
   handsAgainst: number;
   handsWon: number;
   handsLost: number;
+  handsPlayed: number;
   pollosFor: number;
   pollosAgainst: number;
   zapatosFor: number;
@@ -80,6 +81,7 @@ function emptyPlayerDelta(
     handsAgainst: 0,
     handsWon: 0,
     handsLost: 0,
+    handsPlayed: 0,
     pollosFor: 0,
     pollosAgainst: 0,
     zapatosFor: 0,
@@ -204,10 +206,12 @@ export function computeMatchStatsDelta(input: MatchSnapshotInput): StatsDelta {
         if (lost) row.gamesLost += 1;
         row.pointsFor += score.totalPoints;
         row.pointsAgainst += pointsAgainst;
+        // Manos: scored (won) + conceded (lost) = all datas played this game.
         row.handsFor += score.handCount;
         row.handsAgainst += handsAgainst;
-        if (won) row.handsWon += score.handCount;
-        if (lost) row.handsLost += score.handCount;
+        row.handsWon += score.handCount;
+        row.handsLost += handsAgainst;
+        row.handsPlayed += score.handCount + handsAgainst;
         row.pollosFor += pollosFor;
         row.pollosAgainst += pollosAgainst;
         row.zapatosFor += zapatosFor;
@@ -257,6 +261,7 @@ export function mergeStatsDeltas(deltas: StatsDelta[]): StatsDelta {
       existing.handsAgainst += row.handsAgainst;
       existing.handsWon += row.handsWon;
       existing.handsLost += row.handsLost;
+      existing.handsPlayed += row.handsPlayed;
       existing.pollosFor += row.pollosFor;
       existing.pollosAgainst += row.pollosAgainst;
       existing.zapatosFor += row.zapatosFor;

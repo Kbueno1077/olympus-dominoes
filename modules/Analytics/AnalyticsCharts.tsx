@@ -7,7 +7,8 @@ import {
 } from "@/components/ui/chart";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import type { LeaderboardRow, PlayerStatsView } from "@/lib/analytics/types";
-import { Box, Card, Stack, Typography } from "@mui/material";
+import SyncIcon from "@mui/icons-material/Sync";
+import { Box, Button, Card, Stack, Typography } from "@mui/material";
 import {
   Bar,
   BarChart,
@@ -27,6 +28,8 @@ type Props = {
   leaderboard: LeaderboardRow[];
   activeStats: PlayerStatsView | null;
   playerName: string | null;
+  syncing?: boolean;
+  onSync: () => void;
   t: (key: string, values?: Record<string, string | number>) => string;
 };
 
@@ -34,6 +37,8 @@ export default function AnalyticsCharts({
   leaderboard,
   activeStats,
   playerName,
+  syncing = false,
+  onSync,
   t,
 }: Props) {
   const coefData = leaderboard.slice(0, 8).map((row) => ({
@@ -92,13 +97,34 @@ export default function AnalyticsCharts({
       }}
     >
       <Card sx={{ p: 2 }}>
-        <Typography
-          variant="overline"
-          component="p"
-          sx={{ color: "text.secondary", mb: 1 }}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          alignItems={{ xs: "stretch", sm: "flex-start" }}
+          justifyContent="space-between"
+          spacing={1.25}
+          sx={{ mb: 1 }}
         >
-          {t("statsChartCoef")}
-        </Typography>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="overline"
+              component="p"
+              sx={{ color: "text.secondary" }}
+            >
+              {t("statsChartCoef")}
+            </Typography>
+          </Box>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<SyncIcon />}
+            onClick={onSync}
+            disabled={syncing || coefData.length === 0}
+            sx={{ flexShrink: 0, alignSelf: { xs: "stretch", sm: "center" } }}
+          >
+            {t("syncJosesCoefficient")}
+          </Button>
+        </Stack>
+
         {coefData.length === 0 ? (
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
             {t("statsNoData")}

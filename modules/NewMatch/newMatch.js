@@ -1,8 +1,6 @@
 "use client";
 
 import EndMatchControl from "@/components/Header/EndMatchControl";
-import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
-import { buildLiveMatchCompareLaunch } from "@/lib/analytics/compareLaunch";
 import {
   completedGamesRecoil,
   currentGameRecoil,
@@ -49,7 +47,7 @@ const emptyGame = {
   winner: "none",
 };
 
-function MatchStanding({ standings, shutouts, onOpenAnalytics }) {
+function MatchStanding({ standings, shutouts }) {
   const { t } = useTranslation();
   const teamLabel = useMatchTeamLabel();
   const leaderWins = Math.max(0, ...standings.map((s) => s.wins));
@@ -135,26 +133,16 @@ function MatchStanding({ standings, shutouts, onOpenAnalytics }) {
       />
       <MatchSummary />
 
-      <Stack spacing={1} sx={{ mt: 1.5 }}>
-        {onOpenAnalytics ? (
-          <Button
-            variant="outlined"
-            fullWidth
-            onClick={onOpenAnalytics}
-          >
-            {t("matchAnalytics")}
-          </Button>
-        ) : null}
+      <Box sx={{ mt: 1.5 }}>
         <EndMatchControl fullWidth />
-      </Stack>
+      </Box>
     </Card>
   );
 }
 
-export default function NewMatch({ onOpenAnalytics }) {
+export default function NewMatch() {
   const displayToast = useToast();
   const { t } = useTranslation();
-  const { data, setPendingCompare } = useAnalytics();
 
   const [playersAmount] = useRecoilState(playersAmountRecoil);
   const [gameMode] = useRecoilState(gameModeRecoil);
@@ -190,27 +178,6 @@ export default function NewMatch({ onOpenAnalytics }) {
     }
 
     setStartGame(true);
-  };
-
-  const handleOpenAnalytics = () => {
-    if (!data) {
-      displayToast(t("toastMatchAnalyticsNeedImport"), "error");
-      onOpenAnalytics?.();
-      return;
-    }
-    const players = [player1, player2, player3, player4];
-    const launch = buildLiveMatchCompareLaunch({
-      data,
-      playersAmount,
-      modeLabel: gameMode?.label ?? "",
-      players,
-    });
-    if (!launch) {
-      displayToast(t("toastMatchAnalyticsNeedRoster"), "error");
-      return;
-    }
-    setPendingCompare(launch);
-    onOpenAnalytics?.();
   };
 
   const handleNextGame = () => {
@@ -310,14 +277,9 @@ export default function NewMatch({ onOpenAnalytics }) {
           },
         }}
       >
-        {/* Primary column: scorepad in play, setup form before kickoff */}
         {isGameStarted ? (
           <Stack spacing={1.75}>
-            <MatchStanding
-              standings={standings}
-              shutouts={shutouts}
-              onOpenAnalytics={handleOpenAnalytics}
-            />
+            <MatchStanding standings={standings} shutouts={shutouts} />
 
             <NoteMaker
               isGameStarted={isGameStarted}
@@ -348,7 +310,6 @@ export default function NewMatch({ onOpenAnalytics }) {
           </Stack>
         )}
 
-        {/* Sidebar: table seating stays visible during setup and play */}
         <Stack
           spacing={1.75}
           sx={{

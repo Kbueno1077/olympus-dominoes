@@ -115,5 +115,17 @@ export function matchPassesHistoryFilter(
     if (t1 == null || t2 == null || t1 === t2) return false;
   }
 
+  // Full lined-up matchup (every listed player has A/B): no extra linked seats.
+  const allAssigned = filter.players.every(
+    (p) => p.team === 1 || p.team === 2
+  );
+  if (allAssigned && filter.players.length === match.playersAmount) {
+    const filterIds = new Set(filter.players.map((p) => p.playerId));
+    if (seatedIds.size !== filterIds.size) return false;
+    for (const id of Array.from(seatedIds)) {
+      if (!filterIds.has(id)) return false;
+    }
+  }
+
   return true;
 }

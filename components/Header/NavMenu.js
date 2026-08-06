@@ -1,0 +1,161 @@
+"use client";
+
+import { useHasMounted } from "@/hooks/useHasMounted";
+import { useTranslation } from "@/i18n/useTranslation";
+import { isGameStartedRecoil } from "@/recoil/recoilState";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import { Button, ListItemText, Menu, MenuItem } from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useRecoilValue } from "recoil";
+
+/**
+ * Standard nav dropdown — closed trigger shows the current section.
+ */
+export default function NavMenu() {
+  const { t } = useTranslation();
+  const pathname = usePathname();
+  const hasMounted = useHasMounted();
+  const isGameStarted = useRecoilValue(isGameStartedRecoil);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  const matchInProgress = hasMounted && isGameStarted;
+
+  const items = useMemo(
+    () => [
+      { href: "/", label: t("dashboard"), match: (p) => p === "/" },
+      {
+        href: "/match",
+        label: t("navMatch"),
+        match: (p) => p.startsWith("/match"),
+        inProgress: matchInProgress,
+      },
+      {
+        href: "/history",
+        label: t("historyNav"),
+        match: (p) => p.startsWith("/history"),
+      },
+      {
+        href: "/stats",
+        label: t("statsNav"),
+        match: (p) => p === "/stats" || p.startsWith("/stats/"),
+      },
+      {
+        href: "/compare",
+        label: t("compareNav"),
+        match: (p) => p.startsWith("/compare"),
+      },
+    ],
+    [t, matchInProgress]
+  );
+
+  const activeItem = items.find((item) => item.match(pathname)) ?? items[0];
+
+  return (
+    <>
+      <Button
+        size="small"
+        color="inherit"
+        aria-label={t("navMenuAria")}
+        aria-haspopup="menu"
+        aria-expanded={open ? "true" : undefined}
+        onClick={(e) => setAnchorEl(e.currentTarget)}
+        endIcon={
+          <ExpandMore
+            sx={{
+              fontSize: 18,
+              transform: open ? "rotate(180deg)" : "none",
+              transition: "transform 160ms ease",
+            }}
+          />
+        }
+        sx={{
+          color: "text.primary",
+          fontWeight: 600,
+          px: 1.25,
+          minWidth: 0,
+          textTransform: "none",
+          border: "1px solid",
+          borderColor: open ? "divider" : "transparent",
+          backgroundColor: open
+            ? (theme) => alpha(theme.palette.grey[700], 0.06)
+            : "transparent",
+          "&:hover": {
+            backgroundColor: (theme) => alpha(theme.palette.grey[700], 0.08),
+            borderColor: "divider",
+          },
+        }}
+      >
+        {activeItem.label}
+      </Button>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 0.75,
+              minWidth: 188,
+              borderRadius: 1.5,
+              border: "1px solid",
+              borderColor: "divider",
+              boxShadow: (theme) => theme.customShadows.z8,
+            },
+          },
+        }}
+      >
+        {items.map((item) => {
+          const active = item.href === activeItem.href;
+          return (
+            <MenuItem
+              key={item.href}
+              component={Link}
+              href={item.href}
+              onClick={() => setAnchorEl(null)}
+              sx={{
+                py: 1.1,
+                px: 1.75,
+                pl: 1.75,
+                borderLeft: "3px solid",
+                borderColor: active
+                  ? "primary.main"
+                  : item.inProgress
+                    ? (theme) => alpha(theme.palette.secondary.main, 0.55)
+                    : "transparent",
+                backgroundColor: active
+                  ? (theme) => alpha(theme.palette.primary.main, 0.07)
+                  : "transparent",
+                color: active ? "primary.dark" : "text.primary",
+                "&:hover": {
+                  backgroundColor: (theme) =>
+                    alpha(theme.palette.primary.main, 0.06),
+                },
+              }}
+            >
+              <ListItemText
+                primary={item.label}
+                secondary={
+                  item.inProgress && !active ? t("navMatchInProgress") : null
+                }
+                primaryTypographyProps={{
+                  fontWeight: active ? 700 : 500,
+                  fontSize: 14,
+                }}
+                secondaryTypographyProps={{
+                  fontSize: 11,
+                  color: "text.secondary",
+                }}
+              />
+            </MenuItem>
+          );
+        })}
+      </Menu>
+    </>
+  );
+}
