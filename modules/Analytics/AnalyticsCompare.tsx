@@ -1,5 +1,6 @@
 "use client";
 
+import AnalyticsCompareCharts from "@/modules/Analytics/AnalyticsCompareCharts";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import {
   matchupAlignmentReady,
@@ -51,7 +52,7 @@ type CompareStatKey =
   | "pointsFor"
   | "pointsAgainst"
   | "pointsDifference"
-  | "handsFor"
+  | "handsPlayed"
   | "handsWon"
   | "handsLost"
   | "handsDifference"
@@ -109,8 +110,8 @@ function cellValue(stats: PlayerStatsView | null, key: CompareStatKey): string {
       return String(stats.pointsFor);
     case "pointsAgainst":
       return String(stats.pointsAgainst);
-    case "handsFor":
-      return String(stats.handsFor);
+    case "handsPlayed":
+      return String(stats.handsPlayed);
     case "handsWon":
       return String(stats.handsWon);
     case "handsLost":
@@ -327,7 +328,7 @@ export default function AnalyticsCompare({
           full: t("statsPointsDifference"),
         },
         {
-          key: "handsFor" as const,
+          key: "handsPlayed" as const,
           abbr: t("statsAbbrHandsTotal"),
           full: t("statsHandsTotal"),
         },
@@ -639,7 +640,16 @@ export default function AnalyticsCompare({
               {t("statsMatchupNoGames")}
             </Typography>
           ) : (
-            <Card sx={{ overflow: "auto" }}>
+            <>
+              <AnalyticsCompareCharts
+                players={selectedPlayers.map((player) => ({
+                  id: player.id,
+                  name: player.name,
+                  stats: statsForPlayer(player.id),
+                }))}
+                t={t}
+              />
+              <Card sx={{ overflow: "auto" }}>
               <Box
                 component="table"
                 sx={{
@@ -741,6 +751,7 @@ export default function AnalyticsCompare({
                 </tbody>
               </Box>
             </Card>
+            </>
           )}
         </>
       ) : null}

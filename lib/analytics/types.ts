@@ -29,8 +29,12 @@ export type PlayerStatsRow = {
   points_against: number;
   hands_for: number;
   hands_against: number;
+  /** Datas scored — same as hands_for. */
   hands_won: number;
+  /** Datas conceded — same as hands_against. */
   hands_lost: number;
+  /** All datas played: hands_won + hands_lost. */
+  hands_played: number;
   pollos_for: number;
   pollos_against: number;
   zapatos_for: number;
@@ -68,8 +72,12 @@ export type PlayerStatsView = {
   pointsAgainst: number;
   handsFor: number;
   handsAgainst: number;
+  /** Datas scored — same as handsFor. */
   handsWon: number;
+  /** Datas conceded — same as handsAgainst. */
   handsLost: number;
+  /** All datas played: handsWon + handsLost. */
+  handsPlayed: number;
   pollosFor: number;
   pollosAgainst: number;
   zapatosFor: number;

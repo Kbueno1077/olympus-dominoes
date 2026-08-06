@@ -1,11 +1,9 @@
 "use client";
 
 import AnalyticsCharts from "@/modules/Analytics/AnalyticsCharts";
-import AnalyticsCompare from "@/modules/Analytics/AnalyticsCompare";
 import DatasetsPanel from "@/modules/Analytics/DatasetsPanel";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { buildH2HCompareLaunch } from "@/lib/analytics/compareLaunch";
-import type { CompareLaunch } from "@/lib/analytics/datasets";
 import {
   formatJosesCoefficient,
 } from "@/lib/analytics/joseCoefficient";
@@ -20,8 +18,8 @@ import {
   listStatModes,
 } from "@/lib/analytics/selectors";
 import { useTranslation } from "@/i18n/useTranslation";
+import useToast from "@/hooks/useToast";
 import {
-  ArrowBack,
   CloudUpload,
   InsertDriveFile,
 } from "@mui/icons-material";
@@ -36,7 +34,9 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo, useRef, useState } from "react";
 
 function StatLine({
   label,
@@ -192,38 +192,21 @@ function UploadPanel({
 
 export default function Analytics() {
   const { t, modeName } = useTranslation();
-  const { data, error, loading, importFile, peekPendingCompare, clearPendingCompare } =
-    useAnalytics();
+  const displayToast = useToast();
+  const router = useRouter();
+  const {
+    data,
+    error,
+    loading,
+    importFile,
+    syncJosesCoefficients,
+    setPendingCompare,
+  } = useAnalytics();
   const [busy, setBusy] = useState(false);
-  const [comparing, setComparing] = useState(false);
-  const [compareLaunch, setCompareLaunch] = useState<CompareLaunch | null>(
-    null
-  );
-  const [compareKey, setCompareKey] = useState(0);
+  const [syncingCoef, setSyncingCoef] = useState(false);
   const [modeLabel, setModeLabel] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<number | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const launch = peekPendingCompare();
-    if (!launch) return;
-    setCompareLaunch(launch);
-    setCompareKey((k) => k + 1);
-    setComparing(true);
-  }, [peekPendingCompare]);
-
-  const closeCompare = () => {
-    clearPendingCompare();
-    setComparing(false);
-    setCompareLaunch(null);
-  };
-
-  const openCompare = (launch: CompareLaunch | null = null) => {
-    clearPendingCompare();
-    setCompareLaunch(launch);
-    setCompareKey((k) => k + 1);
-    setComparing(true);
-  };
 
   const modes = useMemo(
     () => (data ? listStatModes(data) : []),
@@ -273,14 +256,36 @@ export default function Analytics() {
       await importFile(file);
       setModeLabel(null);
       setPlayerId(null);
-      setComparing(false);
-      setCompareLaunch(null);
     } catch (err) {
       const code = err instanceof Error ? err.message : "parse_failed";
       setLocalError(code);
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleSyncJoses = () => {
+    setSyncingCoef(true);
+    try {
+      syncJosesCoefficients();
+      displayToast(t("toastJosesSynced"), "success");
+    } catch {
+      displayToast(t("analyticsErrorGeneric"), "error");
+    } finally {
+      setSyncingCoef(false);
+    }
+  };
+
+  const openH2HCompare = (opponentId: number) => {
+    if (selectedPlayerId == null || !activeMode) return;
+    setPendingCompare(
+      buildH2HCompareLaunch({
+        modeLabel: activeMode,
+        playerId: selectedPlayerId,
+        opponentId,
+      })
+    );
+    router.push("/compare");
   };
 
   const errorMessage = (() => {
@@ -306,7 +311,7 @@ export default function Analytics() {
         <Stack spacing={2}>
           <Box>
             <Typography variant="h4" sx={{ mb: 0.75 }}>
-              {t("analyticsTitle")}
+              {t("statsTitle")}
             </Typography>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
               {t("analyticsSubtitle")}
@@ -334,19 +339,8 @@ export default function Analytics() {
           spacing={1.5}
         >
           <Box>
-            {comparing ? (
-              <Button
-                size="small"
-                color="inherit"
-                startIcon={<ArrowBack />}
-                onClick={closeCompare}
-                sx={{ color: "text.secondary", ml: -0.5, mb: 0.75 }}
-              >
-                {t("statsBack")}
-              </Button>
-            ) : null}
             <Typography variant="h4" sx={{ mb: 0.5 }}>
-              {comparing ? t("statsCompare") : t("analyticsTitle")}
+              {t("statsTitle")}
             </Typography>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
               {t("analyticsLoadedMeta", {
@@ -356,11 +350,9 @@ export default function Analytics() {
               })}
             </Typography>
           </Box>
-          {!comparing ? (
-            <Button variant="outlined" onClick={() => openCompare(null)}>
-              {t("statsCompare")}
-            </Button>
-          ) : null}
+          <Button component={Link} href="/compare" variant="outlined">
+            {t("statsCompare")}
+          </Button>
         </Stack>
 
         {errorMessage ? (
@@ -369,15 +361,7 @@ export default function Analytics() {
           </Typography>
         ) : null}
 
-        {comparing ? (
-          <AnalyticsCompare
-            key={compareKey}
-            data={data}
-            modes={modes}
-            initialMode={activeMode}
-            initialLaunch={compareLaunch}
-          />
-        ) : modes.length === 0 ? (
+        {modes.length === 0 ? (
           <>
             <DatasetsPanel />
             <Card sx={{ p: 3 }}>
@@ -419,6 +403,8 @@ export default function Analytics() {
               leaderboard={leaderboard}
               activeStats={activeStats}
               playerName={selectedPlayer?.name ?? null}
+              syncing={syncingCoef}
+              onSync={handleSyncJoses}
               t={t}
             />
 
@@ -571,7 +557,7 @@ export default function Analytics() {
                   />
                   <StatLine
                     label={t("statsHandsTotal")}
-                    value={activeStats.handsFor}
+                    value={activeStats.handsPlayed}
                   />
                   <StatLine
                     label={t("statsHandsWon")}
@@ -688,16 +674,7 @@ export default function Analytics() {
                           key={`${row.opponentId}-${row.modeLabel}`}
                           component="button"
                           type="button"
-                          onClick={() => {
-                            if (selectedPlayerId == null || !activeMode) return;
-                            openCompare(
-                              buildH2HCompareLaunch({
-                                modeLabel: activeMode,
-                                playerId: selectedPlayerId,
-                                opponentId: row.opponentId,
-                              })
-                            );
-                          }}
+                          onClick={() => openH2HCompare(row.opponentId)}
                           sx={{
                             py: 1,
                             px: 0.5,

@@ -1,8 +1,8 @@
 export const DEFAULT_LANGUAGE = "en";
 
 export const LANGUAGES = [
-  { code: "en", short: "EN", name: "English" },
-  { code: "es", short: "ES", name: "Español" },
+  { code: "en", short: "EN", name: "English", region: "USA", flag: "🇺🇸" },
+  { code: "es", short: "ES", name: "Español", region: "España", flag: "🇪🇸" },
 ];
 
 export const LANGUAGE_COOKIE = "lang";
@@ -88,6 +88,14 @@ const en = {
   analyticsErrorFormat: "Use a CSV or SQL export from the mobile app.",
   analyticsErrorUnknownTable: "That file has an unexpected table section.",
   analyticsNav: "Analytics",
+  statsNav: "Stats",
+  compareNav: "Compare Stats",
+  statsTitle: "Stats",
+  navMenu: "Menu",
+  navMenuAria: "Open navigation menu",
+  navMatchInProgress: "In progress",
+  compareNeedImport:
+    "Upload a mobile app export in Stats first, then come back to compare players.",
   navMatch: "Match",
   historyNav: "History",
   historyTitle: "History",
@@ -95,8 +103,8 @@ const en = {
   historyGames: "{n} games",
   historyBack: "History",
   historyNeedImport:
-    "Upload a mobile app export in Analytics to browse past matches here.",
-  historyGoAnalytics: "Open analytics",
+    "Upload a mobile app export in Stats to browse past matches here.",
+  historyGoAnalytics: "Open stats",
 
   datasetsTitle: "Data sets",
   datasetsHint:
@@ -142,9 +150,9 @@ const en = {
   statsPointsPerHandFor: "Points / hand for",
   statsPointsPerHandAgainst: "Points / hand against",
   statsPointsPerHandDifference: "Points / hand difference",
-  statsHandsTotal: "Hands (datas)",
-  statsHandsWon: "Hands won",
-  statsHandsLost: "Hands lost",
+  statsHandsTotal: "Hands (all datas)",
+  statsHandsWon: "Hands won (datas scored)",
+  statsHandsLost: "Hands lost (datas conceded)",
   statsHandsDifference: "Hands difference",
   statsPollosFor: "Pollos for",
   statsPollosAgainst: "Pollos against",
@@ -162,6 +170,10 @@ const en = {
   statsFor: "For",
   statsAgainst: "Against",
   statsChartCoef: "Jose's Coefficient",
+  syncJosesCoefficient: "Sync Jose's Coefficient",
+  syncJosesCoefficientHint:
+    "Recompute the ranking score for every player from saved stats. Use after a formula change.",
+  toastJosesSynced: "Jose's Coefficient updated.",
   statsChartRecord: "{name} · record & shutouts",
   statsChartRecordGeneric: "Record & shutouts",
 
@@ -173,6 +185,10 @@ const en = {
   statsCompareEmpty: "Choose at least one player to compare.",
   statsCompareStat: "Stat",
   statsCompareRemove: "Remove {name}",
+  statsCompareChartRecord: "Record",
+  statsCompareChartPoints: "Points",
+  statsCompareChartHands: "Hands",
+  statsCompareChartShutouts: "Shutouts for",
   statsMatchupToggle: "This matchup",
   statsMatchupHint:
     "Only games where these players sat in the teams you assign. Order within a team does not matter.",
@@ -194,10 +210,10 @@ const en = {
   statsAbbrPointsFor: "PF",
   statsAbbrPointsAgainst: "PA",
   statsAbbrPointsDifference: "PD",
-  statsAbbrHandsTotal: "H",
-  statsAbbrHandsWon: "HW",
-  statsAbbrHandsLost: "HL",
-  statsAbbrHandsDifference: "HD",
+  statsAbbrHandsTotal: "M",
+  statsAbbrHandsWon: "MG",
+  statsAbbrHandsLost: "MP",
+  statsAbbrHandsDifference: "DifM",
   statsAbbrPointsPerHandFor: "PPH+",
   statsAbbrPointsPerHandAgainst: "PPH−",
   statsAbbrPointsPerHandDifference: "PPHΔ",
@@ -345,6 +361,14 @@ const es = {
   analyticsErrorFormat: "Usa un export CSV o SQL de la app móvil.",
   analyticsErrorUnknownTable: "Ese archivo tiene una sección de tabla inesperada.",
   analyticsNav: "Analítica",
+  statsNav: "Estadísticas",
+  compareNav: "Comparar stats",
+  statsTitle: "Estadísticas",
+  navMenu: "Menú",
+  navMenuAria: "Abrir menú de navegación",
+  navMatchInProgress: "En curso",
+  compareNeedImport:
+    "Sube un export de la app en Estadísticas primero, luego vuelve a comparar jugadores.",
   navMatch: "Partida",
   historyNav: "Historial",
   historyTitle: "Historial",
@@ -352,8 +376,8 @@ const es = {
   historyGames: "{n} juegos",
   historyBack: "Historial",
   historyNeedImport:
-    "Sube un export de la app móvil en Analítica para ver las partidas aquí.",
-  historyGoAnalytics: "Abrir analítica",
+    "Sube un export de la app en Estadísticas para ver partidas aquí.",
+  historyGoAnalytics: "Abrir estadísticas",
 
   datasetsTitle: "Conjuntos de datos",
   datasetsHint:
@@ -399,9 +423,9 @@ const es = {
   statsPointsPerHandFor: "Puntos / mano a favor",
   statsPointsPerHandAgainst: "Puntos / mano en contra",
   statsPointsPerHandDifference: "Diferencia puntos / mano",
-  statsHandsTotal: "Manos (datas)",
-  statsHandsWon: "Manos ganadas",
-  statsHandsLost: "Manos perdidas",
+  statsHandsTotal: "Manos (todas las datas)",
+  statsHandsWon: "Manos ganadas (datas a favor)",
+  statsHandsLost: "Manos perdidas (datas en contra)",
   statsHandsDifference: "Diferencia de manos",
   statsPollosFor: "Pollos a favor",
   statsPollosAgainst: "Pollos en contra",
@@ -419,6 +443,10 @@ const es = {
   statsFor: "A favor",
   statsAgainst: "En contra",
   statsChartCoef: "Coeficiente de José",
+  syncJosesCoefficient: "Sincronizar coeficiente de José",
+  syncJosesCoefficientHint:
+    "Recalcula la puntuación de todos los jugadores a partir de las estadísticas guardadas. Úsalo si cambió la fórmula.",
+  toastJosesSynced: "Coeficiente de José actualizado.",
   statsChartRecord: "{name} · marca y cerradas",
   statsChartRecordGeneric: "Marca y cerradas",
 
@@ -431,6 +459,10 @@ const es = {
   statsCompareEmpty: "Elige al menos un jugador para comparar.",
   statsCompareStat: "Estad.",
   statsCompareRemove: "Quitar a {name}",
+  statsCompareChartRecord: "Marca",
+  statsCompareChartPoints: "Puntos",
+  statsCompareChartHands: "Manos",
+  statsCompareChartShutouts: "Cerradas a favor",
   statsMatchupToggle: "Este enfrentamiento",
   statsMatchupHint:
     "Solo partidas donde estos jugadores se sentaron en los equipos que asignes. El orden dentro del equipo no importa.",

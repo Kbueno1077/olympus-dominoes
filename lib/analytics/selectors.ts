@@ -9,6 +9,14 @@ import type {
 function toStatsView(
   row: OlympusExportData["player_stats"][number]
 ): PlayerStatsView {
+  const handsFor = row.hands_for;
+  const handsAgainst = row.hands_against;
+  // Prefer scored/conceded identity; fall back to stored won/lost if needed.
+  const handsWon = handsFor;
+  const handsLost = handsAgainst;
+  const handsPlayed =
+    row.hands_played > 0 ? row.hands_played : handsWon + handsLost;
+
   const base: PlayerStatsView = {
     playerId: row.player_id,
     modeLabel: row.mode_label,
@@ -17,10 +25,11 @@ function toStatsView(
     gamesLost: row.games_lost,
     pointsFor: row.points_for,
     pointsAgainst: row.points_against,
-    handsFor: row.hands_for,
-    handsAgainst: row.hands_against,
-    handsWon: row.hands_won,
-    handsLost: row.hands_lost,
+    handsFor,
+    handsAgainst,
+    handsWon,
+    handsLost,
+    handsPlayed,
     pollosFor: row.pollos_for,
     pollosAgainst: row.pollos_against,
     zapatosFor: row.zapatos_for,

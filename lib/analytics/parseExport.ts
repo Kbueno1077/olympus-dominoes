@@ -225,24 +225,39 @@ function normalizePlayers(rows: Record<string, unknown>[]): PlayerRow[] {
 }
 
 function normalizeStats(rows: Record<string, unknown>[]): PlayerStatsRow[] {
-  return rows.map((row) => ({
-    player_id: asNumber(row.player_id),
-    mode_label: asString(row.mode_label),
-    games_played: asNumber(row.games_played),
-    games_won: asNumber(row.games_won),
-    games_lost: asNumber(row.games_lost),
-    points_for: asNumber(row.points_for),
-    points_against: asNumber(row.points_against),
-    hands_for: asNumber(row.hands_for),
-    hands_against: asNumber(row.hands_against),
-    hands_won: asNumber(row.hands_won),
-    hands_lost: asNumber(row.hands_lost),
-    pollos_for: asNumber(row.pollos_for),
-    pollos_against: asNumber(row.pollos_against),
-    zapatos_for: asNumber(row.zapatos_for),
-    zapatos_against: asNumber(row.zapatos_against),
-    joses_coefficient: asNullableNumber(row.joses_coefficient),
-  }));
+  return rows.map((row) => {
+    const hands_for = asNumber(row.hands_for);
+    const hands_against = asNumber(row.hands_against);
+    // Scored / conceded identity (for/against are the durable measures).
+    // Old exports used game-outcome buckets for won/lost — normalize here.
+    const hands_won = hands_for;
+    const hands_lost = hands_against;
+    const importedPlayed = asNullableNumber(row.hands_played);
+    const hands_played =
+      importedPlayed != null && importedPlayed > 0
+        ? importedPlayed
+        : hands_won + hands_lost;
+
+    return {
+      player_id: asNumber(row.player_id),
+      mode_label: asString(row.mode_label),
+      games_played: asNumber(row.games_played),
+      games_won: asNumber(row.games_won),
+      games_lost: asNumber(row.games_lost),
+      points_for: asNumber(row.points_for),
+      points_against: asNumber(row.points_against),
+      hands_for,
+      hands_against,
+      hands_won,
+      hands_lost,
+      hands_played,
+      pollos_for: asNumber(row.pollos_for),
+      pollos_against: asNumber(row.pollos_against),
+      zapatos_for: asNumber(row.zapatos_for),
+      zapatos_against: asNumber(row.zapatos_against),
+      joses_coefficient: asNullableNumber(row.joses_coefficient),
+    };
+  });
 }
 
 function normalizeH2H(rows: Record<string, unknown>[]): PlayerH2HRow[] {

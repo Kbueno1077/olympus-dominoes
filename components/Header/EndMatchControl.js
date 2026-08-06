@@ -17,6 +17,7 @@ import {
   whoWonRecoil,
 } from "@/recoil/recoilState";
 import { gameModes4 } from "@/utils/matchSettings";
+import { useRouter } from "next/navigation";
 import { useSetRecoilState } from "recoil";
 
 const emptyGame = {
@@ -33,6 +34,7 @@ const emptyGame = {
 
 /** Clears the in-progress match and returns the form to its defaults. */
 export default function EndMatchControl({ fullWidth = false }) {
+  const router = useRouter();
   const setPlayersAmount = useSetRecoilState(playersAmountRecoil);
   const setRenderGamesModes = useSetRecoilState(renderGameModesRecoil);
   const setGameMode = useSetRecoilState(gameModeRecoil);
@@ -63,6 +65,7 @@ export default function EndMatchControl({ fullWidth = false }) {
     setCompletedGame([]);
     setCurrentGame(emptyGame);
     setMatchDescription("");
+    router.push("/");
   };
 
   return (
