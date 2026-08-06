@@ -87,3 +87,69 @@ export function buildH2HCompareLaunch(input: {
     matchupMode: false,
   };
 }
+
+/**
+ * Prefill Compare from an imported history match seating.
+ * Partner modes get Team A/B from scorepad sides when both sides are linked.
+ */
+export function buildHistoryMatchCompareLaunch(input: {
+  modeLabel: string;
+  playersAmount: number;
+  seats: readonly {
+    seat: number;
+    displayName: string;
+    playerId: number | null;
+  }[];
+}): CompareLaunch | null {
+  const rosterNames = ["", "", "", ""];
+  for (const seat of input.seats) {
+    if (seat.seat >= 1 && seat.seat <= 4) {
+      rosterNames[seat.seat - 1] = seat.displayName;
+    }
+  }
+
+  const bySeatId = new Map(
+    input.seats
+      .filter((s) => s.playerId != null)
+      .map((s) => [s.seat, s.playerId as number])
+  );
+
+  const scored = teamsFromRoster(
+    input.playersAmount,
+    input.modeLabel,
+    rosterNames
+  );
+
+  const playerIds: number[] = [];
+  const teams: Record<number, 1 | 2 | null> = {};
+  const isFfa = input.modeLabel === FREE_FOR_ALL;
+
+  for (const team of scored) {
+    const side: 1 | 2 = team.number === 1 ? 1 : 2;
+    for (const member of team.members) {
+      const playerId = bySeatId.get(member.number);
+      if (playerId == null) continue;
+      if (playerIds.includes(playerId)) continue;
+      if (playerIds.length >= MAX_COMPARE) break;
+      playerIds.push(playerId);
+      if (!isFfa) {
+        teams[playerId] = side;
+      }
+    }
+  }
+
+  if (playerIds.length === 0) return null;
+
+  const matchupMode =
+    !isFfa &&
+    playerIds.length >= 2 &&
+    playerIds.some((id) => teams[id] === 1) &&
+    playerIds.some((id) => teams[id] === 2);
+
+  return {
+    modeLabel: input.modeLabel,
+    playerIds,
+    teams: matchupMode ? teams : {},
+    matchupMode,
+  };
+}

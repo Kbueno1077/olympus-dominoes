@@ -106,6 +106,21 @@ const en = {
   historyNeedImport:
     "Upload a mobile app export in Stats to browse past matches here.",
   historyGoAnalytics: "Open stats",
+  historySearch: "Search matches",
+  historySearchHint: "Title, date, or name",
+  historyFilterAll: "All",
+  historyFilterPlayer: "Player",
+  historyFilterPlayers: "Players & sides",
+  historyFilterPlayersHint: "Must have played. Assign A/B only when seating matters.",
+  historyFilterAddPlayer: "Add player",
+  historyFilterAnySide: "Any",
+  historyFilterSideA: "A",
+  historyFilterSideB: "B",
+  historyFilterClearPlayers: "Clear",
+  historyFilterCount: "{shown} of {total}",
+  historyFilterFind: "Find",
+  historyCompareMatch: "Compare seating",
+  historyGamesWonShort: "Wins",
 
   datasetsTitle: "Data sets",
   datasetsHint:
@@ -394,6 +409,22 @@ const es = {
   historyNeedImport:
     "Sube un export de la app en Estadísticas para ver partidas aquí.",
   historyGoAnalytics: "Abrir estadísticas",
+  historySearch: "Buscar partidas",
+  historySearchHint: "Título, fecha o nombre",
+  historyFilterAll: "Todas",
+  historyFilterPlayer: "Jugador",
+  historyFilterPlayers: "Jugadores y lados",
+  historyFilterPlayersHint:
+    "Deben haber jugado. Asigna A/B solo si importa la alineación.",
+  historyFilterAddPlayer: "Añadir jugador",
+  historyFilterAnySide: "Cualq.",
+  historyFilterSideA: "A",
+  historyFilterSideB: "B",
+  historyFilterClearPlayers: "Limpiar",
+  historyFilterCount: "{shown} de {total}",
+  historyFilterFind: "Buscar",
+  historyCompareMatch: "Comparar alineación",
+  historyGamesWonShort: "Ganados",
 
   datasetsTitle: "Conjuntos de datos",
   datasetsHint:

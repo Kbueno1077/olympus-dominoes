@@ -4,7 +4,7 @@ import History from "@/modules/History/History";
 import { Box } from "@mui/material";
 import { useRouter } from "next/navigation";
 
-export default function HistoryPage() {
+export default function HistoryMatchPage() {
   const router = useRouter();
 
   return (

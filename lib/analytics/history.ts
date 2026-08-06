@@ -1,3 +1,4 @@
+import { teamNumberFrom } from "@/utils/matchSettings";
 import { teamInitialLabelsByNumber } from "@/utils/teams";
 import { stripTrailingPadHands } from "./hands";
 import type { OlympusExportData } from "./types";
@@ -29,6 +30,10 @@ export type MatchListItem = {
   maxPoints: number;
   gameCount: number;
   playerNames: string[];
+  /** Seats 1..playersAmount with optional linked export player ids. */
+  seats: HistorySeat[];
+  /** Games won per active team (Team 1, Team 2, …). */
+  teamWins: { teamNumber: number; wins: number }[];
 };
 
 export type MatchDetail = {
@@ -151,44 +156,69 @@ export function listMatches(data: OlympusExportData): MatchListItem[] {
   const seats = data.tables.match_players ?? [];
   const games = data.tables.games ?? [];
 
-  const seatsByMatch = new Map<number, { seat: number; name: string }[]>();
+  const seatsByMatch = new Map<number, HistorySeat[]>();
   for (const row of seats) {
     const matchId = asNumber(row.match_id);
     const list = seatsByMatch.get(matchId) ?? [];
     list.push({
       seat: asNumber(row.seat),
-      name: asString(row.display_name),
+      displayName: asString(row.display_name),
+      playerId: asNullableNumber(row.player_id),
     });
     seatsByMatch.set(matchId, list);
   }
 
   const gameCountByMatch = new Map<number, number>();
+  const winsByMatch = new Map<number, Map<number, number>>();
   for (const row of games) {
     const matchId = asNumber(row.match_id);
     gameCountByMatch.set(matchId, (gameCountByMatch.get(matchId) ?? 0) + 1);
+    const team = teamNumberFrom(asString(row.winner_team));
+    if (team == null) continue;
+    const winMap = winsByMatch.get(matchId) ?? new Map<number, number>();
+    winMap.set(team, (winMap.get(team) ?? 0) + 1);
+    winsByMatch.set(matchId, winMap);
   }
 
   return matches
     .map((row) => {
       const id = asNumber(row.id);
       const playersAmount = asNumber(row.players_amount);
+      const modeLabel = asString(row.mode_label);
       const matchSeats = (seatsByMatch.get(id) ?? [])
         .slice()
         .sort((a, b) => a.seat - b.seat);
       const playerNames = matchSeats
         .filter((s) => s.seat >= 1 && s.seat <= playersAmount)
-        .map((s) => s.name)
+        .map((s) => s.displayName)
         .filter(Boolean);
+
+      const isFreeForAll = modeLabel === "Free For All";
+      const teamNumbers =
+        playersAmount > 2 && isFreeForAll
+          ? playersAmount === 4
+            ? [1, 2, 3, 4]
+            : [1, 2, 3]
+          : [1, 2];
+      const winMap = winsByMatch.get(id) ?? new Map<number, number>();
+      const teamWins = teamNumbers.map((teamNumber) => ({
+        teamNumber,
+        wins: winMap.get(teamNumber) ?? 0,
+      }));
 
       return {
         id,
         title: asString(row.title),
         endedAt: asString(row.ended_at),
         playersAmount,
-        modeLabel: asString(row.mode_label),
+        modeLabel,
         maxPoints: asNumber(row.max_points),
         gameCount: gameCountByMatch.get(id) ?? 0,
         playerNames,
+        seats: matchSeats.filter(
+          (s) => s.seat >= 1 && s.seat <= playersAmount
+        ),
+        teamWins,
       };
     })
     .sort((a, b) => {
@@ -269,10 +299,39 @@ export function seatNamesFromDetail(detail: MatchDetail): string[] {
   return names;
 }
 
-export function teamLabelsForDetail(detail: MatchDetail): Record<number, string> {
+export function teamLabelsForDetail(
+  detail: MatchDetail
+): Record<number, string> {
   return teamInitialLabelsByNumber(
     detail.playersAmount,
     detail.modeLabel,
     seatNamesFromDetail(detail)
   ) as Record<number, string>;
+}
+
+/** Compact “KJ 3–1 RaRu” style scoreline for list cards. */
+export function formatMatchScoreline(
+  item: Pick<
+    MatchListItem,
+    "playersAmount" | "modeLabel" | "playerNames" | "teamWins"
+  >,
+  teamName: (n: number) => string
+): string {
+  const labels = teamInitialLabelsByNumber(
+    item.playersAmount,
+    item.modeLabel,
+    [
+      item.playerNames[0] ?? "",
+      item.playerNames[1] ?? "",
+      item.playerNames[2] ?? "",
+      item.playerNames[3] ?? "",
+    ]
+  ) as Record<number, string>;
+
+  return item.teamWins
+    .map((row) => {
+      const label = labels[row.teamNumber] || teamName(row.teamNumber);
+      return `${label} ${row.wins}`;
+    })
+    .join(" – ");
 }
