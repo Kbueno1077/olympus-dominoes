@@ -1,6 +1,7 @@
 "use client";
 
 import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
+import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import HistoryGamesNotes from "@/modules/History/HistoryGamesNotes";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { buildHistoryMatchCompareLaunch } from "@/lib/analytics/compareLaunch";
@@ -488,46 +489,10 @@ export default function History({ onOpenAnalytics }: Props) {
 
   if (!data) {
     return (
-      <Box
-        sx={{
-          maxWidth: 720,
-          mx: "auto",
-          width: "100%",
-          px: { xs: 2, sm: 3 },
-          py: 3,
-        }}
-      >
-        <Stack spacing={2} alignItems="flex-start">
-          <Box>
-            <Typography variant="h4" sx={{ mb: 0.75 }}>
-              {t("historyTitle")}
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              {t("historyNeedImport")}
-            </Typography>
-          </Box>
-          {onOpenAnalytics ? (
-            <Button variant="contained" onClick={onOpenAnalytics}>
-              {t("historyGoAnalytics")}
-            </Button>
-          ) : (
-            <Button component={Link} href="/stats" variant="contained">
-              {t("historyGoAnalytics")}
-            </Button>
-          )}
-          <Button
-            variant="outlined"
-            startIcon={<FolderOpenIcon />}
-            onClick={() => setDataDrawerOpen(true)}
-          >
-            {t("statsManageData")}
-          </Button>
-        </Stack>
-        <StatsDataDrawer
-          open={dataDrawerOpen}
-          onClose={() => setDataDrawerOpen(false)}
-        />
-      </Box>
+      <DashboardEmptyState
+        page="history"
+        onOpenStats={onOpenAnalytics}
+      />
     );
   }
 

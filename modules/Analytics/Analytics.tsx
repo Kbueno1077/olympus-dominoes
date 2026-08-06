@@ -2,6 +2,7 @@
 
 import StatsDashboardCharts from "@/modules/Analytics/StatsDashboardCharts";
 import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
+import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import {
   DashboardPanel,
   MetricTile,
@@ -24,10 +25,6 @@ import useToast from "@/hooks/useToast";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import SyncIcon from "@mui/icons-material/Sync";
 import {
-  CloudUpload,
-  InsertDriveFile,
-} from "@mui/icons-material";
-import {
   Box,
   Button,
   Card,
@@ -45,7 +42,6 @@ import { useRouter } from "next/navigation";
 import {
   startTransition,
   useMemo,
-  useRef,
   useState,
   type ComponentProps,
   type ComponentType,
@@ -116,103 +112,6 @@ function formatPerHand(points: number, hands: number): string {
   if (hands <= 0) return "—";
   const avg = points / hands;
   return Number.isInteger(avg) ? String(avg) : avg.toFixed(1);
-}
-
-function UploadPanel({
-  onFile,
-  busy,
-}: {
-  onFile: (file: File) => Promise<void>;
-  busy: boolean;
-}) {
-  const { t } = useTranslation();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
-
-  const handleFiles = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    await onFile(file);
-  };
-
-  return (
-    <Card
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-        void handleFiles(e.dataTransfer.files);
-      }}
-      sx={{
-        p: { xs: 3, sm: 4 },
-        textAlign: "center",
-        borderStyle: "dashed",
-        borderWidth: 2,
-        borderColor: (theme) =>
-          dragging
-            ? theme.palette.primary.main
-            : alpha(theme.palette.grey[600], 0.35),
-        backgroundColor: (theme) =>
-          dragging
-            ? alpha(theme.palette.primary.main, 0.06)
-            : "background.paper",
-        transition: "border-color 160ms ease, background-color 160ms ease",
-      }}
-    >
-      <Stack spacing={2} alignItems="center">
-        <Box
-          sx={{
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            display: "grid",
-            placeItems: "center",
-            backgroundColor: (theme) =>
-              alpha(theme.palette.primary.main, 0.1),
-            color: "primary.main",
-          }}
-        >
-          {busy ? <CircularProgress size={24} /> : <CloudUpload />}
-        </Box>
-        <Box>
-          <Typography variant="h5" sx={{ mb: 0.75 }}>
-            {t("analyticsUploadTitle")}
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: "text.secondary", maxWidth: 420, mx: "auto" }}
-          >
-            {t("analyticsUploadBody")}
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          disabled={busy}
-          onClick={() => inputRef.current?.click()}
-          startIcon={<InsertDriveFile />}
-        >
-          {t("analyticsChooseFile")}
-        </Button>
-        <Typography variant="caption" sx={{ color: "text.disabled" }}>
-          {t("analyticsUploadHint")}
-        </Typography>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".csv,.sql,text/csv,application/sql,text/plain"
-          hidden
-          onChange={(e) => {
-            void handleFiles(e.target.files);
-            e.target.value = "";
-          }}
-        />
-      </Stack>
-    </Card>
-  );
 }
 
 export default function Analytics() {
@@ -338,43 +237,12 @@ export default function Analytics() {
 
   if (!data) {
     return (
-      <Box
-        sx={{
-          maxWidth: 720,
-          mx: "auto",
-          width: "100%",
-          px: { xs: 2, sm: 3 },
-          py: 3,
-        }}
-      >
-        <Stack spacing={2}>
-          <Box>
-            <Typography variant="h4" sx={{ mb: 0.75 }}>
-              {t("statsTitle")}
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              {t("analyticsSubtitle")}
-            </Typography>
-          </Box>
-          <UploadPanel onFile={handleUpload} busy={busy} />
-          <Button
-            variant="outlined"
-            startIcon={<FolderOpenIcon />}
-            onClick={() => setDataDrawerOpen(true)}
-          >
-            {t("statsManageData")}
-          </Button>
-          {errorMessage ? (
-            <Typography variant="body2" sx={{ color: "error.main" }}>
-              {errorMessage}
-            </Typography>
-          ) : null}
-        </Stack>
-        <StatsDataDrawer
-          open={dataDrawerOpen}
-          onClose={() => setDataDrawerOpen(false)}
-        />
-      </Box>
+      <DashboardEmptyState
+        page="stats"
+        onUploadFile={handleUpload}
+        uploadBusy={busy}
+        errorMessage={errorMessage}
+      />
     );
   }
 

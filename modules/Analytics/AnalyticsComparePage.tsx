@@ -1,6 +1,7 @@
 "use client";
 
 import AnalyticsCompare from "@/modules/Analytics/AnalyticsCompare";
+import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import type { CompareLaunch } from "@/lib/analytics/datasets";
@@ -57,42 +58,7 @@ export default function AnalyticsComparePage() {
   }
 
   if (!data) {
-    return (
-      <Box
-        sx={{
-          maxWidth: 720,
-          mx: "auto",
-          width: "100%",
-          px: { xs: 2, sm: 3 },
-          py: 3,
-        }}
-      >
-        <Stack spacing={2.5}>
-          <Box>
-            <Typography variant="h4" sx={{ mb: 0.5 }}>
-              {t("statsCompare")}
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              {t("compareNeedImport")}
-            </Typography>
-          </Box>
-          <Button component={Link} href="/stats" variant="contained">
-            {t("historyGoAnalytics")}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<FolderOpenIcon />}
-            onClick={() => setDataDrawerOpen(true)}
-          >
-            {t("statsManageData")}
-          </Button>
-        </Stack>
-        <StatsDataDrawer
-          open={dataDrawerOpen}
-          onClose={() => setDataDrawerOpen(false)}
-        />
-      </Box>
-    );
+    return <DashboardEmptyState page="compare" />;
   }
 
   const datasetLabel = activeDataset?.displayName || data.fileName;
