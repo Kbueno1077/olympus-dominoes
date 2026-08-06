@@ -46,7 +46,7 @@ export function DashboardChromeShell({
   );
 }
 
-type EmptyPage = "stats" | "compare" | "history";
+type EmptyPage = "stats" | "compare" | "history" | "podium";
 
 type Props = {
   page: EmptyPage;
@@ -55,7 +55,7 @@ type Props = {
 
 /**
  * Empty analytics chrome when no export is loaded.
- * One action: open Manage data (drawer) — same on Stats, Compare, and History.
+ * One action: open Manage data (drawer) — same on Stats, Compare, History, Podium.
  */
 export default function DashboardEmptyState({
   page,
@@ -64,19 +64,39 @@ export default function DashboardEmptyState({
   const { t } = useTranslation();
   const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
 
-  const title =
-    page === "stats"
-      ? t("statsTitle")
-      : page === "compare"
-        ? t("statsCompare")
-        : t("historyTitle");
+  const title = (() => {
+    switch (page) {
+      case "stats":
+        return t("statsTitle");
+      case "compare":
+        return t("statsCompare");
+      case "podium":
+        return t("podiumTitle");
+      case "history":
+        return t("historyTitle");
+      default: {
+        const _exhaustive: never = page;
+        return _exhaustive;
+      }
+    }
+  })();
 
-  const subtitle =
-    page === "stats"
-      ? t("analyticsSubtitle")
-      : page === "compare"
-        ? t("compareNeedImport")
-        : t("historyNeedImport");
+  const subtitle = (() => {
+    switch (page) {
+      case "stats":
+        return t("analyticsSubtitle");
+      case "compare":
+        return t("compareNeedImport");
+      case "podium":
+        return t("podiumNeedImport");
+      case "history":
+        return t("historyNeedImport");
+      default: {
+        const _exhaustive: never = page;
+        return _exhaustive;
+      }
+    }
+  })();
 
   return (
     <>

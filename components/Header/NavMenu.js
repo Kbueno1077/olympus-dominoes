@@ -3,8 +3,20 @@
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { useTranslation } from "@/i18n/useTranslation";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
+import BarChartOutlined from "@mui/icons-material/BarChartOutlined";
+import CompareArrowsOutlined from "@mui/icons-material/CompareArrowsOutlined";
+import EmojiEventsOutlined from "@mui/icons-material/EmojiEventsOutlined";
 import ExpandMore from "@mui/icons-material/ExpandMore";
-import { Button, ListItemText, Menu, MenuItem } from "@mui/material";
+import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
+import HomeOutlined from "@mui/icons-material/HomeOutlined";
+import SportsEsportsOutlined from "@mui/icons-material/SportsEsportsOutlined";
+import {
+  Button,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+} from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,33 +37,49 @@ export default function NavMenu() {
 
   const items = useMemo(
     () => [
-      { href: "/", label: t("dashboard"), match: (p) => p === "/" },
+      {
+        href: "/",
+        label: t("dashboard"),
+        match: (p) => p === "/",
+        Icon: HomeOutlined,
+      },
       {
         href: "/match",
         label: t("navMatch"),
         match: (p) => p.startsWith("/match"),
         inProgress: matchInProgress,
+        Icon: SportsEsportsOutlined,
       },
       {
         href: "/history",
         label: t("historyNav"),
         match: (p) => p.startsWith("/history"),
+        Icon: HistoryOutlined,
       },
       {
         href: "/stats",
         label: t("statsNav"),
         match: (p) => p === "/stats" || p.startsWith("/stats/"),
+        Icon: BarChartOutlined,
       },
       {
         href: "/compare",
         label: t("compareNav"),
         match: (p) => p.startsWith("/compare"),
+        Icon: CompareArrowsOutlined,
+      },
+      {
+        href: "/podium",
+        label: t("podiumNav"),
+        match: (p) => p === "/podium" || p.startsWith("/podium/"),
+        Icon: EmojiEventsOutlined,
       },
     ],
     [t, matchInProgress]
   );
 
   const activeItem = items.find((item) => item.match(pathname)) ?? items[0];
+  const ActiveIcon = activeItem.Icon;
 
   return (
     <>
@@ -62,6 +90,7 @@ export default function NavMenu() {
         aria-haspopup="menu"
         aria-expanded={open ? "true" : undefined}
         onClick={(e) => setAnchorEl(e.currentTarget)}
+        startIcon={<ActiveIcon sx={{ fontSize: 18 }} />}
         endIcon={
           <ExpandMore
             sx={{
@@ -86,6 +115,7 @@ export default function NavMenu() {
             backgroundColor: (theme) => alpha(theme.palette.grey[700], 0.08),
             borderColor: "divider",
           },
+          "& .MuiButton-startIcon": { mr: 0.75 },
         }}
       >
         {activeItem.label}
@@ -101,7 +131,7 @@ export default function NavMenu() {
           paper: {
             sx: {
               mt: 0.75,
-              minWidth: 188,
+              minWidth: 200,
               borderRadius: 1.5,
               border: "1px solid",
               borderColor: "divider",
@@ -112,6 +142,7 @@ export default function NavMenu() {
       >
         {items.map((item) => {
           const active = item.href === activeItem.href;
+          const Icon = item.Icon;
           return (
             <MenuItem
               key={item.href}
@@ -121,7 +152,7 @@ export default function NavMenu() {
               sx={{
                 py: 1.1,
                 px: 1.75,
-                pl: 1.75,
+                gap: 0.5,
                 borderLeft: "3px solid",
                 borderColor: active
                   ? "primary.main"
@@ -138,6 +169,14 @@ export default function NavMenu() {
                 },
               }}
             >
+              <ListItemIcon
+                sx={{
+                  minWidth: 34,
+                  color: active ? "primary.main" : "text.secondary",
+                }}
+              >
+                <Icon sx={{ fontSize: 20 }} />
+              </ListItemIcon>
               <ListItemText
                 primary={item.label}
                 secondary={

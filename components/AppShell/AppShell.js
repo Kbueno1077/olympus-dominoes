@@ -4,7 +4,7 @@ import Header from "@/components/Header/Header";
 import { Box } from "@mui/material";
 import { usePathname } from "next/navigation";
 
-const FULL_BLEED_PATHS = new Set(["/stats", "/compare", "/history"]);
+const FULL_BLEED_PATHS = new Set(["/stats", "/compare", "/history", "/podium"]);
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
