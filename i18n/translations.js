@@ -147,6 +147,8 @@ const en = {
   datasetsLastDataset: "Keep at least one data set.",
   datasetsEmptyName: "Enter a name.",
 
+  dashboardEmptyNoData: "No data set loaded",
+
   matchAnalytics: "Compare",
   toastMatchAnalyticsNeedImport:
     "Upload a save in Analytics first, then try again.",
@@ -450,6 +452,8 @@ const es = {
     "Se borrarán jugadores, historial y estadísticas del conjunto activo en este navegador.",
   datasetsLastDataset: "Deja al menos un conjunto de datos.",
   datasetsEmptyName: "Escribe un nombre.",
+
+  dashboardEmptyNoData: "Sin conjunto de datos",
 
   matchAnalytics: "Comparar",
   toastMatchAnalyticsNeedImport:
