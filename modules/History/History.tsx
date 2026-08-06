@@ -1,9 +1,12 @@
 "use client";
 
+import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import HistoryGamesNotes from "@/modules/History/HistoryGamesNotes";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
+import { buildHistoryMatchCompareLaunch } from "@/lib/analytics/compareLaunch";
 import {
   formatMatchDate,
+  formatMatchScoreline,
   getMatchDetail,
   listMatches,
   seatNamesFromDetail,
@@ -11,23 +14,46 @@ import {
   type MatchDetail,
   type MatchListItem,
 } from "@/lib/analytics/history";
+import {
+  matchPassesHistoryFilter,
+  type HistoryFilterPlayer,
+  type HistoryFilterTeam,
+} from "@/lib/analytics/historyFilters";
+import {
+  formatSignedDiff,
+  signedDiffColor,
+} from "@/lib/analytics/signedDiff";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   activeTeamNumbers,
   tallyPollosZapatos,
+  tallyWins,
   TEAM_KEYS,
 } from "@/utils/matchSettings";
 import { ArrowBack } from "@mui/icons-material";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import {
+  Autocomplete,
   Box,
   Button,
   Card,
+  Chip,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { startTransition, useMemo, useState } from "react";
+
+const SIDE_A = "#2F6F9F";
+const SIDE_B = "#B8453A";
 
 function HistoryList({
   items,
@@ -38,7 +64,7 @@ function HistoryList({
   language: string;
   onOpen: (id: number) => void;
 }) {
-  const { t, modeName } = useTranslation();
+  const { t, modeName, teamName } = useTranslation();
 
   if (items.length === 0) {
     return (
@@ -49,48 +75,80 @@ function HistoryList({
   }
 
   return (
-    <Stack spacing={1.5}>
-      {items.map((item) => (
-        <Card
-          key={item.id}
-          component="button"
-          type="button"
-          onClick={() => onOpen(item.id)}
-          sx={{
-            p: 2,
-            textAlign: "left",
-            cursor: "pointer",
-            border: "1px solid",
-            borderColor: "divider",
-            width: "100%",
-            font: "inherit",
-            color: "inherit",
-            backgroundColor: "background.paper",
-            "&:hover": {
-              backgroundColor: (theme) =>
-                alpha(theme.palette.primary.main, 0.05),
-              borderColor: (theme) =>
-                alpha(theme.palette.primary.main, 0.35),
-            },
-          }}
-        >
-          <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
-            {formatMatchDate(language, item.endedAt)}
-          </Typography>
-          <Typography
-            variant="overline"
-            component="p"
-            sx={{ color: "text.secondary", mb: 0.75, lineHeight: 1.4 }}
+    <Stack spacing={1.25}>
+      {items.map((item) => {
+        const scoreline = formatMatchScoreline(item, teamName);
+        const heading =
+          item.title.trim().length > 0
+            ? item.title.trim()
+            : formatMatchDate(language, item.endedAt);
+
+        return (
+          <Card
+            key={item.id}
+            component="button"
+            type="button"
+            onClick={() => onOpen(item.id)}
+            sx={{
+              p: 2,
+              textAlign: "left",
+              cursor: "pointer",
+              border: "1px solid",
+              borderColor: "divider",
+              width: "100%",
+              font: "inherit",
+              color: "inherit",
+              backgroundColor: "background.paper",
+              "&:hover": {
+                backgroundColor: (theme) =>
+                  alpha(theme.palette.primary.main, 0.05),
+                borderColor: (theme) =>
+                  alpha(theme.palette.primary.main, 0.35),
+              },
+            }}
           >
-            {modeName(item.modeLabel)} ·{" "}
-            {t("historyGames", { n: item.gameCount })} ·{" "}
-            {t("firstTo", { n: item.maxPoints })}
-          </Typography>
-          <Typography variant="body2" sx={{ color: "text.primary" }}>
-            {item.playerNames.join(" · ")}
-          </Typography>
-        </Card>
-      ))}
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              justifyContent="space-between"
+              alignItems={{ xs: "flex-start", sm: "baseline" }}
+              spacing={0.75}
+              sx={{ mb: 0.5 }}
+            >
+              <Typography sx={{ fontWeight: 700 }}>{heading}</Typography>
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  fontVariantNumeric: "tabular-nums",
+                  color: "primary.main",
+                  fontSize: 15,
+                }}
+              >
+                {scoreline}
+              </Typography>
+            </Stack>
+            {item.title.trim().length > 0 ? (
+              <Typography
+                variant="body2"
+                sx={{ color: "text.secondary", mb: 0.5 }}
+              >
+                {formatMatchDate(language, item.endedAt)}
+              </Typography>
+            ) : null}
+            <Typography
+              variant="overline"
+              component="p"
+              sx={{ color: "text.secondary", mb: 0.75, lineHeight: 1.4 }}
+            >
+              {modeName(item.modeLabel)} ·{" "}
+              {t("historyGames", { n: item.gameCount })} ·{" "}
+              {t("firstTo", { n: item.maxPoints })}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.primary" }}>
+              {item.playerNames.join(" · ")}
+            </Typography>
+          </Card>
+        );
+      })}
     </Stack>
   );
 }
@@ -99,10 +157,14 @@ function HistoryDetailView({
   detail,
   language,
   onBack,
+  onCompare,
+  canCompare,
 }: {
   detail: MatchDetail;
   language: string;
   onBack: () => void;
+  onCompare: () => void;
+  canCompare: boolean;
 }) {
   const { t, modeName, teamName } = useTranslation();
   const seatNames = seatNamesFromDetail(detail);
@@ -110,23 +172,57 @@ function HistoryDetailView({
   const isFreeForAll = detail.modeLabel === "Free For All";
   const teamNumbers = activeTeamNumbers(detail.playersAmount, isFreeForAll);
   const shutouts = tallyPollosZapatos(detail.games, teamNumbers);
+  const wins = tallyWins(detail.games, teamNumbers);
+  const totalGames = detail.games.length;
+  const winsByTeam = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const row of wins) map.set(row.teamNumber, row.wins);
+    return map;
+  }, [wins]);
+
+  const heading =
+    detail.title.trim().length > 0
+      ? detail.title.trim()
+      : formatMatchDate(language, detail.endedAt);
 
   return (
     <Stack spacing={2}>
-      <Button
-        size="small"
-        color="inherit"
-        startIcon={<ArrowBack />}
-        onClick={onBack}
-        sx={{ color: "text.secondary", alignSelf: "flex-start", ml: -0.5 }}
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={1}
+        flexWrap="wrap"
+        useFlexGap
       >
-        {t("historyBack")}
-      </Button>
+        <Button
+          size="small"
+          color="inherit"
+          startIcon={<ArrowBack />}
+          onClick={onBack}
+          sx={{ color: "text.secondary", ml: -0.5 }}
+        >
+          {t("historyBack")}
+        </Button>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          {canCompare ? (
+            <Button size="small" variant="outlined" onClick={onCompare}>
+              {t("historyCompareMatch")}
+            </Button>
+          ) : null}
+        </Stack>
+      </Stack>
 
       <Card sx={{ p: 2 }}>
-        <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
-          {formatMatchDate(language, detail.endedAt)}
-        </Typography>
+        <Typography sx={{ fontWeight: 700, mb: 0.35 }}>{heading}</Typography>
+        {detail.title.trim().length > 0 ? (
+          <Typography
+            variant="body2"
+            sx={{ color: "text.secondary", mb: 0.5 }}
+          >
+            {formatMatchDate(language, detail.endedAt)}
+          </Typography>
+        ) : null}
         <Typography
           variant="overline"
           component="p"
@@ -134,7 +230,8 @@ function HistoryDetailView({
         >
           {modeName(detail.modeLabel)} ·{" "}
           {t("playersCount", { n: detail.playersAmount })} ·{" "}
-          {t("firstTo", { n: detail.maxPoints })}
+          {t("firstTo", { n: detail.maxPoints })} ·{" "}
+          {t("historyGames", { n: detail.games.length })}
         </Typography>
         <Typography variant="body2" sx={{ color: "text.primary", mb: 1.5 }}>
           {detail.seats
@@ -155,48 +252,73 @@ function HistoryDetailView({
               pollosFor: number;
               zapatosFor: number;
             }) => {
-            const label =
-              teamLabels[teamNumber] || teamName(teamNumber);
-            const teamKey = (TEAM_KEYS as Record<number, string>)[teamNumber] ?? "team1";
-            return (
-              <Box
-                key={teamNumber}
-                sx={{
-                  flex: 1,
-                  minWidth: 0,
-                  textAlign: "center",
-                  py: 1,
-                  borderRadius: 2,
-                  border: "1px solid",
-                  borderColor: (theme) =>
-                    alpha((theme.palette as any)[teamKey].main, 0.35),
-                  backgroundColor: (theme) =>
-                    alpha((theme.palette as any)[teamKey].main, 0.08),
-                }}
-              >
-                <Typography
+              const label = teamLabels[teamNumber] || teamName(teamNumber);
+              const teamKey =
+                (TEAM_KEYS as Record<number, string>)[teamNumber] ?? "team1";
+              const gameWins = winsByTeam.get(teamNumber) ?? 0;
+              const net = 2 * gameWins - totalGames;
+              return (
+                <Box
+                  key={teamNumber}
                   sx={{
-                    fontWeight: 700,
-                    fontSize: 13,
-                    color: (theme) => (theme.palette as any)[teamKey].dark,
+                    flex: 1,
+                    minWidth: 0,
+                    textAlign: "center",
+                    py: 1.1,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: (theme) =>
+                      alpha((theme.palette as any)[teamKey].main, 0.35),
+                    backgroundColor: (theme) =>
+                      alpha((theme.palette as any)[teamKey].main, 0.08),
                   }}
                 >
-                  {label}
-                </Typography>
-                <Typography
-                  sx={{
-                    mt: 0.25,
-                    fontSize: 10,
-                    color: "text.disabled",
-                  }}
-                >
-                  {pollosFor}
-                  {t("pollo").charAt(0)} · {zapatosFor}
-                  {t("zapato").charAt(0)}
-                </Typography>
-              </Box>
-            );
-          }
+                  <Typography
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: (theme) => (theme.palette as any)[teamKey].dark,
+                    }}
+                  >
+                    {label}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      mt: 0.35,
+                      fontWeight: 700,
+                      fontSize: 22,
+                      lineHeight: 1.1,
+                      fontVariantNumeric: "tabular-nums",
+                      color: (theme) => (theme.palette as any)[teamKey].main,
+                    }}
+                  >
+                    {gameWins}
+                    <Box
+                      component="span"
+                      sx={{
+                        ml: 0.6,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: signedDiffColor(net) ?? "text.secondary",
+                      }}
+                    >
+                      ({formatSignedDiff(net)})
+                    </Box>
+                  </Typography>
+                  <Typography
+                    sx={{
+                      mt: 0.35,
+                      fontSize: 10,
+                      color: "text.disabled",
+                    }}
+                  >
+                    {t("historyGamesWonShort")} · {pollosFor}
+                    {t("pollo").charAt(0)} · {zapatosFor}
+                    {t("zapato").charAt(0)}
+                  </Typography>
+                </Box>
+              );
+            }
           )}
         </Stack>
       </Card>
@@ -216,23 +338,149 @@ type Props = {
 };
 
 export default function History({ onOpenAnalytics }: Props) {
-  const { t, language } = useTranslation();
-  const { data, loading } = useAnalytics();
-  const [matchId, setMatchId] = useState<number | null>(null);
+  const { t, language, modeName } = useTranslation();
+  const router = useRouter();
+  const params = useParams();
+  const { data, loading, activeDataset, setPendingCompare } = useAnalytics();
+  const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [modeFilter, setModeFilter] = useState<string>("all");
+  const [rosterFilter, setRosterFilter] = useState<HistoryFilterPlayer[]>(
+    []
+  );
+  const [rosterPickerInput, setRosterPickerInput] = useState("");
 
-  const items = useMemo(
-    () => (data ? listMatches(data) : []),
-    [data]
+  const routeMatchId = useMemo(() => {
+    const raw = params?.matchId;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    if (value == null || value === "") return null;
+    const id = Number(value);
+    return Number.isFinite(id) ? id : null;
+  }, [params]);
+
+  const items = useMemo(() => (data ? listMatches(data) : []), [data]);
+
+  const modes = useMemo(() => {
+    const set = new Set<string>();
+    for (const item of items) {
+      if (item.modeLabel) set.add(item.modeLabel);
+    }
+    return Array.from(set);
+  }, [items]);
+
+  const players = useMemo(() => {
+    if (!data) return [];
+    return data.players
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [data]);
+
+  const playersById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const player of players) map.set(player.id, player.name);
+    return map;
+  }, [players]);
+
+  const addablePlayers = useMemo(
+    () =>
+      players.filter(
+        (player) => !rosterFilter.some((entry) => entry.playerId === player.id)
+      ),
+    [players, rosterFilter]
   );
 
+  const filteredItems = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+
+    return items.filter((item) => {
+      if (modeFilter !== "all" && item.modeLabel !== modeFilter) return false;
+
+      if (
+        !matchPassesHistoryFilter(
+          {
+            playersAmount: item.playersAmount,
+            modeLabel: item.modeLabel,
+            seats: item.seats.map((seat) => ({
+              seat: seat.seat,
+              displayName: seat.displayName,
+              playerId: seat.playerId,
+              nameKey: "",
+            })),
+          },
+          { players: rosterFilter }
+        )
+      ) {
+        return false;
+      }
+
+      if (!needle) return true;
+      const haystack = [
+        item.title,
+        formatMatchDate(language, item.endedAt),
+        item.modeLabel,
+        modeName(item.modeLabel),
+        item.playerNames.join(" "),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [items, query, modeFilter, rosterFilter, language, modeName]);
+
+  const setPlayerTeam = (playerId: number, team: HistoryFilterTeam) => {
+    setRosterFilter((current) =>
+      current.map((entry) =>
+        entry.playerId === playerId ? { ...entry, team } : entry
+      )
+    );
+  };
+
+  const removePlayer = (playerId: number) => {
+    setRosterFilter((current) =>
+      current.filter((entry) => entry.playerId !== playerId)
+    );
+  };
+
+  const clearRosterFilter = () => setRosterFilter([]);
+
   const detail = useMemo(() => {
-    if (!data || matchId == null) return null;
-    return getMatchDetail(data, matchId);
-  }, [data, matchId]);
+    if (!data || routeMatchId == null) return null;
+    return getMatchDetail(data, routeMatchId);
+  }, [data, routeMatchId]);
+
+  const openMatch = (id: number) => {
+    startTransition(() => router.push(`/history/${id}`));
+  };
+
+  const backToList = () => {
+    startTransition(() => router.push("/history"));
+  };
+
+  const openCompare = () => {
+    if (!detail) return;
+    const launch = buildHistoryMatchCompareLaunch({
+      modeLabel: detail.modeLabel,
+      playersAmount: detail.playersAmount,
+      seats: detail.seats,
+    });
+    if (!launch) return;
+    setPendingCompare(launch);
+    router.push("/compare");
+  };
+
+  const canCompare = useMemo(() => {
+    if (!detail) return false;
+    return detail.seats.some(
+      (s) =>
+        s.seat >= 1 &&
+        s.seat <= detail.playersAmount &&
+        s.playerId != null
+    );
+  }, [detail]);
 
   if (loading) {
     return (
-      <Box sx={{ display: "grid", placeItems: "center", py: 10 }}>
+      <Box sx={{ display: "grid", placeItems: "center", minHeight: "60vh" }}>
         <CircularProgress />
       </Box>
     );
@@ -240,7 +488,15 @@ export default function History({ onOpenAnalytics }: Props) {
 
   if (!data) {
     return (
-      <Box sx={{ maxWidth: 720, mx: "auto", width: "100%" }}>
+      <Box
+        sx={{
+          maxWidth: 720,
+          mx: "auto",
+          width: "100%",
+          px: { xs: 2, sm: 3 },
+          py: 3,
+        }}
+      >
         <Stack spacing={2} alignItems="flex-start">
           <Box>
             <Typography variant="h4" sx={{ mb: 0.75 }}>
@@ -254,40 +510,402 @@ export default function History({ onOpenAnalytics }: Props) {
             <Button variant="contained" onClick={onOpenAnalytics}>
               {t("historyGoAnalytics")}
             </Button>
-          ) : null}
+          ) : (
+            <Button component={Link} href="/stats" variant="contained">
+              {t("historyGoAnalytics")}
+            </Button>
+          )}
+          <Button
+            variant="outlined"
+            startIcon={<FolderOpenIcon />}
+            onClick={() => setDataDrawerOpen(true)}
+          >
+            {t("statsManageData")}
+          </Button>
         </Stack>
+        <StatsDataDrawer
+          open={dataDrawerOpen}
+          onClose={() => setDataDrawerOpen(false)}
+        />
       </Box>
     );
   }
 
+  const datasetLabel = activeDataset?.displayName || data.fileName;
+
   return (
-    <Box sx={{ maxWidth: 920, mx: "auto", width: "100%" }}>
-      <Stack spacing={2}>
-        {matchId == null ? (
-          <>
-            <Box>
-              <Typography variant="h4" sx={{ mb: 0.5 }}>
-                {t("historyTitle")}
-              </Typography>
-              <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                {t("analyticsLoadedMeta", {
-                  file: data.fileName,
-                  players: data.players.length,
-                  matches: data.matches.length,
-                })}
-              </Typography>
-            </Box>
-            <HistoryList
-              items={items}
-              language={language}
-              onOpen={setMatchId}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        flex: 1,
+        minHeight: { md: "calc(100vh - 64px)" },
+        width: "100%",
+        backgroundColor: "background.default",
+        alignItems: "stretch",
+      }}
+    >
+      <Box
+        component="aside"
+        sx={{
+          width: { xs: "100%", md: 300 },
+          flexShrink: 0,
+          borderRight: {
+            xs: "none",
+            md: "1px solid #C0C0C0",
+          },
+          borderBottom: {
+            xs: "1px solid #C0C0C0",
+            md: "none",
+          },
+          backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.75),
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          display: "flex",
+          flexDirection: "column",
+          alignSelf: "stretch",
+        }}
+      >
+        <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 2 }}>
+          <Typography variant="h5" sx={{ mb: 0.25 }}>
+            {t("historyTitle")}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{ color: "text.secondary", display: "block", mb: 1.5 }}
+            noWrap
+            title={datasetLabel}
+          >
+            {datasetLabel}
+          </Typography>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Chip
+              size="small"
+              icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
+              label={t("statsManageData")}
+              onClick={() => setDataDrawerOpen(true)}
+              variant="outlined"
+              clickable
             />
-          </>
+            <Chip
+              size="small"
+              label={t("statsTitle")}
+              component={Link}
+              href="/stats"
+              clickable
+              variant="outlined"
+            />
+          </Stack>
+        </Box>
+
+        {routeMatchId == null ? (
+          <Box
+            sx={{
+              px: 2,
+              pb: 2.5,
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              flex: 1,
+              minHeight: 0,
+              overflow: "auto",
+            }}
+          >
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: (theme) => alpha(theme.palette.grey[600], 0.16),
+                backgroundColor: (theme) =>
+                  alpha(theme.palette.common.white, 0.45),
+              }}
+            >
+              <Typography
+                variant="overline"
+                component="p"
+                sx={{ color: "text.secondary", mb: 1.25 }}
+              >
+                {t("historyFilterFind")}
+              </Typography>
+              <Stack spacing={1.25}>
+                <TextField
+                  size="small"
+                  label={t("historySearch")}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  fullWidth
+                  helperText={t("historySearchHint")}
+                />
+                <FormControl size="small" fullWidth>
+                  <InputLabel id="history-mode-filter">
+                    {t("format")}
+                  </InputLabel>
+                  <Select
+                    labelId="history-mode-filter"
+                    label={t("format")}
+                    value={modeFilter}
+                    onChange={(e) => setModeFilter(String(e.target.value))}
+                  >
+                    <MenuItem value="all">{t("historyFilterAll")}</MenuItem>
+                    {modes.map((mode) => (
+                      <MenuItem key={mode} value={mode}>
+                        {modeName(mode)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
+            </Box>
+
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: (theme) =>
+                  alpha(theme.palette.primary.main, 0.22),
+                backgroundColor: (theme) =>
+                  alpha(theme.palette.primary.main, 0.05),
+              }}
+            >
+              <Stack
+                direction="row"
+                alignItems="baseline"
+                justifyContent="space-between"
+                spacing={1}
+                sx={{ mb: 0.5 }}
+              >
+                <Typography
+                  variant="overline"
+                  component="p"
+                  sx={{ color: "primary.dark", mb: 0 }}
+                >
+                  {t("historyFilterPlayers")}
+                </Typography>
+                {rosterFilter.length > 0 ? (
+                  <Button
+                    size="small"
+                    color="inherit"
+                    onClick={clearRosterFilter}
+                    sx={{
+                      minWidth: 0,
+                      px: 0.75,
+                      py: 0,
+                      fontSize: 11,
+                      color: "text.secondary",
+                    }}
+                  >
+                    {t("historyFilterClearPlayers")}
+                  </Button>
+                ) : null}
+              </Stack>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  display: "block",
+                  mb: 1.25,
+                  lineHeight: 1.35,
+                }}
+              >
+                {t("historyFilterPlayersHint")}
+              </Typography>
+
+              <Autocomplete
+                size="small"
+                options={addablePlayers}
+                getOptionLabel={(option) => option.name}
+                value={null}
+                inputValue={rosterPickerInput}
+                onInputChange={(_, value, reason) => {
+                  if (reason === "reset") {
+                    setRosterPickerInput("");
+                    return;
+                  }
+                  setRosterPickerInput(value);
+                }}
+                onChange={(_, value) => {
+                  if (!value) return;
+                  setRosterFilter((current) => [
+                    ...current,
+                    { playerId: value.id, team: null },
+                  ]);
+                  setRosterPickerInput("");
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={t("historyFilterAddPlayer")}
+                  />
+                )}
+                sx={{
+                  mb: rosterFilter.length > 0 ? 1.25 : 0,
+                  "& .MuiOutlinedInput-root": {
+                    backgroundColor: "background.paper",
+                  },
+                }}
+              />
+
+              {rosterFilter.length > 0 ? (
+                <Stack spacing={1}>
+                  {rosterFilter.map((entry) => {
+                    const name =
+                      playersById.get(entry.playerId) ??
+                      `#${entry.playerId}`;
+                    return (
+                      <Box
+                        key={entry.playerId}
+                        sx={{
+                          p: 1,
+                          borderRadius: 1.5,
+                          backgroundColor: "background.paper",
+                          border: "1px solid",
+                          borderColor: (theme) =>
+                            alpha(theme.palette.grey[600], 0.14),
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          spacing={1}
+                          sx={{ mb: 0.85 }}
+                        >
+                          <Typography
+                            sx={{ fontWeight: 600, fontSize: 14 }}
+                            title={name}
+                          >
+                            {name}
+                          </Typography>
+                          <Button
+                            size="small"
+                            color="inherit"
+                            onClick={() => removePlayer(entry.playerId)}
+                            aria-label={t("statsCompareRemove", { name })}
+                            sx={{
+                              minWidth: 0,
+                              px: 0.75,
+                              color: "text.secondary",
+                              lineHeight: 1,
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </Stack>
+                        <Stack direction="row" spacing={0.5}>
+                          {(
+                            [
+                              {
+                                value: null as HistoryFilterTeam,
+                                label: t("historyFilterAnySide"),
+                                activeBorder: "rgba(95, 83, 65, 0.45)",
+                                activeBg: "rgba(95, 83, 65, 0.1)",
+                                activeColor: "text.primary",
+                              },
+                              {
+                                value: 1 as const,
+                                label: t("historyFilterSideA"),
+                                activeBorder: SIDE_A,
+                                activeBg: alpha(SIDE_A, 0.14),
+                                activeColor: SIDE_A,
+                              },
+                              {
+                                value: 2 as const,
+                                label: t("historyFilterSideB"),
+                                activeBorder: SIDE_B,
+                                activeBg: alpha(SIDE_B, 0.14),
+                                activeColor: SIDE_B,
+                              },
+                            ] as const
+                          ).map((option) => {
+                            const selected = entry.team === option.value;
+                            return (
+                              <Button
+                                key={String(option.value)}
+                                size="small"
+                                variant="outlined"
+                                aria-pressed={selected}
+                                onClick={() =>
+                                  setPlayerTeam(entry.playerId, option.value)
+                                }
+                                sx={{
+                                  flex: 1,
+                                  minWidth: 0,
+                                  px: 0.5,
+                                  py: 0.35,
+                                  fontSize: 12,
+                                  fontWeight: selected ? 700 : 500,
+                                  borderColor: selected
+                                    ? option.activeBorder
+                                    : (theme) =>
+                                        alpha(theme.palette.grey[600], 0.22),
+                                  backgroundColor: selected
+                                    ? option.activeBg
+                                    : "transparent",
+                                  color: selected
+                                    ? option.activeColor
+                                    : "text.secondary",
+                                  "&:hover": {
+                                    borderColor: option.activeBorder,
+                                    backgroundColor: option.activeBg,
+                                  },
+                                }}
+                              >
+                                {option.label}
+                              </Button>
+                            );
+                          })}
+                        </Stack>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              ) : null}
+            </Box>
+
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                px: 0.25,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {t("historyFilterCount", {
+                shown: filteredItems.length,
+                total: items.length,
+              })}
+            </Typography>
+          </Box>
+        ) : null}
+      </Box>
+
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          px: { xs: 1.5, sm: 2.5, lg: 3 },
+          pt: { xs: 2.5, md: 3 },
+          pb: { xs: 3, sm: 4 },
+          overflow: "auto",
+        }}
+      >
+        {routeMatchId == null ? (
+          <HistoryList
+            items={filteredItems}
+            language={language}
+            onOpen={openMatch}
+          />
         ) : detail ? (
           <HistoryDetailView
             detail={detail}
             language={language}
-            onBack={() => setMatchId(null)}
+            onBack={backToList}
+            onCompare={openCompare}
+            canCompare={canCompare}
           />
         ) : (
           <Stack spacing={2}>
@@ -295,7 +913,7 @@ export default function History({ onOpenAnalytics }: Props) {
               size="small"
               color="inherit"
               startIcon={<ArrowBack />}
-              onClick={() => setMatchId(null)}
+              onClick={backToList}
               sx={{ color: "text.secondary", alignSelf: "flex-start" }}
             >
               {t("historyBack")}
@@ -305,7 +923,12 @@ export default function History({ onOpenAnalytics }: Props) {
             </Typography>
           </Stack>
         )}
-      </Stack>
+      </Box>
+
+      <StatsDataDrawer
+        open={dataDrawerOpen}
+        onClose={() => setDataDrawerOpen(false)}
+      />
     </Box>
   );
 }

@@ -31,9 +31,10 @@ function Outcome({ isWinner, handCount, t }) {
   }
 
   if (handCount === 0 || handCount === 1) {
+    const isPollo = handCount === 0;
     return (
       <Chip
-        label={handCount === 0 ? t("pollo") : t("zapato")}
+        label={isPollo ? `🐔 ${t("pollo")}` : `👟 ${t("zapato")}`}
         size="small"
         sx={{
           fontSize: 11,

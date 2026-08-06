@@ -17,7 +17,7 @@ function toStatsView(
   const handsPlayed =
     row.hands_played > 0 ? row.hands_played : handsWon + handsLost;
 
-  const base: PlayerStatsView = {
+  return {
     playerId: row.player_id,
     modeLabel: row.mode_label,
     gamesPlayed: row.games_played,
@@ -34,14 +34,21 @@ function toStatsView(
     pollosAgainst: row.pollos_against,
     zapatosFor: row.zapatos_for,
     zapatosAgainst: row.zapatos_against,
-    josesCoefficient: row.joses_coefficient,
+    // Always recompute so UI matches the current formula (ignore stale CSV values).
+    josesCoefficient: computeJosesCoefficient({
+      gamesPlayed: row.games_played,
+      gamesWon: row.games_won,
+      gamesLost: row.games_lost,
+      handsFor,
+      handsAgainst,
+      pointsFor: row.points_for,
+      pointsAgainst: row.points_against,
+      pollosFor: row.pollos_for,
+      pollosAgainst: row.pollos_against,
+      zapatosFor: row.zapatos_for,
+      zapatosAgainst: row.zapatos_against,
+    }),
   };
-
-  if (base.josesCoefficient == null) {
-    base.josesCoefficient = computeJosesCoefficient(base);
-  }
-
-  return base;
 }
 
 export function listStatModes(data: OlympusExportData): string[] {

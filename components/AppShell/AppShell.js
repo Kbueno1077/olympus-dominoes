@@ -4,11 +4,12 @@ import Header from "@/components/Header/Header";
 import { Box } from "@mui/material";
 import { usePathname } from "next/navigation";
 
-const FULL_BLEED_PATHS = new Set(["/stats", "/compare"]);
+const FULL_BLEED_PATHS = new Set(["/stats", "/compare", "/history"]);
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
-  const fullBleed = FULL_BLEED_PATHS.has(pathname);
+  const fullBleed =
+    FULL_BLEED_PATHS.has(pathname) || pathname.startsWith("/history/");
 
   return (
     <Box

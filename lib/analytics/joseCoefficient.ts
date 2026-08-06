@@ -1,8 +1,19 @@
 import type { OlympusExportData, PlayerStatsView } from "./types";
 
-/** Weights for Jose's Coefficient (keep in sync with the mobile app). */
+/**
+ * Jose's Coefficient — keep in sync with the mobile app:
+ * olympus-dominoes-app/src/domain/joseCoefficient.ts
+ * and README § Jose's Coefficient.
+ */
+
+export const JOSES_LEAD_SATURATION = 20;
+export const JOSES_LEAD_SCALE = 8;
+/** Floor for secondary-stat rates — short heaters cannot inflate 2nds. */
+export const JOSES_SECONDARY_MIN_GAMES = 25;
+
 export const JOSES_COEFFICIENT_WEIGHTS = {
-  games: 100,
+  /** Multiplier on leadScore(W−L). Absolute net — not divided by G. */
+  games: 1.7,
   datas: 3,
   points: 0.1,
   pollos: 10,
@@ -24,6 +35,20 @@ export type JosesCoefficientInput = Pick<
   | "zapatosAgainst"
 >;
 
+/** `20 * tanh(net / 8)` — soft-caps past ~±20. */
+export function josesLeadScore(netGames: number): number {
+  return JOSES_LEAD_SATURATION * Math.tanh(netGames / JOSES_LEAD_SCALE);
+}
+
+export function josesSecondaryDenom(gamesPlayed: number): number {
+  return Math.max(gamesPlayed, JOSES_SECONDARY_MIN_GAMES);
+}
+
+/**
+ * Lead = 1.7 × leadScore(W−L)
+ * 2nds = datas/points/pollos/zapatos over max(G, 25)
+ * R = Lead + 2nds; null when G = 0
+ */
 export function computeJosesCoefficient(
   stats: JosesCoefficientInput
 ): number | null {
@@ -38,12 +63,15 @@ export function computeJosesCoefficient(
     zapatos: wZapatos,
   } = JOSES_COEFFICIENT_WEIGHTS;
 
+  const net = stats.gamesWon - stats.gamesLost;
+  const denom = josesSecondaryDenom(G);
+
   return (
-    (wGames * (stats.gamesWon - stats.gamesLost)) / G +
-    (wDatas * (stats.handsFor - stats.handsAgainst)) / G +
-    (wPoints * (stats.pointsFor - stats.pointsAgainst)) / G +
-    (wPollos * (stats.pollosFor - stats.pollosAgainst)) / G +
-    (wZapatos * (stats.zapatosFor - stats.zapatosAgainst)) / G
+    wGames * josesLeadScore(net) +
+    (wDatas * (stats.handsFor - stats.handsAgainst)) / denom +
+    (wPoints * (stats.pointsFor - stats.pointsAgainst)) / denom +
+    (wPollos * (stats.pollosFor - stats.pollosAgainst)) / denom +
+    (wZapatos * (stats.zapatosFor - stats.zapatosAgainst)) / denom
   );
 }
 
