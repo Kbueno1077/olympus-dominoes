@@ -2,6 +2,7 @@
 
 import DominoTile from "@/components/DominoTile";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useHasMounted } from "@/hooks/useHasMounted";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
 import { PlayArrow } from "@mui/icons-material";
 import {
@@ -113,7 +114,7 @@ function HowItWorks({ t }) {
   );
 }
 
-function HistoryNotice({ t }) {
+function HistoryNotice({ t, onOpenAnalytics }) {
   return (
     <Card
       sx={{
@@ -139,25 +140,41 @@ function HistoryNotice({ t }) {
             {t("webHistoryBody")}
           </Typography>
         </Box>
-        <Typography
-          variant="overline"
-          sx={{
-            flexShrink: 0,
-            color: "text.disabled",
-            fontSize: 10,
-            whiteSpace: "nowrap",
-          }}
+        <Stack
+          direction={{ xs: "row", sm: "column" }}
+          spacing={1}
+          alignItems={{ xs: "center", sm: "flex-end" }}
+          sx={{ flexShrink: 0 }}
         >
-          {t("webHistoryNote")}
-        </Typography>
+          <Typography
+            variant="overline"
+            sx={{
+              color: "text.disabled",
+              fontSize: 10,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {t("webHistoryNote")}
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={onOpenAnalytics}
+          >
+            {t("webHistoryCta")}
+          </Button>
+        </Stack>
       </Stack>
     </Card>
   );
 }
 
-export default function Dashboard({ onStartNewGame }) {
+export default function Dashboard({ onStartNewGame, onOpenAnalytics }) {
   const { t } = useTranslation();
+  const hasMounted = useHasMounted();
   const isGameStarted = useRecoilValue(isGameStartedRecoil);
+  // Persist only after mount so SSR HTML matches the first client paint.
+  const matchInProgress = hasMounted && isGameStarted;
 
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 6, md: 7 } }}>
@@ -227,14 +244,14 @@ export default function Dashboard({ onStartNewGame }) {
                 backgroundColor: "background.paper",
                 borderColor: (theme) =>
                   alpha(
-                    theme.palette[isGameStarted ? "secondary" : "primary"].main,
+                    theme.palette[matchInProgress ? "secondary" : "primary"].main,
                     0.24
                   ),
               }}
             >
               <Stack spacing={2.5} alignItems="center">
                 <Typography variant="h5" sx={{ color: "text.primary" }}>
-                  {t(isGameStarted ? "continueReadyTitle" : "readyTitle")}
+                  {t(matchInProgress ? "continueReadyTitle" : "readyTitle")}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -244,7 +261,7 @@ export default function Dashboard({ onStartNewGame }) {
                     textAlign: "center",
                   }}
                 >
-                  {t(isGameStarted ? "continueReadyBody" : "readyBody")}
+                  {t(matchInProgress ? "continueReadyBody" : "readyBody")}
                 </Typography>
                 <Button
                   onClick={onStartNewGame}
@@ -254,7 +271,7 @@ export default function Dashboard({ onStartNewGame }) {
                   startIcon={<PlayArrow />}
                   sx={{ maxWidth: 280, fontSize: 15 }}
                 >
-                  {t(isGameStarted ? "continueMatch" : "startMatch")}
+                  {t(matchInProgress ? "continueMatch" : "startMatch")}
                 </Button>
               </Stack>
             </Card>
@@ -276,7 +293,7 @@ export default function Dashboard({ onStartNewGame }) {
             <HowItWorks t={t} />
           </Box>
 
-          <HistoryNotice t={t} />
+          <HistoryNotice t={t} onOpenAnalytics={onOpenAnalytics} />
 
           <Stack spacing={1.5} alignItems="center" sx={{ pt: 1 }}>
             <Box

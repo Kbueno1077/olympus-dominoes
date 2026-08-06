@@ -47,9 +47,10 @@ function Outcome({ isWinner, handCount, t }) {
   return null;
 }
 
-function Note({ hands, isWinner, teamNumber }) {
+function Note({ hands, isWinner, teamNumber, label }) {
   const { t, teamName } = useTranslation();
   const teamKey = TEAM_KEYS[teamNumber] ?? "team1";
+  const displayLabel = label || teamName(teamNumber);
 
   return (
     <Box sx={{ minWidth: 0, textAlign: "center" }}>
@@ -73,7 +74,7 @@ function Note({ hands, isWinner, teamNumber }) {
           variant="overline"
           sx={{ color: "text.secondary", lineHeight: 1, fontSize: 10 }}
         >
-          {teamName(teamNumber)}
+          {displayLabel}
         </Typography>
       </Stack>
 

@@ -1,6 +1,8 @@
 "use client";
 
 import EndMatchControl from "@/components/Header/EndMatchControl";
+import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
+import { buildLiveMatchCompareLaunch } from "@/lib/analytics/compareLaunch";
 import {
   completedGamesRecoil,
   currentGameRecoil,
@@ -21,13 +23,17 @@ import NoteMaker from "@/sections/NoteMaker/NoteMaker";
 import NotesDone from "@/sections/NotesDone/NotesDone";
 import TableDraw from "@/sections/TableDraw/TableDraw";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useMatchTeamLabel } from "@/hooks/useMatchTeamLabel";
 import {
   activeTeamNumbers,
+  tallyPollosZapatos,
+  tallyWins,
   TEAM_KEYS,
 } from "@/utils/matchSettings";
 import { PlayArrow } from "@mui/icons-material";
 import { Box, Button, Card, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { useMemo } from "react";
 import { useRecoilState } from "recoil";
 import useToast from "@/hooks/useToast";
 
@@ -43,19 +49,14 @@ const emptyGame = {
   winner: "none",
 };
 
-/** Games won so far, so the match standing is visible without counting cards. */
-function tallyWins(completedGames, teamNumbers) {
-  return teamNumbers.map((teamNumber) => ({
-    teamNumber,
-    wins: completedGames.filter(
-      (game) => game.winner === `Team ${teamNumber}`
-    ).length,
-  }));
-}
-
-function MatchStanding({ standings }) {
-  const { t, teamName } = useTranslation();
+function MatchStanding({ standings, shutouts, onOpenAnalytics }) {
+  const { t } = useTranslation();
+  const teamLabel = useMatchTeamLabel();
   const leaderWins = Math.max(0, ...standings.map((s) => s.wins));
+  const shutoutByTeam = useMemo(
+    () => new Map(shutouts.map((row) => [row.teamNumber, row])),
+    [shutouts]
+  );
 
   return (
     <Card sx={{ p: 2 }}>
@@ -70,6 +71,7 @@ function MatchStanding({ standings }) {
       <Stack direction="row" spacing={1}>
         {standings.map(({ teamNumber, wins }) => {
           const isLeading = wins > 0 && wins === leaderWins;
+          const marks = shutoutByTeam.get(teamNumber);
 
           return (
             <Box
@@ -103,8 +105,22 @@ function MatchStanding({ standings }) {
                 {wins}
               </Typography>
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                {teamName(teamNumber)}
+                {teamLabel(teamNumber)}
               </Typography>
+              {marks ? (
+                <Typography
+                  sx={{
+                    mt: 0.25,
+                    fontSize: 10,
+                    lineHeight: 1.3,
+                    color: "text.disabled",
+                  }}
+                >
+                  {marks.pollosFor}
+                  {t("pollo").charAt(0)} · {marks.zapatosFor}
+                  {t("zapato").charAt(0)}
+                </Typography>
+              ) : null}
             </Box>
           );
         })}
@@ -112,28 +128,33 @@ function MatchStanding({ standings }) {
 
       <Box
         sx={{
-          my: 1.75,
+          my: 1.5,
           borderTop: "1px solid",
           borderColor: "divider",
         }}
       />
       <MatchSummary />
 
-      <Box
-        sx={{
-          my: 1.75,
-          borderTop: "1px solid",
-          borderColor: "divider",
-        }}
-      />
-      <EndMatchControl fullWidth />
+      <Stack spacing={1} sx={{ mt: 1.5 }}>
+        {onOpenAnalytics ? (
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={onOpenAnalytics}
+          >
+            {t("matchAnalytics")}
+          </Button>
+        ) : null}
+        <EndMatchControl fullWidth />
+      </Stack>
     </Card>
   );
 }
 
-export default function NewMatch() {
+export default function NewMatch({ onOpenAnalytics }) {
   const displayToast = useToast();
   const { t } = useTranslation();
+  const { data, setPendingCompare } = useAnalytics();
 
   const [playersAmount] = useRecoilState(playersAmountRecoil);
   const [gameMode] = useRecoilState(gameModeRecoil);
@@ -169,6 +190,27 @@ export default function NewMatch() {
     }
 
     setStartGame(true);
+  };
+
+  const handleOpenAnalytics = () => {
+    if (!data) {
+      displayToast(t("toastMatchAnalyticsNeedImport"), "error");
+      onOpenAnalytics?.();
+      return;
+    }
+    const players = [player1, player2, player3, player4];
+    const launch = buildLiveMatchCompareLaunch({
+      data,
+      playersAmount,
+      modeLabel: gameMode?.label ?? "",
+      players,
+    });
+    if (!launch) {
+      displayToast(t("toastMatchAnalyticsNeedRoster"), "error");
+      return;
+    }
+    setPendingCompare(launch);
+    onOpenAnalytics?.();
   };
 
   const handleNextGame = () => {
@@ -245,6 +287,7 @@ export default function NewMatch() {
   const isFreeForAll = gameMode?.label === "Free For All";
   const teamNumbers = activeTeamNumbers(playersAmount, isFreeForAll);
   const standings = tallyWins(completedGames, teamNumbers);
+  const shutouts = tallyPollosZapatos(completedGames, teamNumbers);
 
   return (
     <Box
@@ -257,7 +300,7 @@ export default function NewMatch() {
       <Box
         sx={{
           display: "grid",
-          gap: { xs: 2, md: 2.5 },
+          gap: { xs: 1.75, md: 2 },
           alignItems: "start",
           gridTemplateColumns: {
             xs: "1fr",
@@ -269,8 +312,12 @@ export default function NewMatch() {
       >
         {/* Primary column: scorepad in play, setup form before kickoff */}
         {isGameStarted ? (
-          <Stack spacing={2}>
-            <MatchStanding standings={standings} />
+          <Stack spacing={1.75}>
+            <MatchStanding
+              standings={standings}
+              shutouts={shutouts}
+              onOpenAnalytics={handleOpenAnalytics}
+            />
 
             <NoteMaker
               isGameStarted={isGameStarted}
@@ -286,7 +333,7 @@ export default function NewMatch() {
             <NotesDone />
           </Stack>
         ) : (
-          <Stack spacing={2}>
+          <Stack spacing={1.75}>
             <MatchSettings />
 
             <Button
@@ -303,7 +350,7 @@ export default function NewMatch() {
 
         {/* Sidebar: table seating stays visible during setup and play */}
         <Stack
-          spacing={2}
+          spacing={1.75}
           sx={{
             position: { md: "sticky" },
             top: { md: 80 },

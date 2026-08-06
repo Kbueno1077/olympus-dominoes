@@ -3,7 +3,6 @@
 import DominoTile from "@/components/DominoTile";
 import LanguageSwitch from "@/components/Header/LanguageSwitch";
 import { useTranslation } from "@/i18n/useTranslation";
-import { ArrowBack } from "@mui/icons-material";
 import {
   AppBar,
   Box,
@@ -18,9 +17,11 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 /**
- * @param {{ onBack?: () => void, actions?: import("react").ReactNode }} [props]
+ * @param {{
+ *   navItems?: Array<{ id: string, label: string, active?: boolean, onClick: () => void }>,
+ * }} [props]
  */
-export default function Header({ onBack, actions }) {
+export default function Header({ navItems = [] }) {
   const theme = useTheme();
   const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -58,36 +59,41 @@ export default function Header({ onBack, actions }) {
             minHeight: 64,
           }}
         >
-          <Box
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={{ xs: 0.25, sm: 0.5 }}
             sx={{
               flex: 1,
-              display: "flex",
-              alignItems: "center",
               justifyContent: "flex-start",
               minWidth: 0,
+              flexWrap: "wrap",
             }}
           >
-            {onBack && (
+            {navItems.map((item) => (
               <Button
-                startIcon={<ArrowBack />}
-                onClick={onBack}
-                color="inherit"
+                key={item.id}
                 size="small"
+                color="inherit"
+                onClick={item.onClick}
                 sx={{
-                  color: "text.secondary",
-                  ml: { xs: -0.5, sm: -1 },
+                  color: item.active ? "primary.dark" : "text.secondary",
+                  fontWeight: item.active ? 600 : 500,
                   px: { xs: 1, sm: 1.5 },
+                  minWidth: 0,
+                  backgroundColor: item.active
+                    ? (muiTheme) => alpha(muiTheme.palette.primary.main, 0.08)
+                    : "transparent",
+                  "&:hover": {
+                    backgroundColor: (muiTheme) =>
+                      alpha(muiTheme.palette.primary.main, 0.1),
+                  },
                 }}
               >
-                <Box
-                  component="span"
-                  sx={{ display: { xs: "none", sm: "inline" } }}
-                >
-                  {t("dashboard")}
-                </Box>
+                {item.label}
               </Button>
-            )}
-          </Box>
+            ))}
+          </Stack>
 
           <motion.div
             initial={{ opacity: 0, y: -8 }}
@@ -137,7 +143,6 @@ export default function Header({ onBack, actions }) {
               minWidth: 0,
             }}
           >
-            {actions}
             <LanguageSwitch />
           </Stack>
         </Toolbar>

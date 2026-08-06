@@ -1,6 +1,7 @@
 "use client";
 
 import AddScoreDialog from "@/components/Dialogs/AddScoreDialog/AddScoreDialog";
+import { useMatchTeamLabel } from "@/hooks/useMatchTeamLabel";
 import { useTranslation } from "@/i18n/useTranslation";
 import { currentGameRecoil, gameEditionModeRecoil } from "@/recoil/recoilState";
 import { activeTeamNumbers, TEAM_KEYS, teamNumberFrom } from "@/utils/matchSettings";
@@ -22,6 +23,7 @@ import NoteHand from "./NoteHand";
 
 function TeamColumn({
   teamNumber,
+  teamLabel,
   hands,
   total,
   maxPoints,
@@ -34,7 +36,7 @@ function TeamColumn({
   index,
   columnCount,
 }) {
-  const { t, teamName } = useTranslation();
+  const { t } = useTranslation();
   const teamKey = TEAM_KEYS[teamNumber];
   const hasOverflowed = total >= maxPoints;
   const progress = maxPoints > 0 ? Math.min((total / maxPoints) * 100, 100) : 0;
@@ -81,7 +83,7 @@ function TeamColumn({
           variant="overline"
           sx={{ color: "text.secondary", lineHeight: 1 }}
         >
-          {teamName(teamNumber)}
+          {teamLabel}
         </Typography>
         {isWinner && (
           <Icon
@@ -113,6 +115,7 @@ function TeamColumn({
           disabled={gameOver || !isGameStarted}
           teamNumber={teamNumber}
           teamKey={teamKey}
+          teamLabel={teamLabel}
         />
       </Box>
 
@@ -143,7 +146,7 @@ function TeamColumn({
           variant="determinate"
           value={progress}
           aria-label={t("progressAria", {
-            team: teamName(teamNumber),
+            team: teamLabel,
             points: maxPoints,
           })}
           sx={{
@@ -175,7 +178,8 @@ export default function NoteMaker({
   handleNextGame,
   maxPoints,
 }) {
-  const { t, teamName } = useTranslation();
+  const { t } = useTranslation();
+  const teamLabel = useMatchTeamLabel();
   const [gameEditionMode, setGameEditionMode] = useRecoilState(
     gameEditionModeRecoil
   );
@@ -259,6 +263,7 @@ export default function NoteMaker({
           <TeamColumn
             key={teamNumber}
             teamNumber={teamNumber}
+            teamLabel={teamLabel(teamNumber)}
             hands={currentGame[`t${teamNumber}Datas`]}
             total={currentGame[`t${teamNumber}TotalPoints`]}
             maxPoints={numericMax}
@@ -288,7 +293,7 @@ export default function NoteMaker({
         >
           {winningTeam
             ? t("teamReached", {
-                team: teamName(winningTeam),
+                team: teamLabel(winningTeam),
                 points: maxPoints,
               })
             : t("waitingForTarget", { points: maxPoints })}
