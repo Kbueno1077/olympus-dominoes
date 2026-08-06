@@ -195,7 +195,6 @@ export default function NewMatch({ onOpenAnalytics }) {
   const handleOpenAnalytics = () => {
     if (!data) {
       displayToast(t("toastMatchAnalyticsNeedImport"), "error");
-      onOpenAnalytics?.();
       return;
     }
     const players = [player1, player2, player3, player4];

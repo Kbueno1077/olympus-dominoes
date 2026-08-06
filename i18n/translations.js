@@ -45,7 +45,7 @@ const en = {
   // Dashboard — mesa-first home
   brandName: "Olympus",
   heroTitle: "Keep score, not arguments",
-  heroSubtitle: "Cuban double-nine scorepad for the table.",
+  heroSubtitle: "Cuban double-nine scorepad",
   featurePlayers: "2 to 4 players",
   featureModes: "Partners or free for all",
   featureLocal: "Active match kept in this browser",
@@ -70,7 +70,7 @@ const en = {
     "Export a save from the mobile app (CSV or SQL), then open Analytics to load it. History and player stats use that same save.",
   webHistoryNote: "Upload a save",
   webHistoryCta: "Open analytics",
-  mesaAnalyticsLink: "Bring a save from the app →",
+  mesaAnalyticsLink: "Bring a save from the app",
 
   // Analytics
   analyticsTitle: "Analytics",
@@ -303,7 +303,7 @@ const es = {
   // Dashboard — mesa-first home
   brandName: "Olympus",
   heroTitle: "Anota los puntos, no las discusiones",
-  heroSubtitle: "Libreta de dominó cubano doble nueve.",
+  heroSubtitle: "Libreta de dominó cubano doble nueve",
   featurePlayers: "De 2 a 4 jugadores",
   featureModes: "En parejas o todos contra todos",
   featureLocal: "La partida activa se guarda en este navegador",
@@ -328,7 +328,7 @@ const es = {
     "Exporta un respaldo desde la app móvil (CSV o SQL) y ábrelo en Analítica. El historial y las estadísticas usan ese mismo archivo.",
   webHistoryNote: "Sube un respaldo",
   webHistoryCta: "Abrir analítica",
-  mesaAnalyticsLink: "Trae un respaldo de la app →",
+  mesaAnalyticsLink: "Trae un respaldo de la app",
 
   // Analytics
   analyticsTitle: "Analítica",

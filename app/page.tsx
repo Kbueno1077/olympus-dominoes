@@ -9,7 +9,7 @@ import { useHasMounted } from "@/hooks/useHasMounted";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Box } from "@mui/material";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRecoilValue } from "recoil";
 
 type ViewType = "dashboard" | "game" | "analytics" | "history";
@@ -20,13 +20,6 @@ export default function Index() {
   const [currentView, setCurrentView] = useState<ViewType>("dashboard");
   const isGameStarted = useRecoilValue(isGameStartedRecoil);
 
-  // Restore the game view when a match is still in progress from a past visit.
-  useEffect(() => {
-    if (isGameStarted) {
-      setCurrentView("game");
-    }
-  }, [isGameStarted]);
-
   const handleStartNewGame = () => {
     setCurrentView("game");
   };
@@ -34,6 +27,9 @@ export default function Index() {
   const handleOpenAnalytics = () => {
     setCurrentView("analytics");
   };
+
+  // Do not force Match on load — a live match shows as Continue on the mesa home.
+  // Users open Match from the nav or the Continue CTA.
 
   const navItems = useMemo(() => {
     const items = [
