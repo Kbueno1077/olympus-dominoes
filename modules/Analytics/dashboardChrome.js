@@ -13,17 +13,22 @@ export const dashboardShellSx = {
   // Mobile: size to content so AppShell section can scroll. Desktop: fill.
   flex: { xs: "0 0 auto", md: 1 },
   width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
   minHeight: { xs: "100%", md: 0 },
   height: { xs: "auto", md: "100%" },
   maxHeight: { xs: "none", md: "100%" },
   backgroundColor: "background.default",
   alignItems: "stretch",
-  overflow: { xs: "visible", md: "hidden" },
+  overflowX: "hidden",
+  overflowY: { xs: "visible", md: "hidden" },
 };
 
 /** Page route wrapper under AppShell for full-bleed dashboards. */
 export const dashboardPageSx = {
   width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
   flex: { xs: "0 0 auto", md: 1 },
   display: "flex",
   flexDirection: "column",
@@ -37,6 +42,7 @@ export const JOSES_ACCENT = "#6B4F8A";
 /** Left chrome — content-sized on mobile; height-locked on desktop. */
 export const dashboardAsideSx = {
   width: { xs: "100%", md: 300 },
+  maxWidth: "100%",
   flexShrink: 0,
   borderRight: { xs: "none", md: "1px solid #C0C0C0" },
   borderBottom: { xs: "1px solid #C0C0C0", md: "none" },
@@ -49,6 +55,7 @@ export const dashboardAsideSx = {
   height: { xs: "auto", md: "100%" },
   maxHeight: { xs: "none", md: "100%" },
   minHeight: 0,
+  minWidth: 0,
   overflowX: "hidden",
   // Mobile: flow with page scroll. Desktop: inner panels own scroll.
   overflowY: { xs: "visible", md: "hidden" },
@@ -60,6 +67,8 @@ export const dashboardMainSx = {
   // Grow to fill short pages (empty states); never shrink below content on mobile.
   flex: { xs: "1 0 auto", md: 1 },
   minWidth: 0,
+  maxWidth: "100%",
+  width: "100%",
   minHeight: 0,
   height: { xs: "auto", md: "100%" },
   maxHeight: { xs: "none", md: "100%" },
@@ -68,7 +77,7 @@ export const dashboardMainSx = {
   overscrollBehavior: "contain",
   px: { xs: 1.5, sm: 2.5, lg: 3 },
   pt: { xs: 2.5, md: 3 },
-  pb: { xs: 3, sm: 4 },
+  pb: { xs: 5, sm: 4 },
 };
 
 /**

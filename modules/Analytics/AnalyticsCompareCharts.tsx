@@ -116,7 +116,13 @@ export default function AnalyticsCompareCharts({ players, t }: Props) {
       sx={{
         display: "grid",
         gap: 2,
-        gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        gridTemplateColumns: {
+          xs: "minmax(0, 1fr)",
+          md: "repeat(2, minmax(0, 1fr))",
+        },
       }}
     >
       <ChartCard title={t("statsChartCoef")}>
@@ -345,7 +351,14 @@ function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <Card sx={{ p: 2 }}>
+    <Card
+      sx={{
+        p: { xs: 1.5, sm: 2 },
+        minWidth: 0,
+        maxWidth: "100%",
+        overflow: "hidden",
+      }}
+    >
       <Typography
         variant="overline"
         component="p"
@@ -353,7 +366,7 @@ function ChartCard({
       >
         {title}
       </Typography>
-      {children}
+      <Box sx={{ minWidth: 0, width: "100%" }}>{children}</Box>
     </Card>
   );
 }

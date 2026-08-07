@@ -30,18 +30,31 @@ export default function StatsDataDrawer({ open, onClose }: Props) {
       PaperProps={{
         sx: {
           width: { xs: "100%", sm: 420 },
-          p: 2.5,
+          maxWidth: "100%",
+          height: "100%",
+          maxHeight: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
           backgroundColor: "background.paper",
         },
       }}
     >
       <Stack
         direction="row"
-        alignItems="center"
+        alignItems="flex-start"
         justifyContent="space-between"
-        sx={{ mb: 2 }}
+        spacing={1}
+        sx={{
+          flexShrink: 0,
+          px: 2.5,
+          pt: 2.5,
+          pb: 1.5,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+        }}
       >
-        <Box>
+        <Box sx={{ minWidth: 0 }}>
           <Typography variant="h5" sx={{ mb: 0.25 }}>
             {t("statsDataTitle")}
           </Typography>
@@ -49,11 +62,29 @@ export default function StatsDataDrawer({ open, onClose }: Props) {
             {t("statsDataHint")}
           </Typography>
         </Box>
-        <IconButton onClick={onClose} aria-label={t("cancel")}>
+        <IconButton
+          onClick={onClose}
+          aria-label={t("cancel")}
+          sx={{ flexShrink: 0 }}
+        >
           <CloseIcon />
         </IconButton>
       </Stack>
-      <DatasetsPanel embedded />
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowX: "hidden",
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
+          px: 2.5,
+          py: 2,
+          pb: { xs: 4, sm: 2.5 },
+        }}
+      >
+        <DatasetsPanel embedded />
+      </Box>
     </Drawer>
   );
 }
