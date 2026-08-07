@@ -45,12 +45,10 @@ import {
   Card,
   Chip,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -560,24 +558,38 @@ export default function History() {
                   fullWidth
                   helperText={t("historySearchHint")}
                 />
-                <FormControl size="small" fullWidth>
-                  <InputLabel id="history-mode-filter">
-                    {t("format")}
-                  </InputLabel>
-                  <Select
-                    labelId="history-mode-filter"
-                    label={t("format")}
-                    value={modeFilter}
-                    onChange={(e) => setModeFilter(String(e.target.value))}
+                <Box>
+                  <Typography
+                    variant="overline"
+                    component="p"
+                    sx={{ color: "text.secondary", mb: 0.75 }}
                   >
-                    <MenuItem value="all">{t("historyFilterAll")}</MenuItem>
+                    {t("format")}
+                  </Typography>
+                  <ToggleButtonGroup
+                    exclusive
+                    size="small"
+                    fullWidth
+                    value={modeFilter}
+                    onChange={(_, value) => {
+                      if (value) setModeFilter(value);
+                    }}
+                    sx={{ flexWrap: "wrap" }}
+                  >
+                    <ToggleButton value="all" sx={{ flex: "1 1 auto" }}>
+                      {t("historyFilterAll")}
+                    </ToggleButton>
                     {modes.map((mode) => (
-                      <MenuItem key={mode} value={mode}>
+                      <ToggleButton
+                        key={mode}
+                        value={mode}
+                        sx={{ flex: "1 1 auto" }}
+                      >
                         {modeName(mode)}
-                      </MenuItem>
+                      </ToggleButton>
                     ))}
-                  </Select>
-                </FormControl>
+                  </ToggleButtonGroup>
+                </Box>
               </Stack>
             </Box>
 
