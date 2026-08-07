@@ -6,6 +6,8 @@ import {
   type PlayerRow,
   type PlayerStatsRow,
 } from "./types";
+import { withEnsuredPlayerPublicIds } from "./playerIdentity";
+import { resolveImportedPublicId } from "./playerPublicId";
 
 function parseCsvLine(line: string): string[] {
   const cells: string[] = [];
@@ -40,7 +42,11 @@ function parseCsvLine(line: string): string[] {
 
 function coerceCell(raw: string): string | number | null {
   if (raw === "") return null;
-  if (/^-?\d+(\.\d+)?$/.test(raw)) return Number(raw);
+  // Keep long digit strings as text so 16-char public_ids stay exact.
+  if (/^-?\d+$/.test(raw) && raw.replace(/^-/, "").length < 16) {
+    return Number(raw);
+  }
+  if (/^-?\d+\.\d+$/.test(raw)) return Number(raw);
   return raw;
 }
 
@@ -100,101 +106,6 @@ function parseCsv(contents: string): Partial<
   return tables;
 }
 
-/**
- * Split SQL VALUES (...) respecting quoted strings.
- */
-function splitSqlValues(valuesBlob: string): (string | number | null)[] {
-  const values: (string | number | null)[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < valuesBlob.length; i++) {
-    const ch = valuesBlob[i];
-    if (inQuotes) {
-      if (ch === "'") {
-        if (valuesBlob[i + 1] === "'") {
-          current += "'";
-          i += 1;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        current += ch;
-      }
-    } else if (ch === "'") {
-      inQuotes = true;
-    } else if (ch === ",") {
-      values.push(coerceSqlLiteral(current.trim()));
-      current = "";
-    } else {
-      current += ch;
-    }
-  }
-  if (current.trim() !== "" || valuesBlob.endsWith(",")) {
-    values.push(coerceSqlLiteral(current.trim()));
-  }
-  return values;
-}
-
-function coerceSqlLiteral(raw: string): string | number | null {
-  if (raw === "" || /^null$/i.test(raw)) return null;
-  if (/^-?\d+(\.\d+)?$/.test(raw)) return Number(raw);
-  if (
-    (raw.startsWith("'") && raw.endsWith("'")) ||
-    (raw.startsWith('"') && raw.endsWith('"'))
-  ) {
-    return raw
-      .slice(1, -1)
-      .replace(/''/g, "'")
-      .replace(/""/g, '"');
-  }
-  return raw;
-}
-
-function parseSql(contents: string): Partial<
-  Record<ExportTable, Record<string, unknown>[]>
-> {
-  const tables = emptyTables();
-  const cleaned = contents
-    .split("\n")
-    .map((line) => line.replace(/--.*$/, "").trim())
-    .filter(Boolean)
-    .join("\n");
-
-  const statements = cleaned
-    .split(";")
-    .map((s) => s.trim())
-    .filter(
-      (s) =>
-        s.length > 0 &&
-        !/^PRAGMA/i.test(s) &&
-        !/^(BEGIN|COMMIT)/i.test(s) &&
-        !/^DELETE\s+FROM/i.test(s)
-    );
-
-  const insertRe =
-    /^INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([\s\S]*)\)$/i;
-
-  for (const statement of statements) {
-    if (!/^INSERT\s+INTO\s+/i.test(statement)) continue;
-    const match = insertRe.exec(statement);
-    if (!match) continue;
-
-    const tableName = match[1];
-    if (!isExportTable(tableName)) continue;
-
-    const columns = match[2].split(",").map((c) => c.trim());
-    const values = splitSqlValues(match[3].trim());
-    const row: Record<string, unknown> = {};
-    columns.forEach((col, index) => {
-      row[col] = values[index] ?? null;
-    });
-    tables[tableName]!.push(row);
-  }
-
-  return tables;
-}
-
 function asNumber(value: unknown, fallback = 0): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value !== "" && !Number.isNaN(Number(value))) {
@@ -215,8 +126,13 @@ function asString(value: unknown, fallback = ""): string {
 }
 
 function normalizePlayers(rows: Record<string, unknown>[]): PlayerRow[] {
+  const used = new Set<string>();
   return rows.map((row) => ({
     id: asNumber(row.id),
+    public_id: resolveImportedPublicId(
+      row.public_id as string | number | null | undefined,
+      used
+    ),
     name: asString(row.name),
     name_key: asString(row.name_key, asString(row.name).trim().toLowerCase()),
     created_at: row.created_at == null ? null : asString(row.created_at),
@@ -270,17 +186,18 @@ function normalizeH2H(rows: Record<string, unknown>[]): PlayerH2HRow[] {
   }));
 }
 
-function detectFormat(
-  fileName: string,
-  contents: string
-): "csv" | "sql" {
+function assertCsvExport(fileName: string, contents: string): void {
   const lower = fileName.toLowerCase();
-  if (lower.endsWith(".sql")) return "sql";
-  if (lower.endsWith(".csv")) return "csv";
-  if (/^\s*--\s*Olympus/i.test(contents) || /INSERT\s+INTO/i.test(contents)) {
-    return "sql";
+  if (lower.endsWith(".sql")) {
+    throw new Error("sql_unsupported");
   }
-  if (/^\s*#\s*\w+/m.test(contents)) return "csv";
+  if (
+    /^\s*--\s*Olympus/i.test(contents) ||
+    (/INSERT\s+INTO/i.test(contents) && !/^\s*#\s*\w+/m.test(contents))
+  ) {
+    throw new Error("sql_unsupported");
+  }
+  if (lower.endsWith(".csv") || /^\s*#\s*\w+/m.test(contents)) return;
   throw new Error("unknown_format");
 }
 
@@ -289,9 +206,8 @@ export function parseOlympusExport(
   fileName: string
 ): OlympusExportData {
   const normalized = contents.replace(/^\uFEFF/, "");
-  const source = detectFormat(fileName, normalized);
-  const tables =
-    source === "csv" ? parseCsv(normalized) : parseSql(normalized);
+  assertCsvExport(fileName, normalized);
+  const tables = parseCsv(normalized);
 
   const players = normalizePlayers(tables.players ?? []);
   const player_stats = normalizeStats(tables.player_stats ?? []);
@@ -301,8 +217,9 @@ export function parseOlympusExport(
     throw new Error("empty_export");
   }
 
-  return {
-    source,
+  // Mirror public_id onto raw table rows and catch any remaining gaps.
+  return withEnsuredPlayerPublicIds({
+    source: "csv",
     fileName,
     importedAt: new Date().toISOString(),
     players,
@@ -310,5 +227,5 @@ export function parseOlympusExport(
     player_h2h,
     matches: tables.matches ?? [],
     tables,
-  };
+  });
 }

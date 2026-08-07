@@ -3,7 +3,7 @@
 Cuban double-nine dominoes scorepad on the web (Next.js / React).
 Havana theme, English and Spanish. Live matches stay in the browser via
 Recoil + `recoil-persist` (localStorage). Stats, history, and compare read
-Olympus exports (CSV / SQL) from the mobile app, stored as named datasets in
+Olympus exports (CSV) from the mobile app, stored as named datasets in
 localStorage.
 
 **Live:** [https://olympus-dominoes.vercel.app/](https://olympus-dominoes.vercel.app/)
@@ -101,7 +101,7 @@ UI modules consume selectors / helpers. Jose's formula must stay in sync with
 - **History** — search / format / roster+side filters; match cards; deep links;
   launch Compare from seating
 - **Datasets** — multiple named localStorage slots; switch / rename / delete;
-  import CSV or SQL export from the mobile app
+  import CSV export from the mobile app
 - **i18n** — English and Spanish (cookie-backed language)
 
 ## Jose's Coefficient
@@ -244,7 +244,7 @@ Checks: Cesar 2nds > HotWeekend 2nds; Ugly+4 > EvenBlow; Solid40 > Luis.
 
 ## Imports & datasets
 
-The mobile app can export SQLite tables as CSV (or SQL). The web parser
+The mobile app can export SQLite tables as CSV. The web parser
 expects Olympus sectioned tables:
 
 `players`, `app_settings`, `matches`, `match_players`, `games`,
@@ -252,12 +252,33 @@ expects Olympus sectioned tables:
 
 See `lib/analytics/parseExport.ts` and `lib/analytics/types.ts`.
 
+### `players` columns
+
+| Column | Notes |
+|--------|--------|
+| `id` | Local numeric id within the export (not stable across DBs) |
+| `name` | Display name |
+| `name_key` | `trim(lower(name))` |
+| `public_id` | Stable **16-char** alphanumeric (`A–Z a–z 0–9`). Survives renames. Cross-DB identity. |
+| `created_at` | ISO timestamp (optional) |
+| `is_myself` | `0` / `1` (optional) |
+
+Legacy exports without `public_id` (only `id,name,name_key,created_at,is_myself`) still
+import: missing or invalid ids are generated with `crypto.getRandomValues`. When a valid
+`public_id` is present it is kept (first duplicate in a file wins; later rows get new ids).
+Matching helpers prefer `public_id` over name — see `lib/analytics/playerPublicId.ts` and
+`lib/analytics/playerIdentity.ts`.
+
+Export stays on the mobile app. The web app imports CSV/SQL and preserves `public_id`
+so identities round-trip when you re-import on mobile.
+
 Datasets live under:
 
 - Registry: `olympus-web-datasets-v1`
 - Payloads: `olympus-web-dataset-data-<id>`
 - Legacy single slot migrated on first load: `olympus-web-analytics-export-v1`
 
+Stored datasets missing `public_id` are backfilled on load.
 ## Notes
 
 - No account or cloud sync. Match state and imports stay in this browser.

@@ -31,6 +31,7 @@ import {
   type DatasetRegistry,
 } from "./datasets";
 import { parseOlympusExport } from "./parseExport";
+import { withEnsuredPlayerPublicIds } from "./playerIdentity";
 import { recalculateAllJosesCoefficients } from "./joseCoefficient";
 import type { OlympusExportData } from "./types";
 
@@ -45,7 +46,6 @@ type AnalyticsContextValue = {
   importText: (contents: string, fileName: string) => void;
   /** Import file as a brand-new named data set and switch to it. */
   importAsNew: (file: File, displayName?: string) => Promise<void>;
-  clearActive: () => void;
   switchDataset: (id: string) => void;
   renameDataset: (id: string, displayName: string) => void;
   deleteDataset: (id: string) => void;
@@ -62,6 +62,19 @@ type AnalyticsContextValue = {
 
 const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
 
+/** Load + backfill public_id for legacy blobs missing the field. */
+function hydrateDatasetData(
+  id: string,
+  data: OlympusExportData | null
+): OlympusExportData | null {
+  if (!data) return null;
+  const ensured = withEnsuredPlayerPublicIds(data);
+  if (ensured !== data) {
+    saveDatasetData(id, ensured);
+  }
+  return ensured;
+}
+
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const [registry, setRegistry] = useState<DatasetRegistry>({
     activeDatasetId: DEFAULT_DATASET_ID,
@@ -74,7 +87,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const next = loadDatasetRegistry();
     setRegistry(next);
-    setData(loadDatasetData(next.activeDatasetId));
+    setData(hydrateDatasetData(next.activeDatasetId, loadDatasetData(next.activeDatasetId)));
     setLoading(false);
   }, []);
 
@@ -96,7 +109,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const applyParsedToActive = useCallback(
     (parsed: OlympusExportData, current: DatasetRegistry) => {
       // Exports often omit joses_coefficient — persist the current formula.
-      const withJose = recalculateAllJosesCoefficients(parsed);
+      // public_id is resolved during parse; ensure again for legacy safety.
+      const withIds = withEnsuredPlayerPublicIds(parsed);
+      const withJose = recalculateAllJosesCoefficients(withIds);
       const touched = touchDatasetInRegistry(
         current,
         current.activeDatasetId,
@@ -136,7 +151,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     async (file: File, displayName?: string) => {
       const contents = await file.text();
       const parsed = recalculateAllJosesCoefficients(
-        parseOlympusExport(contents, file.name)
+        withEnsuredPlayerPublicIds(parseOlympusExport(contents, file.name))
       );
       const name =
         displayName?.trim() ||
@@ -155,23 +170,11 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     [persistRegistry, registry]
   );
 
-  const clearActive = useCallback(() => {
-    saveDatasetData(registry.activeDatasetId, null);
-    const touched = touchDatasetInRegistry(
-      registry,
-      registry.activeDatasetId,
-      ""
-    );
-    persistRegistry(touched);
-    setData(null);
-    setError(null);
-  }, [persistRegistry, registry]);
-
   const switchDataset = useCallback(
     (id: string) => {
       const next = setActiveDatasetInRegistry(registry, id);
       persistRegistry(next);
-      setData(loadDatasetData(id));
+      setData(hydrateDatasetData(id, loadDatasetData(id)));
       setError(null);
     },
     [persistRegistry, registry]
@@ -187,10 +190,22 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   const deleteDataset = useCallback(
     (id: string) => {
+      const wasLast = registry.datasets.length <= 1;
       const next = removeDatasetFromRegistryLocal(registry, id);
       saveDatasetData(id, null);
+      // Fresh empty Local slot after deleting the only set — no leftover payload.
+      if (wasLast) {
+        saveDatasetData(next.activeDatasetId, null);
+      }
       persistRegistry(next);
-      setData(loadDatasetData(next.activeDatasetId));
+      setData(
+        wasLast
+          ? null
+          : hydrateDatasetData(
+              next.activeDatasetId,
+              loadDatasetData(next.activeDatasetId)
+            )
+      );
       setError(null);
     },
     [persistRegistry, registry]
@@ -256,7 +271,6 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       importFile,
       importText,
       importAsNew,
-      clearActive,
       switchDataset,
       renameDataset,
       deleteDataset,
@@ -276,7 +290,6 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       importFile,
       importText,
       importAsNew,
-      clearActive,
       switchDataset,
       renameDataset,
       deleteDataset,

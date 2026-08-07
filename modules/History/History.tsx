@@ -1,10 +1,10 @@
 "use client";
 
 import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
+import DashboardAside from "@/modules/Analytics/DashboardAside";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import HistoryGamesNotes from "@/modules/History/HistoryGamesNotes";
 import {
-  dashboardAsideSx,
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
@@ -15,6 +15,7 @@ import {
   formatMatchScoreline,
   getMatchDetail,
   listMatches,
+  resolveMatchHeading,
   seatNamesFromDetail,
   teamLabelsForDetail,
   type MatchDetail,
@@ -57,10 +58,18 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useParams, useRouter } from "next/navigation";
-import { startTransition, useEffect, useMemo, useState } from "react";
+import {
+  startTransition,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 const SIDE_A = "#2F6F9F";
 const SIDE_B = "#B8453A";
+/** How many filtered matches to render before the next infinite-scroll page. */
+const HISTORY_PAGE_SIZE = 15;
 
 function HistoryList({
   items,
@@ -72,6 +81,35 @@ function HistoryList({
   onOpen: (id: number) => void;
 }) {
   const { t, modeName, teamName } = useTranslation();
+  const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Filters/search rebuild `items` — reset to the first page.
+  useEffect(() => {
+    setVisibleCount(HISTORY_PAGE_SIZE);
+  }, [items]);
+
+  const visibleItems = items.slice(0, visibleCount);
+  const hasMore = visibleCount < items.length;
+
+  useEffect(() => {
+    if (!hasMore) return;
+    const node = sentinelRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        setVisibleCount((count) =>
+          Math.min(count + HISTORY_PAGE_SIZE, items.length)
+        );
+      },
+      // Nested AppShell / main scrollers still clip; root null respects that.
+      { root: null, rootMargin: "160px 0px", threshold: 0 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, items.length, visibleCount]);
 
   if (items.length === 0) {
     return (
@@ -83,12 +121,13 @@ function HistoryList({
 
   return (
     <Stack spacing={1.25}>
-      {items.map((item) => {
+      {visibleItems.map((item) => {
         const scoreline = formatMatchScoreline(item, teamName);
-        const heading =
-          item.title.trim().length > 0
-            ? item.title.trim()
-            : formatMatchDate(language, item.endedAt);
+        const { heading, showDateSubtitle } = resolveMatchHeading(
+          language,
+          item.title,
+          item.endedAt
+        );
 
         return (
           <Card
@@ -133,7 +172,7 @@ function HistoryList({
                 {scoreline}
               </Typography>
             </Stack>
-            {item.title.trim().length > 0 ? (
+            {showDateSubtitle ? (
               <Typography
                 variant="body2"
                 sx={{ color: "text.secondary", mb: 0.5 }}
@@ -156,6 +195,21 @@ function HistoryList({
           </Card>
         );
       })}
+
+      {hasMore ? (
+        <Box
+          ref={sentinelRef}
+          sx={{
+            display: "grid",
+            placeItems: "center",
+            py: 1.5,
+            minHeight: 40,
+          }}
+          aria-hidden
+        >
+          <CircularProgress size={22} />
+        </Box>
+      ) : null}
     </Stack>
   );
 }
@@ -187,10 +241,11 @@ function HistoryDetailView({
     return map;
   }, [wins]);
 
-  const heading =
-    detail.title.trim().length > 0
-      ? detail.title.trim()
-      : formatMatchDate(language, detail.endedAt);
+  const { heading, showDateSubtitle } = resolveMatchHeading(
+    language,
+    detail.title,
+    detail.endedAt
+  );
 
   return (
     <Stack spacing={2}>
@@ -222,7 +277,7 @@ function HistoryDetailView({
 
       <Card sx={{ p: 2 }}>
         <Typography sx={{ fontWeight: 700, mb: 0.35 }}>{heading}</Typography>
-        {detail.title.trim().length > 0 ? (
+        {showDateSubtitle ? (
           <Typography
             variant="body2"
             sx={{ color: "text.secondary", mb: 0.5 }}
@@ -548,25 +603,19 @@ export default function History() {
 
   return (
     <Box sx={dashboardShellSx}>
-      <Box component="aside" sx={dashboardAsideSx}>
-        <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 2 }}>
-          <Typography variant="h5" sx={{ mb: 1.5 }}>
-            {t("historyTitle")}
-          </Typography>
-
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Chip
-              size="small"
-              icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-              label={t("statsManageData")}
-              onClick={() => setDataDrawerOpen(true)}
-              variant="outlined"
-              clickable
-            />
-          </Stack>
-        </Box>
-
-        {routeMatchId == null ? (
+      <DashboardAside
+        title={t("historyTitle")}
+        toolbar={
+          <Chip
+            size="small"
+            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
+            label={t("statsManageData")}
+            onClick={() => setDataDrawerOpen(true)}
+            variant="outlined"
+            clickable
+          />
+        }
+      >
           <Box
             sx={{
               px: 2,
@@ -577,7 +626,8 @@ export default function History() {
               flex: 1,
               minHeight: 0,
               overflow: { xs: "visible", md: "auto" },
-              overscrollBehavior: "contain",
+              overscrollBehavior: { md: "contain" },
+              alignItems: "stretch",
             }}
           >
             <Box
@@ -847,22 +897,24 @@ export default function History() {
               ) : null}
             </Box>
 
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                px: 0.25,
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {t("historyFilterCount", {
-                shown: filteredItems.length,
-                total: items.length,
-              })}
-            </Typography>
+            <Box sx={{ width: "100%", textAlign: "center" }}>
+              <Typography
+                variant="caption"
+                component="p"
+                sx={{
+                  color: "text.secondary",
+                  m: 0,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {t("historyFilterCount", {
+                  shown: filteredItems.length,
+                  total: items.length,
+                })}
+              </Typography>
+            </Box>
           </Box>
-        ) : null}
-      </Box>
+      </DashboardAside>
 
       <Box component="main" sx={dashboardMainSx}>
         {routeMatchId == null ? (

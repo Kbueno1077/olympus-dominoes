@@ -36,7 +36,6 @@ export default function DatasetsPanel({
     switchDataset,
     renameDataset,
     deleteDataset,
-    clearActive,
     syncJosesCoefficients,
   } = useAnalytics();
 
@@ -49,7 +48,6 @@ export default function DatasetsPanel({
     | null
     | { type: "delete"; id: string; name: string }
     | { type: "switch"; id: string; name: string }
-    | { type: "clear" }
   >(null);
   const [nameNewOpen, setNameNewOpen] = useState(false);
   const [pendingNewFile, setPendingNewFile] = useState<File | null>(null);
@@ -63,8 +61,13 @@ export default function DatasetsPanel({
       await fn();
     } catch (err) {
       const code = err instanceof Error ? err.message : "failed";
-      if (code === "last_dataset") setLocalError(t("datasetsLastDataset"));
-      else if (code === "empty_name") setLocalError(t("datasetsEmptyName"));
+      if (code === "empty_name") setLocalError(t("datasetsEmptyName"));
+      else if (code === "duplicate_name")
+        setLocalError(t("datasetsDuplicateName"));
+      else if (code === "sql_unsupported")
+        setLocalError(t("analyticsErrorSqlUnsupported"));
+      else if (code === "unknown_format")
+        setLocalError(t("analyticsErrorFormat"));
       else setLocalError(t("analyticsErrorGeneric"));
     } finally {
       setBusy(false);
@@ -156,6 +159,7 @@ export default function DatasetsPanel({
                   size="small"
                   disabled={busy}
                   onClick={() => {
+                    setLocalError(null);
                     setRenameId(ds.id);
                     setRenameValue(ds.displayName);
                   }}
@@ -174,7 +178,7 @@ export default function DatasetsPanel({
                 <Button
                   size="small"
                   color="error"
-                  disabled={busy || registry.datasets.length <= 1}
+                  disabled={busy}
                   onClick={() =>
                     setConfirm({
                       type: "delete",
@@ -211,17 +215,6 @@ export default function DatasetsPanel({
             {t("syncJosesCoefficientShort")}
           </Button>
         ) : null}
-        {data ? (
-          <Button
-            variant="text"
-            size="small"
-            color="error"
-            disabled={busy}
-            onClick={() => setConfirm({ type: "clear" })}
-          >
-            {t("datasetsClearActive")}
-          </Button>
-        ) : null}
       </Stack>
 
       {data ? (
@@ -242,7 +235,7 @@ export default function DatasetsPanel({
       <input
         ref={replaceInputRef}
         type="file"
-        accept=".csv,.sql,text/csv,application/sql,text/plain"
+        accept=".csv,text/csv,text/plain"
         hidden
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -253,12 +246,13 @@ export default function DatasetsPanel({
       <input
         ref={newInputRef}
         type="file"
-        accept=".csv,.sql,text/csv,application/sql,text/plain"
+        accept=".csv,text/csv,text/plain"
         hidden
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = "";
           if (!file) return;
+          setLocalError(null);
           setPendingNewFile(file);
           setNewName(suggestedDatasetNameFromFile(file.name));
           setNameNewOpen(true);
@@ -270,6 +264,9 @@ export default function DatasetsPanel({
         onClose={() => setRenameId(null)}
         fullWidth
         maxWidth="xs"
+        TransitionProps={{
+          onExited: () => setLocalError(null),
+        }}
       >
         <DialogTitle>{t("datasetsRenameTitle")}</DialogTitle>
         <DialogContent>
@@ -279,7 +276,12 @@ export default function DatasetsPanel({
             margin="dense"
             label={t("datasetsRenamePlaceholder")}
             value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
+            onChange={(e) => {
+              setLocalError(null);
+              setRenameValue(e.target.value);
+            }}
+            error={Boolean(localError)}
+            helperText={localError || undefined}
           />
         </DialogContent>
         <DialogActions>
@@ -316,7 +318,12 @@ export default function DatasetsPanel({
             margin="dense"
             label={t("datasetsRenamePlaceholder")}
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={(e) => {
+              setLocalError(null);
+              setNewName(e.target.value);
+            }}
+            error={Boolean(localError)}
+            helperText={localError || undefined}
           />
         </DialogContent>
         <DialogActions>
@@ -354,17 +361,13 @@ export default function DatasetsPanel({
         <DialogTitle>
           {confirm?.type === "delete"
             ? t("datasetsDeleteTitle", { name: confirm.name })
-            : confirm?.type === "switch"
-              ? t("datasetsSwitchTitle")
-              : t("datasetsClearTitle")}
+            : t("datasetsSwitchTitle")}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
             {confirm?.type === "delete"
               ? t("datasetsDeleteBody")
-              : confirm?.type === "switch"
-                ? t("datasetsSwitchBody", { name: confirm.name })
-                : t("datasetsClearBody")}
+              : t("datasetsSwitchBody", { name: confirm?.name ?? "" })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -376,17 +379,14 @@ export default function DatasetsPanel({
               if (!confirm) return;
               void run(() => {
                 if (confirm.type === "delete") deleteDataset(confirm.id);
-                else if (confirm.type === "switch") switchDataset(confirm.id);
-                else clearActive();
+                else switchDataset(confirm.id);
                 setConfirm(null);
               });
             }}
           >
             {confirm?.type === "switch"
               ? t("datasetsSwitch")
-              : confirm?.type === "delete"
-                ? t("datasetsDelete")
-                : t("datasetsClearActive")}
+              : t("datasetsDelete")}
           </Button>
         </DialogActions>
       </Dialog>

@@ -2,12 +2,12 @@
 
 import StatsDashboardCharts from "@/modules/Analytics/StatsDashboardCharts";
 import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
+import DashboardAside from "@/modules/Analytics/DashboardAside";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import {
   DashboardPanel,
   JOSES_ACCENT,
   MetricTile,
-  dashboardAsideSx,
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
@@ -26,6 +26,10 @@ import {
   listLeaderboard,
   listStatModes,
 } from "@/lib/analytics/selectors";
+import {
+  clearStatsLaunch,
+  peekStatsLaunch,
+} from "@/lib/analytics/statsLaunch";
 import { useTranslation } from "@/i18n/useTranslation";
 import useToast from "@/hooks/useToast";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
@@ -45,6 +49,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   startTransition,
+  useEffect,
   useMemo,
   useState,
   type ComponentProps,
@@ -111,6 +116,15 @@ export default function Analytics() {
   const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
   const [modeLabel, setModeLabel] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<number | null>(null);
+
+  // Leaderboard (and similar) stash a player before routing here.
+  useEffect(() => {
+    const launch = peekStatsLaunch();
+    if (!launch) return;
+    setModeLabel(launch.modeLabel);
+    setPlayerId(launch.playerId);
+    clearStatsLaunch();
+  }, []);
 
   const modes = useMemo(
     () => (data ? listStatModes(data) : []),
@@ -188,6 +202,7 @@ export default function Analytics() {
     if (code.startsWith("unknown_table:")) return t("analyticsErrorUnknownTable");
     if (code === "empty_export") return t("analyticsErrorEmpty");
     if (code === "unknown_format") return t("analyticsErrorFormat");
+    if (code === "sql_unsupported") return t("analyticsErrorSqlUnsupported");
     return t("analyticsErrorGeneric");
   })();
 
@@ -209,14 +224,11 @@ export default function Analytics() {
 
   return (
     <Box sx={dashboardShellSx}>
-      {/* Sidebar */}
-      <Box component="aside" sx={dashboardAsideSx}>
-        <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 1.5 }}>
-          <Typography variant="h5" sx={{ mb: 0.25 }}>
-            {t("statsTitle")}
-          </Typography>
-
-          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
+      <DashboardAside
+        title={t("statsTitle")}
+        filtersLabel={t("statsComparePlayers")}
+        toolbar={
+          <>
             <Chip
               size="small"
               icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
@@ -234,9 +246,9 @@ export default function Analytics() {
               variant="outlined"
               clickable
             />
-          </Stack>
-        </Box>
-
+          </>
+        }
+      >
         {modes.length > 0 ? (
           <Box sx={{ px: 2, pb: 1.5 }}>
             <Typography
@@ -270,7 +282,7 @@ export default function Analytics() {
             flex: 1,
             minHeight: 0,
             overflow: { xs: "visible", md: "auto" },
-            overscrollBehavior: "contain",
+            overscrollBehavior: { md: "contain" },
             px: 1,
             pb: 2,
             contentVisibility: "auto",
@@ -371,7 +383,7 @@ export default function Analytics() {
             </Stack>
           )}
         </Box>
-      </Box>
+      </DashboardAside>
 
       {/* Main dashboard */}
       <Box component="main" sx={dashboardMainSx}>

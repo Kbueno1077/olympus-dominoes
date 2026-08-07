@@ -1,5 +1,6 @@
 import { FREE_FOR_ALL, normalizeNameKey, teamsFromRoster } from "@/utils/teams";
 import type { CompareLaunch } from "./datasets";
+import { findMatchingPlayer } from "./playerIdentity";
 import type { OlympusExportData } from "./types";
 
 const MAX_COMPARE = 10;
@@ -22,16 +23,16 @@ export function clearCompareLaunch() {
 /**
  * Prefill Compare from the live match roster against players in the active save.
  * Partner modes get Team A/B from scorepad sides; FFA only selects players.
+ * Optional seat public_ids prefer public_id match over name (cross-DB identity).
  */
 export function buildLiveMatchCompareLaunch(input: {
   data: OlympusExportData;
   playersAmount: number;
   modeLabel: string;
   players: readonly string[];
+  /** Parallel to `players` when known — prefers public_id over name. */
+  playerPublicIds?: readonly (string | null | undefined)[];
 }): CompareLaunch | null {
-  const byKey = new Map(
-    input.data.players.map((p) => [p.name_key || normalizeNameKey(p.name), p])
-  );
   const scored = teamsFromRoster(
     input.playersAmount,
     input.modeLabel,
@@ -45,9 +46,13 @@ export function buildLiveMatchCompareLaunch(input: {
   for (const team of scored) {
     const side: 1 | 2 = team.number === 1 ? 1 : 2;
     for (const member of team.members) {
-      const key = normalizeNameKey(member.name);
-      if (!key) continue;
-      const player = byKey.get(key);
+      const seatIndex = member.number - 1;
+      const publicId = input.playerPublicIds?.[seatIndex] ?? null;
+      const player = findMatchingPlayer(input.data.players, {
+        publicId,
+        name: member.name,
+        nameKey: normalizeNameKey(member.name),
+      });
       if (!player) continue;
       if (playerIds.includes(player.id)) continue;
       if (playerIds.length >= MAX_COMPARE) break;

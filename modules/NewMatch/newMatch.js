@@ -200,37 +200,15 @@ export default function NewMatch() {
       return;
     }
 
-    const t1Datas = [...currentGame.t1Datas];
-    const t2Datas = [...currentGame.t2Datas];
-    const t3Datas = [...currentGame.t3Datas];
-    const t4Datas = [...currentGame.t4Datas];
-
-    const newCompletedGames = [...completedGames];
-
-    tempCurrentGame.winner = whoWon;
-    if (whoWon === "Team 1") {
-      t1Datas.push(maxPoints - tempCurrentGame.t1TotalPoints);
-    }
-    if (whoWon === "Team 2") {
-      t2Datas.push(maxPoints - tempCurrentGame.t2TotalPoints);
-    }
-    if (whoWon === "Team 3") {
-      t3Datas.push(maxPoints - tempCurrentGame.t3TotalPoints);
-    }
-    if (whoWon === "Team 4") {
-      t4Datas.push(maxPoints - tempCurrentGame.t4TotalPoints);
-    }
-
+    // Close as recorded — keep real hand scores and totals (including
+    // overshoot past the target). Do not invent a pad hand to force the
+    // column to the target (same as the mobile app).
     const convertedGame = {
       ...tempCurrentGame,
-      t1Datas,
-      t2Datas,
-      t3Datas,
-      t4Datas,
+      winner: whoWon,
     };
 
-    newCompletedGames.push(convertedGame);
-    setCompletedGame(newCompletedGames);
+    setCompletedGame([...completedGames, convertedGame]);
     setCurrentGame(emptyGame);
     setWhoWon("");
   };

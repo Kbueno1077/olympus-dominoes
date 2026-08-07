@@ -9,6 +9,7 @@ import EmojiEventsOutlined from "@mui/icons-material/EmojiEventsOutlined";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
+import LeaderboardOutlined from "@mui/icons-material/LeaderboardOutlined";
 import SportsEsportsOutlined from "@mui/icons-material/SportsEsportsOutlined";
 import {
   Box,
@@ -56,6 +57,12 @@ export default function NavMenu() {
         label: t("historyNav"),
         match: (p) => p.startsWith("/history"),
         Icon: HistoryOutlined,
+      },
+      {
+        href: "/leaderboard",
+        label: t("leaderboardNav"),
+        match: (p) => p === "/leaderboard" || p.startsWith("/leaderboard/"),
+        Icon: LeaderboardOutlined,
       },
       {
         href: "/stats",
