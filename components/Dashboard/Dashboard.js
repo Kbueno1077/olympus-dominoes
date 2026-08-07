@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { useRecoilValue } from "recoil";
 
 // The opening hand: a spread of tiles that doubles as the hero art.
@@ -311,6 +312,19 @@ export default function Dashboard({ onStartNewGame, onOpenAnalytics }) {
               sx={{ color: "text.disabled", fontSize: 10 }}
             >
               {t("madeForTheTable")}
+            </Typography>
+            <Typography
+              component={Link}
+              href="/privacy"
+              variant="caption"
+              sx={{
+                color: "text.disabled",
+                textDecoration: "underline",
+                textUnderlineOffset: 2,
+                "&:hover": { color: "text.secondary" },
+              }}
+            >
+              Privacy Policy
             </Typography>
           </Stack>
         </Stack>
