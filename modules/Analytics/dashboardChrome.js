@@ -6,24 +6,35 @@ import { alpha } from "@mui/material/styles";
 /** Viewport under the fixed 64px header. */
 export const DASHBOARD_VIEWPORT_HEIGHT = "calc(100vh - 64px)";
 
-/** Outer Stats / History / Compare row — fills parent; panes scroll alone. */
+/** Outer Stats / History / Compare row — fills parent; panes scroll alone on md+. */
 export const dashboardShellSx = {
   display: "flex",
   flexDirection: { xs: "column", md: "row" },
-  flex: 1,
+  // Mobile: size to content so AppShell section can scroll. Desktop: fill.
+  flex: { xs: "0 0 auto", md: 1 },
   width: "100%",
-  minHeight: 0,
-  height: { md: "100%" },
-  maxHeight: { md: "100%" },
+  minHeight: { xs: "100%", md: 0 },
+  height: { xs: "auto", md: "100%" },
+  maxHeight: { xs: "none", md: "100%" },
   backgroundColor: "background.default",
   alignItems: "stretch",
-  overflow: { md: "hidden" },
+  overflow: { xs: "visible", md: "hidden" },
+};
+
+/** Page route wrapper under AppShell for full-bleed dashboards. */
+export const dashboardPageSx = {
+  width: "100%",
+  flex: { xs: "0 0 auto", md: 1 },
+  display: "flex",
+  flexDirection: "column",
+  minHeight: { xs: "100%", md: 0 },
+  height: { xs: "auto", md: "100%" },
 };
 
 /** Accent for Jose's Coefficient — distinct from forest green diffs. */
 export const JOSES_ACCENT = "#6B4F8A";
 
-/** Left chrome — height-locked; scrolls on its own (not with main). */
+/** Left chrome — content-sized on mobile; height-locked on desktop. */
 export const dashboardAsideSx = {
   width: { xs: "100%", md: 300 },
   flexShrink: 0,
@@ -35,22 +46,23 @@ export const dashboardAsideSx = {
   display: "flex",
   flexDirection: "column",
   alignSelf: "stretch",
-  height: { md: "100%" },
-  maxHeight: { md: "100%" },
+  height: { xs: "auto", md: "100%" },
+  maxHeight: { xs: "none", md: "100%" },
   minHeight: 0,
   overflowX: "hidden",
-  // Inner panels (leaderboard, filters) own scroll; keep chrome from moving with main.
+  // Mobile: flow with page scroll. Desktop: inner panels own scroll.
   overflowY: { xs: "visible", md: "hidden" },
   overscrollBehavior: "contain",
 };
 
-/** Main pane — scrolls independently of the sidebar. */
+/** Main pane — flows under sidebar on mobile; scrolls alone on desktop. */
 export const dashboardMainSx = {
-  flex: 1,
+  // Grow to fill short pages (empty states); never shrink below content on mobile.
+  flex: { xs: "1 0 auto", md: 1 },
   minWidth: 0,
   minHeight: 0,
-  height: { md: "100%" },
-  maxHeight: { md: "100%" },
+  height: { xs: "auto", md: "100%" },
+  maxHeight: { xs: "none", md: "100%" },
   overflowX: "hidden",
   overflowY: { xs: "visible", md: "auto" },
   overscrollBehavior: "contain",

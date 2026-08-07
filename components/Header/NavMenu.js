@@ -11,6 +11,7 @@ import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
 import SportsEsportsOutlined from "@mui/icons-material/SportsEsportsOutlined";
 import {
+  Box,
   Button,
   ListItemIcon,
   ListItemText,
@@ -103,8 +104,9 @@ export default function NavMenu() {
         sx={{
           color: "text.primary",
           fontWeight: 600,
-          px: 1.25,
+          px: { xs: 0.75, sm: 1.25 },
           minWidth: 0,
+          flexShrink: 0,
           textTransform: "none",
           border: "1px solid",
           borderColor: open ? "divider" : "transparent",
@@ -115,10 +117,21 @@ export default function NavMenu() {
             backgroundColor: (theme) => alpha(theme.palette.grey[700], 0.08),
             borderColor: "divider",
           },
-          "& .MuiButton-startIcon": { mr: 0.75 },
+          "& .MuiButton-startIcon": {
+            mr: { xs: 0, sm: 0.75 },
+            ml: 0,
+          },
+          "& .MuiButton-endIcon": {
+            ml: { xs: 0.25, sm: 0.5 },
+          },
         }}
       >
-        {activeItem.label}
+        <Box
+          component="span"
+          sx={{ display: { xs: "none", sm: "inline" } }}
+        >
+          {activeItem.label}
+        </Box>
       </Button>
 
       <Menu

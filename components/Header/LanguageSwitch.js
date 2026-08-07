@@ -34,7 +34,8 @@ export default function LanguageSwitch() {
         endIcon={<ExpandMore sx={{ fontSize: 18 }} />}
         sx={{
           minWidth: 0,
-          px: 1,
+          flexShrink: 0,
+          px: { xs: 0.75, sm: 1 },
           py: 0.5,
           color: "text.secondary",
           fontWeight: 600,
@@ -47,16 +48,22 @@ export default function LanguageSwitch() {
             borderColor: (theme) =>
               alpha(theme.palette.primary.main, 0.28),
           },
+          "& .MuiButton-endIcon": {
+            display: { xs: "none", sm: "inherit" },
+            ml: 0.5,
+          },
         }}
       >
         <Box
           component="span"
           aria-hidden
-          sx={{ fontSize: 16, lineHeight: 1, mr: 0.75 }}
+          sx={{ fontSize: 16, lineHeight: 1, mr: { xs: 0, sm: 0.75 } }}
         >
           {current.flag}
         </Box>
-        {current.short}
+        <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+          {current.short}
+        </Box>
       </Button>
 
       <Menu

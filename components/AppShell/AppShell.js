@@ -19,6 +19,7 @@ export default function AppShell({ children }) {
         minHeight: "100vh",
         height: fullBleed ? "100vh" : "auto",
         width: "100%",
+        // Mobile: section scrolls as one page. Desktop: panes scroll inside.
         overflow: fullBleed ? "hidden" : "visible",
       }}
     >
@@ -31,9 +32,13 @@ export default function AppShell({ children }) {
           flexDirection: "column",
           pt: 8,
           minHeight: 0,
-          // Dashboard pages own their bottom edge; panes scroll inside.
+          // Dashboard pages own their bottom edge; panes scroll inside on md+.
           pb: fullBleed ? 0 : { xs: 14, sm: 10 },
-          overflow: fullBleed ? "hidden" : "visible",
+          overflow: fullBleed
+            ? { xs: "auto", md: "hidden" }
+            : "visible",
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
         }}
       >
         {children}
