@@ -17,6 +17,7 @@ import {
 } from "@/lib/analytics/podium";
 import { listLeaderboard, listStatModes } from "@/lib/analytics/selectors";
 import { useTranslation } from "@/i18n/useTranslation";
+import { usePodiumPunchlines } from "@/hooks/usePodiumPunchlines";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import {
@@ -49,26 +50,6 @@ function categoryTitleKey(id: PodiumCategoryId): string {
     keepsComing: "podiumKeepsComingTitle",
     pollosEaten: "podiumPollosEatenTitle",
     zapatosEaten: "podiumZapatosEatenTitle",
-  };
-  return map[id];
-}
-
-function categorySubtitleKey(id: PodiumCategoryId): string {
-  const map: Record<PodiumCategoryId, string> = {
-    jose: "podiumJoseSubtitle",
-    datas: "podiumDatasSubtitle",
-    points: "podiumPointsSubtitle",
-    pph: "podiumPphSubtitle",
-    pollos: "podiumPollosSubtitle",
-    polloRate: "podiumPolloRateSubtitle",
-    zapatos: "podiumZapatosSubtitle",
-    zapatoRate: "podiumZapatoRateSubtitle",
-    games: "podiumGamesSubtitle",
-    hands: "podiumHandsSubtitle",
-    bestLoser: "podiumBestLoserSubtitle",
-    keepsComing: "podiumKeepsComingSubtitle",
-    pollosEaten: "podiumPollosEatenSubtitle",
-    zapatosEaten: "podiumZapatosEatenSubtitle",
   };
   return map[id];
 }
@@ -148,8 +129,10 @@ function PlaceRow({
 
 function TrophyCard({
   category,
+  punchlineKey,
 }: {
   category: PodiumCategoryResult;
+  punchlineKey: (id: PodiumCategoryId) => string;
 }) {
   const { t } = useTranslation();
   const shame = category.kind === "shame";
@@ -199,7 +182,7 @@ function TrophyCard({
             variant="caption"
             sx={{ color: "text.secondary", display: "block", mt: 0.25 }}
           >
-            {t(categorySubtitleKey(category.id))}
+            {t(punchlineKey(category.id))}
           </Typography>
         </Box>
       </Stack>
@@ -221,6 +204,7 @@ function TrophyCard({
 export default function Podium() {
   const { t, modeName } = useTranslation();
   const { data, error, loading, activeDataset } = useAnalytics();
+  const { ready: punchlinesReady, punchlineKey } = usePodiumPunchlines();
   const [modeLabel, setModeLabel] = useState<string | null>(null);
   const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
 
@@ -257,7 +241,7 @@ export default function Podium() {
     return t("analyticsErrorGeneric");
   })();
 
-  if (loading) {
+  if (loading || !punchlinesReady) {
     return (
       <Box sx={{ display: "grid", placeItems: "center", minHeight: "60vh" }}>
         <CircularProgress />
@@ -371,7 +355,11 @@ export default function Podium() {
                     }}
                   >
                     {cats.map((category) => (
-                      <TrophyCard key={category.id} category={category} />
+                      <TrophyCard
+                        key={category.id}
+                        category={category}
+                        punchlineKey={punchlineKey}
+                      />
                     ))}
                   </Box>
                 </Box>
