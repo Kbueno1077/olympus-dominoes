@@ -87,6 +87,7 @@ export default function Leaderboard() {
         <DashboardAside
           title={t("leaderboardTitle")}
           subtitle={t("leaderboardSubtitle")}
+          filtersLabel={t("format")}
           toolbar={
             <Chip
               size="small"
