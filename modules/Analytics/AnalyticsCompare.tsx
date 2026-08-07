@@ -673,7 +673,14 @@ export default function AnalyticsCompare({
                 }))}
                 t={t}
               />
-              <Card sx={{ overflow: "auto" }}>
+              <Card
+                sx={{
+                  overflow: "auto",
+                  width: "100%",
+                  maxWidth: "100%",
+                  WebkitOverflowScrolling: "touch",
+                }}
+              >
               <Box
                 component="table"
                 sx={{

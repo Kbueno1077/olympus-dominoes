@@ -430,7 +430,7 @@ export default function Analytics() {
             </Typography>
           </Card>
         ) : (
-          <Stack spacing={2.5}>
+          <Stack spacing={2.5} sx={{ minWidth: 0, width: "100%", maxWidth: "100%" }}>
             {selectedPlayer && activeStats ? (
               <Box>
                 <Stack

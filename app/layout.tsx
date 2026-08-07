@@ -65,7 +65,7 @@ export default async function RootLayout({
             className={`${GeistSans.variable} ${handwriting.variable}`}
         >
             <body>
-                <main className="min-h-screen flex flex-col">
+                <main className="min-h-screen flex flex-col max-w-full overflow-x-hidden">
                     <Providers initialLanguage={language}>{children}</Providers>
                 </main>
             </body>

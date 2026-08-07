@@ -39,11 +39,15 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
   color: rgb(var(--foreground));
   background-color: rgb(var(--background));
+  max-width: 100%;
+  overflow-x: hidden;
   /* A faint grain so the page reads as paper or table linen rather than a
      flat screen. Fixed so it does not swim while scrolling. */
   background-image: radial-gradient(
