@@ -70,7 +70,15 @@ function ChartCard({
       >
         {title}
       </Typography>
-      <Box sx={{ flex: 1, minHeight: 0, minWidth: 0, width: "100%" }}>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: { xs: 200, sm: 220 },
+          minWidth: 0,
+          width: "100%",
+          position: "relative",
+        }}
+      >
         {children}
       </Box>
     </Card>
