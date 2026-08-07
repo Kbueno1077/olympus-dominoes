@@ -49,70 +49,83 @@ export default function Header() {
         transition: "border-color 200ms ease, box-shadow 200ms ease",
       }}
     >
-      <Container maxWidth={false}>
+      <Container maxWidth={false} sx={{ px: { xs: 1.5, sm: 2, md: 2.5 } }}>
         <Toolbar
           disableGutters
           sx={{
             justifyContent: "space-between",
-            gap: 2,
+            alignItems: "center",
+            gap: { xs: 1, sm: 1.5 },
             minHeight: 64,
+            flexWrap: "nowrap",
           }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            <Stack
-              component={Link}
-              href="/"
-              direction="row"
-              alignItems="center"
-              spacing={1.5}
-              sx={{
-                textDecoration: "none",
-                color: "inherit",
-              }}
+          <Box sx={{ minWidth: 0, flex: "1 1 auto" }}>
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             >
-              <DominoTile top={9} bottom={9} size={17} orientation="horizontal" />
-              <Box>
-                <Typography
-                  component="p"
-                  sx={{
-                    fontFamily: (muiTheme) =>
-                      muiTheme.typography.h2.fontFamily,
-                    fontWeight: 700,
-                    fontSize: { xs: 19, sm: 22 },
-                    lineHeight: 1.1,
-                    letterSpacing: "-0.01em",
-                    color: "primary.dark",
-                  }}
-                >
-                  Olympus Dominoes
-                </Typography>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    display: { xs: "none", sm: "block" },
-                    color: "text.disabled",
-                    fontSize: 9,
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {t("tagline")}
-                </Typography>
-              </Box>
-            </Stack>
-          </motion.div>
+              <Stack
+                component={Link}
+                href="/"
+                direction="row"
+                alignItems="center"
+                spacing={{ xs: 1, sm: 1.5 }}
+                sx={{
+                  textDecoration: "none",
+                  color: "inherit",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                }}
+              >
+                <Box sx={{ display: { xs: "none", sm: "block" }, flexShrink: 0 }}>
+                  <DominoTile
+                    top={9}
+                    bottom={9}
+                    size={17}
+                    orientation="horizontal"
+                  />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    component="p"
+                    noWrap
+                    sx={{
+                      fontFamily: (muiTheme) =>
+                        muiTheme.typography.h2.fontFamily,
+                      fontWeight: 700,
+                      fontSize: { xs: 16, sm: 22 },
+                      lineHeight: 1.1,
+                      letterSpacing: "-0.01em",
+                      color: "primary.dark",
+                    }}
+                  >
+                    Olympus Dominoes
+                  </Typography>
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      display: { xs: "none", sm: "block" },
+                      color: "text.disabled",
+                      fontSize: 9,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {t("tagline")}
+                  </Typography>
+                </Box>
+              </Stack>
+            </motion.div>
+          </Box>
 
           <Stack
             direction="row"
             alignItems="center"
             spacing={{ xs: 0.5, sm: 1 }}
             sx={{
-              minWidth: 0,
-              flexWrap: "wrap",
-              justifyContent: "flex-end",
+              flexShrink: 0,
+              flexWrap: "nowrap",
             }}
           >
             <NavMenu />

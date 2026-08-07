@@ -68,10 +68,12 @@ export default function AnalyticsComparePage() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        flex: 1,
-        minHeight: 0,
+        flex: { xs: "0 0 auto", md: 1 },
+        minHeight: { xs: "100%", md: 0 },
+        height: { xs: "auto", md: "100%" },
+        maxHeight: { xs: "none", md: "100%" },
         width: "100%",
-        overflow: { md: "hidden" },
+        overflow: { xs: "visible", md: "hidden" },
       }}
     >
       <Stack
@@ -123,7 +125,15 @@ export default function AnalyticsComparePage() {
         </Stack>
       </Stack>
 
-      <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <Box
+        sx={{
+          flex: { xs: "0 0 auto", md: 1 },
+          minHeight: { xs: 0, md: 0 },
+          height: { xs: "auto", md: "100%" },
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {modes.length === 0 ? (
           <Card sx={{ m: 2, p: 3 }}>
             <Typography sx={{ color: "text.secondary" }}>

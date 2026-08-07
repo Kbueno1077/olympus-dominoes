@@ -530,7 +530,7 @@ export default function History() {
               gap: 2,
               flex: 1,
               minHeight: 0,
-              overflow: "auto",
+              overflow: { xs: "visible", md: "auto" },
               overscrollBehavior: "contain",
             }}
           >

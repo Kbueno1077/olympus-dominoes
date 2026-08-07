@@ -464,7 +464,7 @@ export default function AnalyticsCompare({
           sx={{
             flex: 1,
             minHeight: 0,
-            overflow: "auto",
+            overflow: { xs: "visible", md: "auto" },
             overscrollBehavior: "contain",
             p: 2,
             pt: { xs: 2.5, md: 3 },

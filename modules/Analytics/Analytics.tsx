@@ -311,7 +311,7 @@ export default function Analytics() {
           sx={{
             flex: 1,
             minHeight: 0,
-            overflow: "auto",
+            overflow: { xs: "visible", md: "auto" },
             overscrollBehavior: "contain",
             px: 1,
             pb: 2,
