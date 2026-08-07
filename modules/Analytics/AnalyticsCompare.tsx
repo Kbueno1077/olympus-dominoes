@@ -1,10 +1,10 @@
 "use client";
 
 import AnalyticsCompareCharts from "@/modules/Analytics/AnalyticsCompareCharts";
+import DashboardAside from "@/modules/Analytics/DashboardAside";
 import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import {
   ControlSection,
-  dashboardAsideSx,
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
@@ -321,29 +321,20 @@ export default function AnalyticsCompare({
 
   return (
     <Box sx={dashboardShellSx}>
-      <Box
-        component="aside"
-        sx={{
-          ...dashboardAsideSx,
-          p: 0,
-        }}
+      <DashboardAside
+        title={t("statsCompare")}
+        filtersLabel={t("statsComparePlayers")}
+        toolbar={
+          <Chip
+            size="small"
+            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
+            label={t("statsManageData")}
+            onClick={() => setDataDrawerOpen(true)}
+            variant="outlined"
+            clickable
+          />
+        }
       >
-        <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 1.5 }}>
-          <Typography variant="h5" sx={{ mb: 0.25 }}>
-            {t("statsCompare")}
-          </Typography>
-          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
-            <Chip
-              size="small"
-              icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-              label={t("statsManageData")}
-              onClick={() => setDataDrawerOpen(true)}
-              variant="outlined"
-              clickable
-            />
-          </Stack>
-        </Box>
-
         <Stack
           spacing={0}
           divider={
@@ -360,7 +351,7 @@ export default function AnalyticsCompare({
             flex: 1,
             minHeight: 0,
             overflow: { xs: "visible", md: "auto" },
-            overscrollBehavior: "contain",
+            overscrollBehavior: { md: "contain" },
             px: 2,
             pb: 2,
           }}
@@ -517,7 +508,7 @@ export default function AnalyticsCompare({
           }
         />
         </Stack>
-      </Box>
+      </DashboardAside>
 
       <Box
         component="main"

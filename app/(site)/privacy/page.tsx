@@ -106,7 +106,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">Import, export, and sharing</h2>
           <p className="leading-relaxed text-[rgb(var(--text-muted))]">
-            You can export match data (for example CSV or SQL) and import it
+            You can export match data as CSV and import it
             into the mobile app or this website. Exports and imports are
             user-initiated. When you share a file, the destination (email, cloud
             drive, messaging, and so on) is controlled by you and your device,

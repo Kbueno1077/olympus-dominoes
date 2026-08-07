@@ -11,10 +11,8 @@ import {
   Box,
   Button,
   Card,
-  IconButton,
   LinearProgress,
   Stack,
-  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -226,22 +224,15 @@ export default function NoteMaker({
           </Typography>
         </Box>
 
-        <Tooltip title={gameEditionMode ? t("doneEditing") : t("editHands")}>
-          <IconButton
-            color={gameEditionMode ? "default" : "primary"}
-            onClick={() => setGameEditionMode(!gameEditionMode)}
-            aria-label={
-              gameEditionMode ? t("stopEditingAria") : t("editHands")
-            }
-          >
-            <Icon
-              icon={
-                gameEditionMode ? "ic:baseline-edit-off" : "ic:baseline-edit"
-              }
-              style={{ fontSize: 20 }}
-            />
-          </IconButton>
-        </Tooltip>
+        <Button
+          size="small"
+          variant={gameEditionMode ? "contained" : "outlined"}
+          color={gameEditionMode ? "inherit" : "primary"}
+          onClick={() => setGameEditionMode(!gameEditionMode)}
+          aria-pressed={gameEditionMode}
+        >
+          {gameEditionMode ? t("doneEditing") : t("editHands")}
+        </Button>
       </Stack>
 
       <Box

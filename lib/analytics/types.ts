@@ -13,6 +13,8 @@ export type ExportTable = (typeof EXPORT_TABLES)[number];
 
 export type PlayerRow = {
   id: number;
+  /** Stable 16-char alphanumeric identity across DBs / exports. Survives renames. */
+  public_id: string;
   name: string;
   name_key: string;
   created_at?: string | null;
@@ -51,7 +53,7 @@ export type PlayerH2HRow = {
 };
 
 export type OlympusExportData = {
-  source: "csv" | "sql";
+  source: "csv";
   fileName: string;
   importedAt: string;
   players: PlayerRow[];

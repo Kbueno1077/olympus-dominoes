@@ -142,6 +142,24 @@ export function suggestedDatasetNameFromFile(fileName: string): string {
   return cleaned.slice(0, 48);
 }
 
+function normalizeDatasetNameKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+/** True if another data set already uses this display name (case-insensitive). */
+export function isDatasetDisplayNameTaken(
+  registry: DatasetRegistry,
+  displayName: string,
+  exceptId?: string
+): boolean {
+  const key = normalizeDatasetNameKey(displayName);
+  if (!key) return false;
+  return registry.datasets.some(
+    (d) =>
+      d.id !== exceptId && normalizeDatasetNameKey(d.displayName) === key
+  );
+}
+
 export function renameDatasetInRegistry(
   registry: DatasetRegistry,
   id: string,
@@ -149,10 +167,13 @@ export function renameDatasetInRegistry(
 ): DatasetRegistry {
   const name = displayName.trim();
   if (!name) throw new Error("empty_name");
+  if (!registry.datasets.some((d) => d.id === id)) throw new Error("not_found");
+  if (isDatasetDisplayNameTaken(registry, name, id)) {
+    throw new Error("duplicate_name");
+  }
   const datasets = registry.datasets.map((d) =>
     d.id === id ? { ...d, displayName: name, updatedAt: nowIso() } : d
   );
-  if (!datasets.some((d) => d.id === id)) throw new Error("not_found");
   return { ...registry, datasets };
 }
 
@@ -179,6 +200,9 @@ export function registerNewDatasetInRegistry(
   fileName = ""
 ): { registry: DatasetRegistry; dataset: DatasetMeta } {
   const name = displayName.trim() || "Dataset";
+  if (isDatasetDisplayNameTaken(registry, name)) {
+    throw new Error("duplicate_name");
+  }
   const id = newId();
   const dataset: DatasetMeta = {
     id,
@@ -209,13 +233,14 @@ export function removeDatasetFromRegistryLocal(
   registry: DatasetRegistry,
   id: string
 ): DatasetRegistry {
-  if (registry.datasets.length <= 1) {
-    throw new Error("last_dataset");
-  }
   if (!registry.datasets.some((d) => d.id === id)) {
     throw new Error("not_found");
   }
   const datasets = registry.datasets.filter((d) => d.id !== id);
+  // Web is view-only — deleting the last set is fine; leave an empty Local slot.
+  if (datasets.length === 0) {
+    return defaultRegistry();
+  }
   let activeDatasetId = registry.activeDatasetId;
   if (activeDatasetId === id) {
     activeDatasetId = datasets[0].id;

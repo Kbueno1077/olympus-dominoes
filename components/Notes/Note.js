@@ -1,11 +1,12 @@
 "use client";
 
 import { useTranslation } from "@/i18n/useTranslation";
+import { stripTrailingPadHands } from "@/lib/analytics/hands";
 import { FONT_HAND } from "@/muiTheme/typography";
 import { TEAM_KEYS } from "@/utils/matchSettings";
 import { Box, Chip, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import React from "react";
+import React, { useMemo } from "react";
 
 function runningTotal(hands, index) {
   return hands.slice(0, index).reduce((a, b) => a + b, 0) + hands[index];
@@ -52,6 +53,11 @@ function Note({ hands, isWinner, teamNumber, label }) {
   const { t, teamName } = useTranslation();
   const teamKey = TEAM_KEYS[teamNumber] ?? "team1";
   const displayLabel = label || teamName(teamNumber);
+  // Drop legacy pad hands (≤0 trailing) used to force the column to target.
+  const cleanedHands = useMemo(
+    () => stripTrailingPadHands(hands ?? []),
+    [hands]
+  );
 
   return (
     <Box sx={{ minWidth: 0, textAlign: "center" }}>
@@ -79,7 +85,7 @@ function Note({ hands, isWinner, teamNumber, label }) {
         </Typography>
       </Stack>
 
-      {hands.map((hand, index) => (
+      {cleanedHands.map((hand, index) => (
         <Stack
           key={`${teamNumber}-${index}-${hand}`}
           direction="row"
@@ -120,13 +126,13 @@ function Note({ hands, isWinner, teamNumber, label }) {
               color: "text.primary",
             }}
           >
-            {index === 0 ? hand : runningTotal(hands, index)}
+            {index === 0 ? hand : runningTotal(cleanedHands, index)}
           </Typography>
         </Stack>
       ))}
 
       <Box sx={{ mt: 1 }}>
-        <Outcome isWinner={isWinner} handCount={hands.length} t={t} />
+        <Outcome isWinner={isWinner} handCount={cleanedHands.length} t={t} />
       </Box>
     </Box>
   );

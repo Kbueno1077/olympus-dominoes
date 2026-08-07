@@ -23,10 +23,19 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 8);
+    // Document scroll is locked; AppShell section owns scroll on mobile.
+    const shell = document.getElementById("app-shell-scroll");
+    const onScroll = () => {
+      const shellTop = shell?.scrollTop ?? 0;
+      setIsScrolled(window.scrollY > 8 || shellTop > 8);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    shell?.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      shell?.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   return (

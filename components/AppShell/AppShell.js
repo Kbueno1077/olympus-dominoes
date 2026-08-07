@@ -4,10 +4,13 @@ import Header from "@/components/Header/Header";
 import { Box } from "@mui/material";
 import { usePathname } from "next/navigation";
 
-const FULL_BLEED_PATHS = new Set(["/stats", "/compare", "/history", "/podium"]);
-
-/** Long single-column pages that scroll inside the shell (under the fixed header). */
-const SECTION_SCROLL_PATHS = new Set(["/privacy"]);
+const FULL_BLEED_PATHS = new Set([
+  "/stats",
+  "/compare",
+  "/history",
+  "/podium",
+  "/leaderboard",
+]);
 
 /** Prefer dynamic viewport height on mobile browsers (URL chrome). */
 const VIEWPORT_HEIGHT = {
@@ -15,30 +18,31 @@ const VIEWPORT_HEIGHT = {
   md: "100vh",
 };
 
+/**
+ * Single scroll owner for the site. Document scroll is disabled in globals.css
+ * so mobile does not stack html/body scroll under this section (overscroll past
+ * content). Full-bleed dashboards still use inner pane scroll on md+.
+ */
 export default function AppShell({ children }) {
   const pathname = usePathname();
   const fullBleed =
     FULL_BLEED_PATHS.has(pathname) || pathname.startsWith("/history/");
-  // Fixed-height shell + section overflow — avoids nested scroll traps from
-  // overflow-x:hidden forcing overflow-y:auto while the shell still grows.
-  const sectionScroll =
-    fullBleed || SECTION_SCROLL_PATHS.has(pathname);
 
   return (
     <Box
       sx={{
         display: "flex",
         flexDirection: "column",
-        minHeight: sectionScroll ? VIEWPORT_HEIGHT : "100vh",
-        height: sectionScroll ? VIEWPORT_HEIGHT : "auto",
+        height: VIEWPORT_HEIGHT,
+        maxHeight: VIEWPORT_HEIGHT,
         width: "100%",
         maxWidth: "100%",
-        // Mobile dashboards / prose: section scrolls. Desktop panes scroll inside.
-        overflow: sectionScroll ? "hidden" : "visible",
+        overflow: "hidden",
       }}
     >
       <Header />
       <Box
+        id="app-shell-scroll"
         component="section"
         sx={{
           flex: 1,
@@ -48,18 +52,13 @@ export default function AppShell({ children }) {
           minHeight: 0,
           width: "100%",
           maxWidth: "100%",
-          // Extra bottom pad on mobile so the last cards clear the home indicator.
-          pb: fullBleed ? { xs: 4, md: 0 } : { xs: 14, sm: 10 },
-          // Prefer clip over hidden on document-scroll pages so overflow-y can
-          // stay visible (hidden+visible pairs to auto and traps touch scroll).
-          overflowX: sectionScroll ? "hidden" : "clip",
-          overflowY: sectionScroll
-            ? fullBleed
-              ? { xs: "auto", md: "hidden" }
-              : "auto"
-            : "visible",
+          // Modest pad — large bottom padding invented empty scroll room.
+          pb: fullBleed ? { xs: 2, md: 0 } : { xs: 10, sm: 8 },
+          overflowX: "clip",
+          // Mobile: section scrolls. Desktop full-bleed: panes scroll inside.
+          overflowY: fullBleed ? { xs: "auto", md: "hidden" } : "auto",
           WebkitOverflowScrolling: "touch",
-          ...(sectionScroll ? { overscrollBehavior: "contain" } : null),
+          overscrollBehaviorY: "contain",
         }}
       >
         {children}

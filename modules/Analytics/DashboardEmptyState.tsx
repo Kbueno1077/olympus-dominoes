@@ -1,32 +1,47 @@
 "use client";
 
+import DashboardAside from "@/modules/Analytics/DashboardAside";
 import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import {
-  dashboardAsideSx,
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
 import { useTranslation } from "@/i18n/useTranslation";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
-import { Box, Button, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useState, type ReactNode } from "react";
 
 export function DashboardChromeShell({
-  sidebar,
+  title,
+  subtitle = null,
+  toolbar = null,
   children,
   centerMain = false,
 }: {
-  sidebar: ReactNode;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  toolbar?: ReactNode;
   children: ReactNode;
   /** Vertically/horizontally center main content (empty states). */
   centerMain?: boolean;
 }) {
   return (
-    <Box sx={dashboardShellSx}>
-      <Box component="aside" sx={dashboardAsideSx}>
-        {sidebar}
-      </Box>
+    <Box
+      sx={{
+        ...dashboardShellSx,
+        ...(centerMain
+          ? {
+              // Fill the AppShell section so empty content can center, without
+              // inventing extra scroll past the viewport.
+              flex: 1,
+              height: "100%",
+              minHeight: 0,
+            }
+          : null),
+      }}
+    >
+      <DashboardAside title={title} subtitle={subtitle} toolbar={toolbar} />
       <Box
         component="main"
         sx={{
@@ -36,6 +51,8 @@ export function DashboardChromeShell({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                flex: 1,
+                minHeight: 0,
               }
             : null),
         }}
@@ -46,7 +63,7 @@ export function DashboardChromeShell({
   );
 }
 
-type EmptyPage = "stats" | "compare" | "history" | "podium";
+type EmptyPage = "stats" | "compare" | "history" | "podium" | "leaderboard";
 
 type Props = {
   page: EmptyPage;
@@ -74,6 +91,8 @@ export default function DashboardEmptyState({
         return t("podiumTitle");
       case "history":
         return t("historyTitle");
+      case "leaderboard":
+        return t("leaderboardTitle");
       default: {
         const _exhaustive: never = page;
         return _exhaustive;
@@ -91,6 +110,8 @@ export default function DashboardEmptyState({
         return t("podiumNeedImport");
       case "history":
         return t("historyNeedImport");
+      case "leaderboard":
+        return t("leaderboardNeedImport");
       default: {
         const _exhaustive: never = page;
         return _exhaustive;
@@ -102,18 +123,17 @@ export default function DashboardEmptyState({
     <>
       <DashboardChromeShell
         centerMain
-        sidebar={
-          <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 2.5 }}>
-            <Typography variant="h5" sx={{ mb: 0.35 }}>
-              {title}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{ color: "text.secondary", display: "block" }}
-            >
-              {t("dashboardEmptyNoData")}
-            </Typography>
-          </Box>
+        title={title}
+        subtitle={t("dashboardEmptyNoData")}
+        toolbar={
+          <Chip
+            size="small"
+            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
+            label={t("statsManageData")}
+            onClick={() => setDataDrawerOpen(true)}
+            variant="outlined"
+            clickable
+          />
         }
       >
         <Stack

@@ -10,12 +10,13 @@ export const DASHBOARD_VIEWPORT_HEIGHT = "calc(100vh - 64px)";
 export const dashboardShellSx = {
   display: "flex",
   flexDirection: { xs: "column", md: "row" },
-  // Mobile: size to content so AppShell section can scroll. Desktop: fill.
+  // Mobile: size to content (never force a full viewport) so page scroll
+  // matches real height. Desktop: fill the AppShell pane.
   flex: { xs: "0 0 auto", md: 1 },
   width: "100%",
   maxWidth: "100%",
   minWidth: 0,
-  minHeight: { xs: "100%", md: 0 },
+  minHeight: { xs: 0, md: 0 },
   height: { xs: "auto", md: "100%" },
   maxHeight: { xs: "none", md: "100%" },
   backgroundColor: "background.default",
@@ -32,7 +33,7 @@ export const dashboardPageSx = {
   flex: { xs: "0 0 auto", md: 1 },
   display: "flex",
   flexDirection: "column",
-  minHeight: { xs: "100%", md: 0 },
+  minHeight: { xs: 0, md: 0 },
   height: { xs: "auto", md: "100%" },
 };
 
@@ -59,13 +60,13 @@ export const dashboardAsideSx = {
   overflowX: "hidden",
   // Mobile: flow with page scroll. Desktop: inner panels own scroll.
   overflowY: { xs: "visible", md: "hidden" },
-  overscrollBehavior: "contain",
+  overscrollBehavior: { md: "contain" },
 };
 
 /** Main pane — flows under sidebar on mobile; scrolls alone on desktop. */
 export const dashboardMainSx = {
-  // Grow to fill short pages (empty states); never shrink below content on mobile.
-  flex: { xs: "1 0 auto", md: 1 },
+  // Mobile: content-sized only (avoid flex-grow phantom height / overscroll).
+  flex: { xs: "0 0 auto", md: 1 },
   minWidth: 0,
   maxWidth: "100%",
   width: "100%",
@@ -74,10 +75,10 @@ export const dashboardMainSx = {
   maxHeight: { xs: "none", md: "100%" },
   overflowX: "hidden",
   overflowY: { xs: "visible", md: "auto" },
-  overscrollBehavior: "contain",
+  overscrollBehavior: { md: "contain" },
   px: { xs: 1.5, sm: 2.5, lg: 3 },
-  pt: { xs: 2.5, md: 3 },
-  pb: { xs: 5, sm: 4 },
+  pt: { xs: 2, md: 3 },
+  pb: { xs: 3, sm: 3, md: 4 },
 };
 
 /**

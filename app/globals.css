@@ -37,19 +37,29 @@
   --radius: 0.625rem;
 }
 
+/*
+  Lock the document to one viewport. overflow-x:hidden on html/body forces
+  overflow-y:auto (CSS overflow pairing), which stacks a second scroller under
+  AppShell and feels like rubber-banding past content on mobile Safari.
+  clip keeps horizontal bleed clipped without creating document scroll.
+*/
 html {
   -webkit-text-size-adjust: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body {
   color: rgb(var(--foreground));
   background-color: rgb(var(--background));
+  height: 100dvh;
+  max-height: 100dvh;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow: hidden;
   /* A faint grain so the page reads as paper or table linen rather than a
-     flat screen. Fixed so it does not swim while scrolling. */
+     flat screen. Scroll lives in AppShell — fixed attachment is fine here. */
   background-image: radial-gradient(
     circle at 1px 1px,
     rgb(var(--bone-700) / 0.055) 1px,

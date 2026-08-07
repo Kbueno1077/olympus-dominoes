@@ -1,9 +1,9 @@
 "use client";
 
+import DashboardAside from "@/modules/Analytics/DashboardAside";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import {
   DashboardPanel,
-  dashboardAsideSx,
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
@@ -238,6 +238,7 @@ export default function Podium() {
     if (code.startsWith("unknown_table:")) return t("analyticsErrorUnknownTable");
     if (code === "empty_export") return t("analyticsErrorEmpty");
     if (code === "unknown_format") return t("analyticsErrorFormat");
+    if (code === "sql_unsupported") return t("analyticsErrorSqlUnsupported");
     return t("analyticsErrorGeneric");
   })();
 
@@ -259,30 +260,21 @@ export default function Podium() {
 
   return (
     <Box sx={dashboardShellSx}>
-      <Box component="aside" sx={dashboardAsideSx}>
-        <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 1.5 }}>
-          <Typography variant="h5" sx={{ mb: 0.25 }}>
-            {t("podiumTitle")}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ color: "text.secondary", display: "block" }}
-          >
-            {t("podiumSubtitle")}
-          </Typography>
-
-          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
-            <Chip
-              size="small"
-              icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-              label={t("statsManageData")}
-              onClick={() => setDataDrawerOpen(true)}
-              variant="outlined"
-              clickable
-            />
-          </Stack>
-        </Box>
-
+      <DashboardAside
+        title={t("podiumTitle")}
+        subtitle={t("podiumSubtitle")}
+        filtersLabel={t("format")}
+        toolbar={
+          <Chip
+            size="small"
+            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
+            label={t("statsManageData")}
+            onClick={() => setDataDrawerOpen(true)}
+            variant="outlined"
+            clickable
+          />
+        }
+      >
         {modes.length > 0 ? (
           <Box sx={{ px: 2, pb: 1.5 }}>
             <Typography
@@ -310,15 +302,16 @@ export default function Podium() {
             </ToggleButtonGroup>
           </Box>
         ) : null}
-
-        <Box sx={{ px: 2, pb: 2, mt: "auto" }}>
-          <Typography variant="caption" sx={{ color: "text.disabled" }}>
-            {datasetLabel}
-          </Typography>
-        </Box>
-      </Box>
+      </DashboardAside>
 
       <Box component="main" sx={dashboardMainSx}>
+        <Typography
+          variant="caption"
+          sx={{ color: "text.secondary", display: "block", mb: 1.5 }}
+        >
+          {t("dashboardViewingDataset", { name: datasetLabel })}
+        </Typography>
+
         {modes.length === 0 || podium.every((c) => !c.winner) ? (
           <DashboardPanel title={t("podiumTitle")}>
             <Typography sx={{ color: "text.secondary" }}>

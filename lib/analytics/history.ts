@@ -151,6 +151,30 @@ export function formatMatchDate(
   }
 }
 
+/**
+ * Mobile exports often store the English date as `title`. Treat that as empty
+ * so the UI shows only the current-language timestamp.
+ */
+export function resolveMatchHeading(
+  language: string,
+  title: string,
+  endedAt: Date | string
+): { heading: string; showDateSubtitle: boolean } {
+  const trimmed = title.trim();
+  const localized = formatMatchDate(language, endedAt);
+  if (!trimmed) {
+    return { heading: localized, showDateSubtitle: false };
+  }
+
+  const en = formatMatchDate("en", endedAt);
+  const es = formatMatchDate("es", endedAt);
+  if (trimmed === en || trimmed === es || trimmed === localized) {
+    return { heading: localized, showDateSubtitle: false };
+  }
+
+  return { heading: trimmed, showDateSubtitle: true };
+}
+
 export function listMatches(data: OlympusExportData): MatchListItem[] {
   const matches = data.tables.matches ?? [];
   const seats = data.tables.match_players ?? [];
