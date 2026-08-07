@@ -53,11 +53,14 @@ function ChartCard({
   return (
     <Card
       sx={{
-        p: 2,
+        p: { xs: 1.5, sm: 2 },
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        minHeight: tall ? 280 : 240,
+        minHeight: tall ? { xs: 240, sm: 280 } : { xs: 220, sm: 240 },
+        minWidth: 0,
+        maxWidth: "100%",
+        overflow: "hidden",
       }}
     >
       <Typography
@@ -67,7 +70,9 @@ function ChartCard({
       >
         {title}
       </Typography>
-      <Box sx={{ flex: 1, minHeight: 0 }}>{children}</Box>
+      <Box sx={{ flex: 1, minHeight: 0, minWidth: 0, width: "100%" }}>
+        {children}
+      </Box>
     </Card>
   );
 }
@@ -223,14 +228,23 @@ export default function StatsDashboardCharts({
       sx={{
         display: "grid",
         gap: 2,
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
         gridTemplateColumns: {
-          xs: "1fr",
-          sm: "1fr 1fr",
+          xs: "minmax(0, 1fr)",
+          sm: "repeat(2, minmax(0, 1fr))",
           xl: "repeat(3, minmax(0, 1fr))",
         },
       }}
     >
-      <Box sx={{ gridColumn: { xs: "1", sm: "1 / -1", xl: "1 / 3" } }}>
+      <Box
+        sx={{
+          gridColumn: { xs: "1", sm: "1 / -1", xl: "1 / 3" },
+          minWidth: 0,
+          maxWidth: "100%",
+        }}
+      >
         <ChartCard title={t("statsChartCoef")} tall>
           {coefData.length === 0 ? (
             empty
@@ -254,7 +268,7 @@ export default function StatsDashboardCharts({
                 <YAxis
                   dataKey="name"
                   type="category"
-                  width={88}
+                  width={64}
                   tickLine={false}
                   axisLine={false}
                 />

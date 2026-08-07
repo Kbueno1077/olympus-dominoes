@@ -46,7 +46,7 @@ export function ChartContainer({
       <div
         data-chart={chartId}
         className={cn(
-          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-[rgb(var(--text-muted))] [&_.recharts-cartesian-grid_line]:stroke-[rgb(var(--border))] [&_.recharts-curve.recharts-tooltip-cursor]:stroke-[rgb(var(--border))] [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-[rgb(var(--bone-300)/0.45)] [&_.recharts-layer]:outline-none [&_.recharts-surface]:outline-none",
+          "flex h-full w-full min-w-0 max-w-full justify-center text-xs [&_.recharts-responsive-container]:!w-full [&_.recharts-responsive-container]:!max-w-full [&_.recharts-wrapper]:!max-w-full [&_.recharts-surface]:max-w-full [&_.recharts-cartesian-axis-tick_text]:fill-[rgb(var(--text-muted))] [&_.recharts-cartesian-grid_line]:stroke-[rgb(var(--border))] [&_.recharts-curve.recharts-tooltip-cursor]:stroke-[rgb(var(--border))] [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-[rgb(var(--bone-300)/0.45)] [&_.recharts-layer]:outline-none [&_.recharts-surface]:outline-none",
           className
         )}
         {...props}
