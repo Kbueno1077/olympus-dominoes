@@ -352,6 +352,7 @@ const en = {
   statsAbbrGamesWon: "GW",
   statsAbbrGamesLost: "GL",
   statsAbbrGameDifference: "GameDif",
+  statsAbbrWinRate: "Win%",
   statsAbbrPointsFor: "PF",
   statsAbbrPointsAgainst: "PA",
   statsAbbrPointsDifference: "PD",
@@ -365,9 +366,11 @@ const en = {
   statsAbbrPollosFor: "Pol+",
   statsAbbrPollosAgainst: "Pol−",
   statsAbbrPollosDifference: "PolΔ",
+  statsAbbrPollosRate: "Pol%",
   statsAbbrZapatosFor: "Zap+",
   statsAbbrZapatosAgainst: "Zap−",
   statsAbbrZapatosDifference: "ZapΔ",
+  statsAbbrZapatosRate: "Zap%",
   done: "Done",
 
   // Setup
@@ -775,6 +778,7 @@ const es = {
   statsAbbrGamesWon: "PG",
   statsAbbrGamesLost: "PP",
   statsAbbrGameDifference: "DifJ",
+  statsAbbrWinRate: "%V",
   statsAbbrPointsFor: "PF",
   statsAbbrPointsAgainst: "PC",
   statsAbbrPointsDifference: "DifP",
@@ -788,9 +792,11 @@ const es = {
   statsAbbrPollosFor: "Pol+",
   statsAbbrPollosAgainst: "Pol−",
   statsAbbrPollosDifference: "PolΔ",
+  statsAbbrPollosRate: "Pol%",
   statsAbbrZapatosFor: "Zap+",
   statsAbbrZapatosAgainst: "Zap−",
   statsAbbrZapatosDifference: "ZapΔ",
+  statsAbbrZapatosRate: "Zap%",
   done: "Listo",
 
   // Setup

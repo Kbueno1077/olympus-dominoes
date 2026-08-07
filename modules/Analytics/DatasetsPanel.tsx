@@ -3,6 +3,8 @@
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { suggestedDatasetNameFromFile } from "@/lib/analytics/datasets";
 import { useTranslation } from "@/i18n/useTranslation";
+import useToast from "@/hooks/useToast";
+import SyncIcon from "@mui/icons-material/Sync";
 import {
   Box,
   Button,
@@ -25,6 +27,7 @@ export default function DatasetsPanel({
   embedded?: boolean;
 }) {
   const { t } = useTranslation();
+  const displayToast = useToast();
   const {
     data,
     registry,
@@ -34,6 +37,7 @@ export default function DatasetsPanel({
     renameDataset,
     deleteDataset,
     clearActive,
+    syncJosesCoefficients,
   } = useAnalytics();
 
   const replaceInputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +69,18 @@ export default function DatasetsPanel({
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleSyncJoses = () => {
+    void run(() => {
+      try {
+        syncJosesCoefficients();
+        displayToast(t("toastJosesSynced"), "success");
+      } catch (err) {
+        console.error("syncJosesCoefficients failed", err);
+        displayToast(t("toastJosesSyncFailed"), "error");
+      }
+    });
   };
 
   const content = (
@@ -186,6 +202,17 @@ export default function DatasetsPanel({
         </Button>
         {data ? (
           <Button
+            variant="outlined"
+            size="small"
+            disabled={busy}
+            startIcon={<SyncIcon sx={{ fontSize: 16 }} />}
+            onClick={handleSyncJoses}
+          >
+            {t("syncJosesCoefficientShort")}
+          </Button>
+        ) : null}
+        {data ? (
+          <Button
             variant="text"
             size="small"
             color="error"
@@ -196,6 +223,15 @@ export default function DatasetsPanel({
           </Button>
         ) : null}
       </Stack>
+
+      {data ? (
+        <Typography
+          variant="caption"
+          sx={{ color: "text.secondary", display: "block", mt: 1 }}
+        >
+          {t("syncJosesCoefficientHint")}
+        </Typography>
+      ) : null}
 
       {localError ? (
         <Typography variant="body2" sx={{ color: "error.main", mt: 1 }}>
