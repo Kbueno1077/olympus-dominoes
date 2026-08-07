@@ -366,7 +366,16 @@ function ChartCard({
       >
         {title}
       </Typography>
-      <Box sx={{ minWidth: 0, width: "100%" }}>{children}</Box>
+      <Box
+        sx={{
+          minWidth: 0,
+          width: "100%",
+          minHeight: 220,
+          position: "relative",
+        }}
+      >
+        {children}
+      </Box>
     </Card>
   );
 }
