@@ -49,6 +49,10 @@ type AnalyticsContextValue = {
   switchDataset: (id: string) => void;
   renameDataset: (id: string, displayName: string) => void;
   deleteDataset: (id: string) => void;
+  /** Mark one roster player as "You" (clears any previous mark). */
+  setMyselfPlayer: (playerId: number) => void;
+  /** Remove the "You" badge from every player in the active data set. */
+  clearMyselfPlayer: () => void;
   /** Recompute Jose's Coefficient for every player from saved aggregates. */
   syncJosesCoefficients: () => void;
   setPendingCompare: (launch: CompareLaunch | null) => void;
@@ -192,21 +196,52 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     [persistRegistry, registry]
   );
 
+  const persistActiveData = useCallback(
+    (next: OlympusExportData) => {
+      const touched = touchDatasetInRegistry(
+        registry,
+        registry.activeDatasetId,
+        next.fileName
+      );
+      saveDatasetData(registry.activeDatasetId, next);
+      persistRegistry(touched);
+      setData(next);
+      setError(null);
+    },
+    [persistRegistry, registry]
+  );
+
+  const setMyselfPlayer = useCallback(
+    (playerId: number) => {
+      if (!data) throw new Error("no_data");
+      persistActiveData({
+        ...data,
+        players: data.players.map((player) => ({
+          ...player,
+          is_myself: player.id === playerId ? 1 : 0,
+        })),
+      });
+    },
+    [data, persistActiveData]
+  );
+
+  const clearMyselfPlayer = useCallback(() => {
+    if (!data) throw new Error("no_data");
+    persistActiveData({
+      ...data,
+      players: data.players.map((player) => ({
+        ...player,
+        is_myself: 0,
+      })),
+    });
+  }, [data, persistActiveData]);
+
   const syncJosesCoefficients = useCallback(() => {
     if (!data) {
       throw new Error("no_data");
     }
-    const next = recalculateAllJosesCoefficients(data);
-    const touched = touchDatasetInRegistry(
-      registry,
-      registry.activeDatasetId,
-      next.fileName
-    );
-    saveDatasetData(registry.activeDatasetId, next);
-    persistRegistry(touched);
-    setData(next);
-    setError(null);
-  }, [data, persistRegistry, registry]);
+    persistActiveData(recalculateAllJosesCoefficients(data));
+  }, [data, persistActiveData]);
 
   const activeDataset =
     registry.datasets.find((d) => d.id === registry.activeDatasetId) ?? null;
@@ -225,6 +260,8 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       switchDataset,
       renameDataset,
       deleteDataset,
+      setMyselfPlayer,
+      clearMyselfPlayer,
       syncJosesCoefficients,
       setPendingCompare,
       peekPendingCompare,
@@ -243,6 +280,8 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       switchDataset,
       renameDataset,
       deleteDataset,
+      setMyselfPlayer,
+      clearMyselfPlayer,
       syncJosesCoefficients,
       setPendingCompare,
       peekPendingCompare,

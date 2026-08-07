@@ -1,5 +1,6 @@
 "use client";
 
+import ActiveDatasetPlayersAccordion from "@/modules/Analytics/ActiveDatasetPlayersAccordion";
 import DatasetsPanel from "@/modules/Analytics/DatasetsPanel";
 import { useTranslation } from "@/i18n/useTranslation";
 import CloseIcon from "@mui/icons-material/Close";
@@ -85,6 +86,7 @@ export default function StatsDataDrawer({ open, onClose }: Props) {
       >
         <DatasetsPanel embedded />
       </Box>
+      <ActiveDatasetPlayersAccordion />
     </Drawer>
   );
 }

@@ -243,6 +243,13 @@ const en = {
     "Players, history, and stats for the active data set will be removed from this browser.",
   datasetsLastDataset: "Keep at least one data set.",
   datasetsEmptyName: "Enter a name.",
+  datasetsPlayersTitle: "Players",
+  datasetsPlayersCount: "{n} in active data set",
+  datasetsPlayersHint:
+    "Mark who you are in this save. Stats highlight that name with a You badge.",
+  datasetsPlayersEmpty: "No players in this data set.",
+  setAsMyself: "This is me",
+  clearMyself: "Not me",
 
   dashboardEmptyNoData: "No data set loaded",
   dashboardEmptyTitle: "Add your match data",
@@ -655,6 +662,13 @@ const es = {
     "Se borrarán jugadores, historial y estadísticas del conjunto activo en este navegador.",
   datasetsLastDataset: "Deja al menos un conjunto de datos.",
   datasetsEmptyName: "Escribe un nombre.",
+  datasetsPlayersTitle: "Jugadores",
+  datasetsPlayersCount: "{n} en el conjunto activo",
+  datasetsPlayersHint:
+    "Marca quién eres en este guardado. Las estadísticas destacan ese nombre con la etiqueta Tú.",
+  datasetsPlayersEmpty: "No hay jugadores en este conjunto.",
+  setAsMyself: "Soy yo",
+  clearMyself: "No soy yo",
 
   dashboardEmptyNoData: "Sin conjunto de datos",
   dashboardEmptyTitle: "Añade tus datos de partida",
