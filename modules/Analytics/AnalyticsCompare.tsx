@@ -1,27 +1,33 @@
 "use client";
 
 import AnalyticsCompareCharts from "@/modules/Analytics/AnalyticsCompareCharts";
+import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import {
   ControlSection,
   dashboardAsideSx,
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
-import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
+import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
+import {
+  loadCompareUiFilters,
+  saveCompareUiFilters,
+} from "@/lib/analytics/compareFilterState";
+import {
+  BREAKDOWN_STAT_DEFS,
+  breakdownValueColor,
+  formatBreakdownValue,
+} from "@/lib/analytics/statBreakdown";
 import {
   matchupAlignmentReady,
   matchupFilterFromTeams,
 } from "@/lib/analytics/matchup";
 import { computeMatchupStats } from "@/lib/analytics/matchupStats";
 import { getPlayerStats } from "@/lib/analytics/selectors";
-import {
-  formatSignedDiff,
-  perHandAverage,
-  signedDiffColor,
-} from "@/lib/analytics/signedDiff";
 import type { CompareLaunch } from "@/lib/analytics/datasets";
 import type { OlympusExportData, PlayerStatsView } from "@/lib/analytics/types";
 import { useTranslation } from "@/i18n/useTranslation";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import {
   Box,
   Button,
@@ -49,123 +55,8 @@ const SIDE_B = "#B8453A";
 
 type TeamSide = 1 | 2;
 
-type CompareStatKey =
-  | "josesCoefficient"
-  | "gamesPlayed"
-  | "gamesWon"
-  | "gamesLost"
-  | "gameDifference"
-  | "pointsFor"
-  | "pointsAgainst"
-  | "pointsDifference"
-  | "handsPlayed"
-  | "handsWon"
-  | "handsLost"
-  | "handsDifference"
-  | "pointsPerHandFor"
-  | "pointsPerHandAgainst"
-  | "pointsPerHandDifference"
-  | "pollosFor"
-  | "pollosAgainst"
-  | "pollosDifference"
-  | "zapatosFor"
-  | "zapatosAgainst"
-  | "zapatosDifference";
-
-function formatPerHand(points: number, hands: number): string {
-  if (hands <= 0) return "—";
-  const avg = points / hands;
-  return Number.isInteger(avg) ? String(avg) : avg.toFixed(1);
-}
-
-function cellValue(stats: PlayerStatsView | null, key: CompareStatKey): string {
-  if (!stats) return "—";
-  switch (key) {
-    case "josesCoefficient":
-      return formatJosesCoefficient(stats.josesCoefficient);
-    case "pointsPerHandFor":
-      return formatPerHand(stats.pointsFor, stats.handsFor);
-    case "pointsPerHandAgainst":
-      return formatPerHand(stats.pointsAgainst, stats.handsAgainst);
-    case "gameDifference":
-      return formatSignedDiff(stats.gamesWon - stats.gamesLost);
-    case "pointsDifference":
-      return formatSignedDiff(stats.pointsFor - stats.pointsAgainst);
-    case "handsDifference":
-      return formatSignedDiff(stats.handsWon - stats.handsLost);
-    case "pointsPerHandDifference": {
-      const forAvg = perHandAverage(stats.pointsFor, stats.handsFor);
-      const againstAvg = perHandAverage(
-        stats.pointsAgainst,
-        stats.handsAgainst
-      );
-      if (forAvg == null || againstAvg == null) return "—";
-      return formatSignedDiff(forAvg - againstAvg, 1);
-    }
-    case "pollosDifference":
-      return formatSignedDiff(stats.pollosFor - stats.pollosAgainst);
-    case "zapatosDifference":
-      return formatSignedDiff(stats.zapatosFor - stats.zapatosAgainst);
-    case "gamesPlayed":
-      return String(stats.gamesPlayed);
-    case "gamesWon":
-      return String(stats.gamesWon);
-    case "gamesLost":
-      return String(stats.gamesLost);
-    case "pointsFor":
-      return String(stats.pointsFor);
-    case "pointsAgainst":
-      return String(stats.pointsAgainst);
-    case "handsPlayed":
-      return String(stats.handsPlayed);
-    case "handsWon":
-      return String(stats.handsWon);
-    case "handsLost":
-      return String(stats.handsLost);
-    case "pollosFor":
-      return String(stats.pollosFor);
-    case "pollosAgainst":
-      return String(stats.pollosAgainst);
-    case "zapatosFor":
-      return String(stats.zapatosFor);
-    case "zapatosAgainst":
-      return String(stats.zapatosAgainst);
-    default: {
-      const _exhaustive: never = key;
-      return _exhaustive;
-    }
-  }
-}
-
-function cellColor(
-  stats: PlayerStatsView | null,
-  key: CompareStatKey
-): string | undefined {
-  if (!stats) return undefined;
-  switch (key) {
-    case "gameDifference":
-      return signedDiffColor(stats.gamesWon - stats.gamesLost);
-    case "pointsDifference":
-      return signedDiffColor(stats.pointsFor - stats.pointsAgainst);
-    case "handsDifference":
-      return signedDiffColor(stats.handsWon - stats.handsLost);
-    case "pointsPerHandDifference": {
-      const forAvg = perHandAverage(stats.pointsFor, stats.handsFor);
-      const againstAvg = perHandAverage(
-        stats.pointsAgainst,
-        stats.handsAgainst
-      );
-      if (forAvg == null || againstAvg == null) return undefined;
-      return signedDiffColor(forAvg - againstAvg);
-    }
-    case "pollosDifference":
-      return signedDiffColor(stats.pollosFor - stats.pollosAgainst);
-    case "zapatosDifference":
-      return signedDiffColor(stats.zapatosFor - stats.zapatosAgainst);
-    default:
-      return undefined;
-  }
-}
+const cellValue = formatBreakdownValue;
+const cellColor = breakdownValueColor;
 
 function defaultTeamForNew(
   assignments: Record<number, TeamSide | null>
@@ -192,24 +83,52 @@ export default function AnalyticsCompare({
   initialLaunch = null,
 }: Props) {
   const { t, modeName } = useTranslation();
+  const { activeDataset, registry } = useAnalytics();
+  const datasetId = activeDataset?.id ?? registry.activeDatasetId;
   const launchApplied = useRef(false);
+
+  const playerIds = useMemo(
+    () => new Set(data.players.map((player) => player.id)),
+    [data.players]
+  );
+  const playerIdKey = useMemo(
+    () => data.players.map((player) => player.id).join(","),
+    [data.players]
+  );
+
+  const stored = useMemo(
+    () => loadCompareUiFilters(datasetId, playerIds, modes),
+    // Seed once per dataset; sanitize against players separately.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [datasetId]
+  );
+
   const [modeLabel, setModeLabel] = useState<string | null>(() => {
     if (initialLaunch?.modeLabel && modes.includes(initialLaunch.modeLabel)) {
       return initialLaunch.modeLabel;
+    }
+    if (stored.modeLabel && modes.includes(stored.modeLabel)) {
+      return stored.modeLabel;
     }
     if (initialMode && modes.includes(initialMode)) return initialMode;
     return modes[0] ?? null;
   });
   const [selectedIds, setSelectedIds] = useState<number[]>(() =>
-    initialLaunch?.playerIds?.length ? [...initialLaunch.playerIds] : []
+    initialLaunch?.playerIds?.length
+      ? [...initialLaunch.playerIds]
+      : stored.selectedIds
   );
   const [teams, setTeams] = useState<Record<number, TeamSide | null>>(() =>
-    initialLaunch?.teams ? { ...initialLaunch.teams } : {}
+    initialLaunch?.teams ? { ...initialLaunch.teams } : { ...stored.teams }
   );
-  const [matchupMode, setMatchupMode] = useState(
-    () => Boolean(initialLaunch?.matchupMode)
+  const [matchupMode, setMatchupMode] = useState(() =>
+    initialLaunch ? Boolean(initialLaunch.matchupMode) : stored.matchupMode
+  );
+  const [filtersHydratedFor, setFiltersHydratedFor] = useState<string | null>(
+    null
   );
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
   const [matchupByPlayer, setMatchupByPlayer] = useState<
     Record<number, PlayerStatsView>
   >({});
@@ -221,6 +140,67 @@ export default function AnalyticsCompare({
 
   const players = data.players;
   const alignmentReady = matchupAlignmentReady(selectedIds, teams);
+
+  // Restore when switching data sets (pending H2H launch still wins once).
+  useEffect(() => {
+    if (initialLaunch && !launchApplied.current) {
+      setFiltersHydratedFor(datasetId);
+      return;
+    }
+    const loaded = loadCompareUiFilters(datasetId, playerIds, modes);
+    setModeLabel(
+      loaded.modeLabel && modes.includes(loaded.modeLabel)
+        ? loaded.modeLabel
+        : (modes[0] ?? null)
+    );
+    setSelectedIds(loaded.selectedIds);
+    setTeams(loaded.teams);
+    setMatchupMode(loaded.matchupMode);
+    setFiltersHydratedFor(datasetId);
+    // Intentionally only on dataset change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datasetId]);
+
+  useEffect(() => {
+    if (filtersHydratedFor !== datasetId) return;
+    saveCompareUiFilters({
+      datasetId,
+      modeLabel,
+      selectedIds,
+      teams,
+      matchupMode,
+    });
+  }, [
+    datasetId,
+    modeLabel,
+    selectedIds,
+    teams,
+    matchupMode,
+    filtersHydratedFor,
+  ]);
+
+  // Drop picks that disappeared after import/replace.
+  useEffect(() => {
+    if (!playerIdKey) return;
+    const validIds = new Set(playerIdKey.split(",").map((id) => Number(id)));
+    setSelectedIds((current) => {
+      const next = current.filter((id) => validIds.has(id));
+      return next.length === current.length ? current : next;
+    });
+    setTeams((current) => {
+      let changed = false;
+      const next: Record<number, TeamSide | null> = {};
+      for (const [key, value] of Object.entries(current)) {
+        const id = Number(key);
+        if (!validIds.has(id)) {
+          changed = true;
+          continue;
+        }
+        next[id] = value;
+      }
+      return changed ? next : current;
+    });
+  }, [playerIdKey]);
 
   useEffect(() => {
     if (launchApplied.current || !initialLaunch) return;
@@ -234,7 +214,8 @@ export default function AnalyticsCompare({
     if (initialLaunch.modeLabel && modes.includes(initialLaunch.modeLabel)) {
       setModeLabel(initialLaunch.modeLabel);
     }
-  }, [initialLaunch, modes, players]);
+    setFiltersHydratedFor(datasetId);
+  }, [initialLaunch, modes, players, datasetId]);
 
   useEffect(() => {
     if (modeLabel && modes.includes(modeLabel)) return;
@@ -292,113 +273,11 @@ export default function AnalyticsCompare({
 
   const rows = useMemo(
     () =>
-      [
-        {
-          key: "josesCoefficient" as const,
-          abbr: t("statsAbbrJoses"),
-          full: t("statsJosesCoefficient"),
-        },
-        {
-          key: "gamesPlayed" as const,
-          abbr: t("statsAbbrGamesPlayed"),
-          full: t("statsGamesPlayed"),
-        },
-        {
-          key: "gamesWon" as const,
-          abbr: t("statsAbbrGamesWon"),
-          full: t("statsGamesWon"),
-        },
-        {
-          key: "gamesLost" as const,
-          abbr: t("statsAbbrGamesLost"),
-          full: t("statsGamesLost"),
-        },
-        {
-          key: "gameDifference" as const,
-          abbr: t("statsAbbrGameDifference"),
-          full: t("statsGameDifference"),
-        },
-        {
-          key: "pointsFor" as const,
-          abbr: t("statsAbbrPointsFor"),
-          full: t("statsPointsFor"),
-        },
-        {
-          key: "pointsAgainst" as const,
-          abbr: t("statsAbbrPointsAgainst"),
-          full: t("statsPointsAgainst"),
-        },
-        {
-          key: "pointsDifference" as const,
-          abbr: t("statsAbbrPointsDifference"),
-          full: t("statsPointsDifference"),
-        },
-        {
-          key: "handsPlayed" as const,
-          abbr: t("statsAbbrHandsTotal"),
-          full: t("statsHandsTotal"),
-        },
-        {
-          key: "handsWon" as const,
-          abbr: t("statsAbbrHandsWon"),
-          full: t("statsHandsWon"),
-        },
-        {
-          key: "handsLost" as const,
-          abbr: t("statsAbbrHandsLost"),
-          full: t("statsHandsLost"),
-        },
-        {
-          key: "handsDifference" as const,
-          abbr: t("statsAbbrHandsDifference"),
-          full: t("statsHandsDifference"),
-        },
-        {
-          key: "pointsPerHandFor" as const,
-          abbr: t("statsAbbrPointsPerHandFor"),
-          full: t("statsPointsPerHandFor"),
-        },
-        {
-          key: "pointsPerHandAgainst" as const,
-          abbr: t("statsAbbrPointsPerHandAgainst"),
-          full: t("statsPointsPerHandAgainst"),
-        },
-        {
-          key: "pointsPerHandDifference" as const,
-          abbr: t("statsAbbrPointsPerHandDifference"),
-          full: t("statsPointsPerHandDifference"),
-        },
-        {
-          key: "pollosFor" as const,
-          abbr: t("statsAbbrPollosFor"),
-          full: t("statsPollosFor"),
-        },
-        {
-          key: "pollosAgainst" as const,
-          abbr: t("statsAbbrPollosAgainst"),
-          full: t("statsPollosAgainst"),
-        },
-        {
-          key: "pollosDifference" as const,
-          abbr: t("statsAbbrPollosDifference"),
-          full: t("statsPollosDifference"),
-        },
-        {
-          key: "zapatosFor" as const,
-          abbr: t("statsAbbrZapatosFor"),
-          full: t("statsZapatosFor"),
-        },
-        {
-          key: "zapatosAgainst" as const,
-          abbr: t("statsAbbrZapatosAgainst"),
-          full: t("statsZapatosAgainst"),
-        },
-        {
-          key: "zapatosDifference" as const,
-          abbr: t("statsAbbrZapatosDifference"),
-          full: t("statsZapatosDifference"),
-        },
-      ] as const,
+      BREAKDOWN_STAT_DEFS.map((def) => ({
+        key: def.key,
+        abbr: t(def.abbrKey),
+        full: t(def.fullKey),
+      })),
     [t]
   );
 
@@ -449,6 +328,22 @@ export default function AnalyticsCompare({
           p: 0,
         }}
       >
+        <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 1.5 }}>
+          <Typography variant="h5" sx={{ mb: 0.25 }}>
+            {t("statsCompare")}
+          </Typography>
+          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
+            <Chip
+              size="small"
+              icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
+              label={t("statsManageData")}
+              onClick={() => setDataDrawerOpen(true)}
+              variant="outlined"
+              clickable
+            />
+          </Stack>
+        </Box>
+
         <Stack
           spacing={0}
           divider={
@@ -466,8 +361,8 @@ export default function AnalyticsCompare({
             minHeight: 0,
             overflow: { xs: "visible", md: "auto" },
             overscrollBehavior: "contain",
-            p: 2,
-            pt: { xs: 2.5, md: 3 },
+            px: 2,
+            pb: 2,
           }}
         >
         <ControlSection
@@ -835,6 +730,11 @@ export default function AnalyticsCompare({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <StatsDataDrawer
+        open={dataDrawerOpen}
+        onClose={() => setDataDrawerOpen(false)}
+      />
     </Box>
   );
 }

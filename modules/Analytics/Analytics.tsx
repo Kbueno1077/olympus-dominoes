@@ -15,10 +15,11 @@ import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { buildH2HCompareLaunch } from "@/lib/analytics/compareLaunch";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import {
-  formatPerGameRatePct,
-  formatSignedDiff,
-  perHandAverage,
-} from "@/lib/analytics/signedDiff";
+  BREAKDOWN_STAT_DEFS,
+  breakdownValueColor,
+  formatBreakdownValue,
+} from "@/lib/analytics/statBreakdown";
+import { formatSignedDiff } from "@/lib/analytics/signedDiff";
 import {
   getPlayerH2H,
   getPlayerStats,
@@ -31,7 +32,6 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import SyncIcon from "@mui/icons-material/Sync";
 import {
   Box,
-  Button,
   Card,
   Chip,
   CircularProgress,
@@ -42,7 +42,6 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   startTransition,
@@ -94,29 +93,6 @@ function StatLine({
       </Typography>
     </Stack>
   );
-}
-
-function DiffStatLine({
-  label,
-  favor,
-  against,
-}: {
-  label: string;
-  favor: number;
-  against: number;
-}) {
-  const diff = favor - against;
-  const color =
-    diff > 0 ? "primary.main" : diff < 0 ? "error.main" : "text.primary";
-  return (
-    <StatLine label={label} value={formatSignedDiff(diff)} valueColor={color} />
-  );
-}
-
-function formatPerHand(points: number, hands: number): string {
-  if (hands <= 0) return "—";
-  const avg = points / hands;
-  return Number.isInteger(avg) ? String(avg) : avg.toFixed(1);
 }
 
 export default function Analytics() {
@@ -236,27 +212,9 @@ export default function Analytics() {
       {/* Sidebar */}
       <Box component="aside" sx={dashboardAsideSx}>
         <Box sx={{ px: 2, pt: { xs: 2.5, md: 3 }, pb: 1.5 }}>
-          <Stack
-            direction="row"
-            alignItems="flex-start"
-            justifyContent="space-between"
-            spacing={1}
-          >
-            <Box sx={{ minWidth: 0 }}>
-              <Typography variant="h5" sx={{ mb: 0.25 }}>
-                {t("statsTitle")}
-              </Typography>
-            </Box>
-            <Button
-              component={Link}
-              href="/compare"
-              size="small"
-              variant="outlined"
-              sx={{ flexShrink: 0 }}
-            >
-              {t("statsCompareShort")}
-            </Button>
-          </Stack>
+          <Typography variant="h5" sx={{ mb: 0.25 }}>
+            {t("statsTitle")}
+          </Typography>
 
           <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
             <Chip
@@ -540,144 +498,21 @@ export default function Analytics() {
                 }}
               >
                 <DashboardPanel title={t("statsDetailTitle")}>
-                  <StatLine
-                    label={t("statsJosesCoefficient")}
-                    value={formatJosesCoefficient(activeStats.josesCoefficient)}
-                    valueColor={JOSES_ACCENT}
-                  />
-                  <StatLine
-                    label={t("statsGamesPlayed")}
-                    value={activeStats.gamesPlayed}
-                  />
-                  <StatLine
-                    label={t("statsGamesWon")}
-                    value={activeStats.gamesWon}
-                  />
-                  <StatLine
-                    label={t("statsGamesLost")}
-                    value={activeStats.gamesLost}
-                  />
-                  <DiffStatLine
-                    label={t("statsGameDifference")}
-                    favor={activeStats.gamesWon}
-                    against={activeStats.gamesLost}
-                  />
-                  <StatLine
-                    label={t("statsPointsFor")}
-                    value={activeStats.pointsFor}
-                  />
-                  <StatLine
-                    label={t("statsPointsAgainst")}
-                    value={activeStats.pointsAgainst}
-                  />
-                  <DiffStatLine
-                    label={t("statsPointsDifference")}
-                    favor={activeStats.pointsFor}
-                    against={activeStats.pointsAgainst}
-                  />
-                  <StatLine
-                    label={t("statsHandsTotal")}
-                    value={activeStats.handsPlayed}
-                  />
-                  <StatLine
-                    label={t("statsHandsWon")}
-                    value={activeStats.handsWon}
-                  />
-                  <StatLine
-                    label={t("statsHandsLost")}
-                    value={activeStats.handsLost}
-                  />
-                  <DiffStatLine
-                    label={t("statsHandsDifference")}
-                    favor={activeStats.handsWon}
-                    against={activeStats.handsLost}
-                  />
-                  <StatLine
-                    label={t("statsPointsPerHandFor")}
-                    value={formatPerHand(
-                      activeStats.pointsFor,
-                      activeStats.handsFor
-                    )}
-                  />
-                  <StatLine
-                    label={t("statsPointsPerHandAgainst")}
-                    value={formatPerHand(
-                      activeStats.pointsAgainst,
-                      activeStats.handsAgainst
-                    )}
-                  />
-                  {(() => {
-                    const forAvg = perHandAverage(
-                      activeStats.pointsFor,
-                      activeStats.handsFor
-                    );
-                    const againstAvg = perHandAverage(
-                      activeStats.pointsAgainst,
-                      activeStats.handsAgainst
-                    );
-                    if (forAvg == null || againstAvg == null) {
-                      return (
-                        <StatLine
-                          label={t("statsPointsPerHandDifference")}
-                          value="—"
-                        />
-                      );
-                    }
-                    const diff = forAvg - againstAvg;
+                  {BREAKDOWN_STAT_DEFS.map((def) => {
+                    const value = formatBreakdownValue(activeStats, def.key);
+                    const valueColor =
+                      def.key === "josesCoefficient"
+                        ? JOSES_ACCENT
+                        : breakdownValueColor(activeStats, def.key);
                     return (
                       <StatLine
-                        label={t("statsPointsPerHandDifference")}
-                        value={formatSignedDiff(diff, 1)}
-                        valueColor={
-                          diff > 0
-                            ? "primary.main"
-                            : diff < 0
-                              ? "error.main"
-                              : "text.primary"
-                        }
+                        key={def.key}
+                        label={t(def.fullKey)}
+                        value={value}
+                        valueColor={valueColor}
                       />
                     );
-                  })()}
-                  <StatLine
-                    label={t("statsPollosFor")}
-                    value={activeStats.pollosFor}
-                  />
-                  <StatLine
-                    label={t("statsPollosAgainst")}
-                    value={activeStats.pollosAgainst}
-                  />
-                  <DiffStatLine
-                    label={t("statsPollosDifference")}
-                    favor={activeStats.pollosFor}
-                    against={activeStats.pollosAgainst}
-                  />
-                  <StatLine
-                    label={t("statsPollosRate")}
-                    value={formatPerGameRatePct(
-                      activeStats.pollosFor,
-                      activeStats.gamesPlayed
-                    )}
-                  />
-                  <StatLine
-                    label={t("statsZapatosFor")}
-                    value={activeStats.zapatosFor}
-                  />
-                  <StatLine
-                    label={t("statsZapatosAgainst")}
-                    value={activeStats.zapatosAgainst}
-                  />
-                  <DiffStatLine
-                    label={t("statsZapatosDifference")}
-                    favor={activeStats.zapatosFor}
-                    against={activeStats.zapatosAgainst}
-                  />
-                  <StatLine
-                    label={t("statsZapatosRate")}
-                    value={formatPerGameRatePct(
-                      activeStats.zapatosFor,
-                      activeStats.gamesPlayed
-                    )}
-                  />
+                  })}
                 </DashboardPanel>
 
                 <DashboardPanel

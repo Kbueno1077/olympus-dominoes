@@ -26,6 +26,10 @@ import {
   type HistoryFilterTeam,
 } from "@/lib/analytics/historyFilters";
 import {
+  loadHistoryUiFilters,
+  saveHistoryUiFilters,
+} from "@/lib/analytics/historyFilterState";
+import {
   formatSignedDiff,
   signedDiffColor,
 } from "@/lib/analytics/signedDiff";
@@ -52,9 +56,8 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { startTransition, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 
 const SIDE_A = "#2F6F9F";
 const SIDE_B = "#B8453A";
@@ -341,14 +344,23 @@ export default function History() {
   const { t, language, modeName } = useTranslation();
   const router = useRouter();
   const params = useParams();
-  const { data, loading, activeDataset, setPendingCompare } = useAnalytics();
+  const { data, loading, activeDataset, registry, setPendingCompare } =
+    useAnalytics();
   const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [modeFilter, setModeFilter] = useState<string>("all");
+
+  const datasetId = activeDataset?.id ?? registry.activeDatasetId;
+
+  const [query, setQuery] = useState(() => loadHistoryUiFilters(datasetId).query);
+  const [modeFilter, setModeFilter] = useState(
+    () => loadHistoryUiFilters(datasetId).modeFilter
+  );
   const [rosterFilter, setRosterFilter] = useState<HistoryFilterPlayer[]>(
-    []
+    () => loadHistoryUiFilters(datasetId).rosterFilter
   );
   const [rosterPickerInput, setRosterPickerInput] = useState("");
+  const [filtersHydratedFor, setFiltersHydratedFor] = useState<string | null>(
+    null
+  );
 
   const routeMatchId = useMemo(() => {
     const raw = params?.matchId;
@@ -380,6 +392,50 @@ export default function History() {
     for (const player of players) map.set(player.id, player.name);
     return map;
   }, [players]);
+
+  const playerIdKey = useMemo(
+    () => players.map((player) => player.id).join(","),
+    [players]
+  );
+
+  // Restore filters when the active data set changes (list ↔ match remounts
+  // hit memory/sessionStorage via the lazy useState initializers too).
+  useEffect(() => {
+    const loaded = loadHistoryUiFilters(datasetId);
+    setQuery(loaded.query);
+    setModeFilter(loaded.modeFilter);
+    setRosterFilter(loaded.rosterFilter);
+    setFiltersHydratedFor(datasetId);
+  }, [datasetId]);
+
+  // Drop roster picks that disappeared after a replace/import.
+  useEffect(() => {
+    if (!playerIdKey) return;
+    const validIds = new Set(
+      playerIdKey.split(",").map((id) => Number(id))
+    );
+    setRosterFilter((current) => {
+      const next = current.filter((entry) => validIds.has(entry.playerId));
+      return next.length === current.length ? current : next;
+    });
+  }, [playerIdKey]);
+
+  useEffect(() => {
+    if (filtersHydratedFor !== datasetId) return;
+    saveHistoryUiFilters({
+      datasetId,
+      query,
+      modeFilter,
+      rosterFilter,
+    });
+  }, [datasetId, query, modeFilter, rosterFilter, filtersHydratedFor]);
+
+  // Drop a saved format that this data set no longer has.
+  useEffect(() => {
+    if (modeFilter === "all") return;
+    if (modes.length === 0) return;
+    if (!modes.includes(modeFilter)) setModeFilter("all");
+  }, [modes, modeFilter]);
 
   const addablePlayers = useMemo(
     () =>
@@ -506,14 +562,6 @@ export default function History() {
               onClick={() => setDataDrawerOpen(true)}
               variant="outlined"
               clickable
-            />
-            <Chip
-              size="small"
-              label={t("statsTitle")}
-              component={Link}
-              href="/stats"
-              clickable
-              variant="outlined"
             />
           </Stack>
         </Box>
