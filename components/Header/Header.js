@@ -3,7 +3,6 @@
 import DominoTile from "@/components/DominoTile";
 import LanguageSwitch from "@/components/Header/LanguageSwitch";
 import NavMenu from "@/components/Header/NavMenu";
-import { APP_UI_SIGNATURE } from "@/lib/analytics/dbMeta";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   AppBar,
@@ -117,26 +116,14 @@ export default function Header() {
                     variant="overline"
                     noWrap
                     sx={{
-                      display: "block",
+                      display: { xs: "none", sm: "block" },
                       color: "text.disabled",
-                      fontSize: { xs: 8, sm: 9 },
+                      fontSize: 9,
                       lineHeight: 1.35,
                       letterSpacing: "0.06em",
                     }}
                   >
-                    <Box
-                      component="span"
-                      sx={{ color: "text.secondary", fontWeight: 600 }}
-                    >
-                      {APP_UI_SIGNATURE}
-                    </Box>
-                    <Box
-                      component="span"
-                      sx={{ display: { xs: "none", sm: "inline" } }}
-                    >
-                      {" · "}
-                      {t("tagline")}
-                    </Box>
+                    {t("tagline")}
                   </Typography>
                 </Box>
               </Stack>

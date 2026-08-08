@@ -83,12 +83,16 @@ export default function NavMenu() {
         match: (p) => p === "/podium" || p.startsWith("/podium/"),
         Icon: EmojiEventsOutlined,
       },
-      {
-        href: "/merge",
-        label: t("mergeNav"),
-        match: (p) => p === "/merge" || p.startsWith("/merge/"),
-        Icon: CallMergeOutlined,
-      },
+      ...(process.env.NODE_ENV === "development"
+        ? [
+            {
+              href: "/merge",
+              label: t("mergeNav"),
+              match: (p) => p === "/merge" || p.startsWith("/merge/"),
+              Icon: CallMergeOutlined,
+            },
+          ]
+        : []),
     ],
     [t, matchInProgress]
   );

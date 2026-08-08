@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { APP_UI_SIGNATURE } from "@/lib/analytics/dbMeta";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Olympus Dominoes",
@@ -28,6 +29,9 @@ export default function PrivacyPage() {
           </h1>
           <p className="text-sm text-[rgb(var(--text-muted))]">
             Last updated: {LAST_UPDATED}
+          </p>
+          <p className="text-xs font-medium tracking-wide text-[rgb(var(--text-muted))]">
+            {APP_UI_SIGNATURE}
           </p>
         </header>
 

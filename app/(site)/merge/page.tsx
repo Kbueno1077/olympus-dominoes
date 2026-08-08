@@ -1,13 +1,10 @@
-"use client";
-
-import MergeDatasets from "@/modules/Analytics/MergeDatasets";
-import { dashboardPageSx } from "@/modules/Analytics/dashboardChrome";
-import { Box } from "@mui/material";
+import { notFound } from "next/navigation";
+import MergePageClient from "./MergePageClient";
 
 export default function MergePage() {
-  return (
-    <Box sx={dashboardPageSx}>
-      <MergeDatasets />
-    </Box>
-  );
+  if (process.env.NODE_ENV !== "development") {
+    notFound();
+  }
+
+  return <MergePageClient />;
 }
