@@ -36,6 +36,7 @@ import {
   withEnsuredDbMeta,
   withTouchedDbMeta,
 } from "./dbMetaState";
+import { withEnsuredMatchPublicIds } from "./matchIdentity";
 import { withEnsuredPlayerPublicIds } from "./playerIdentity";
 import { recalculateAllJosesCoefficients } from "./joseCoefficient";
 import type { OlympusExportData } from "./types";
@@ -75,9 +76,10 @@ function hydrateDatasetData(
 ): OlympusExportData | null {
   if (!data) return null;
   const withPlayers = withEnsuredPlayerPublicIds(data);
-  const ensured = withEnsuredDbMeta(withPlayers, {
+  const withMatches = withEnsuredMatchPublicIds(withPlayers);
+  const ensured = withEnsuredDbMeta(withMatches, {
     origin: "web",
-    label: label ?? withPlayers.db_meta?.label,
+    label: label ?? withMatches.db_meta?.label,
   });
   if (ensured !== data) {
     saveDatasetData(id, ensured);
@@ -90,9 +92,10 @@ function prepareImportedData(
   label?: string
 ): OlympusExportData {
   const withPlayers = withEnsuredPlayerPublicIds(parsed);
-  const withMeta = withEnsuredDbMeta(withPlayers, {
+  const withMatches = withEnsuredMatchPublicIds(withPlayers);
+  const withMeta = withEnsuredDbMeta(withMatches, {
     origin: "imported",
-    label: label || withPlayers.db_meta?.label || "",
+    label: label || withMatches.db_meta?.label || "",
   });
   // Import is a meaningful write — refresh updated_at / app versions.
   return recalculateAllJosesCoefficients(
