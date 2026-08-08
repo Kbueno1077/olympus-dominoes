@@ -261,7 +261,7 @@ See `lib/analytics/parseExport.ts`, `lib/analytics/dbMeta.ts`, and
 | `db_identifier` | Stable **16-char** alphanumeric league identity |
 | `created_at` / `updated_at` | ISO-8601; `updated_at` bumps only on meaningful writes |
 | `schema_version` | Current schema (`16`) |
-| `app_version` | Last writer (e.g. `4.2.0`) |
+| `app_version` | Last writer (e.g. `4.2.1`) |
 | `label` | Optional display name (often the data-set name) |
 | `origin` | `local` \| `imported` \| `web` |
 
