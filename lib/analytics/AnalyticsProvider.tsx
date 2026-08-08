@@ -31,6 +31,11 @@ import {
   type DatasetRegistry,
 } from "./datasets";
 import { parseOlympusExport } from "./parseExport";
+import {
+  withDbMetaLabel,
+  withEnsuredDbMeta,
+  withTouchedDbMeta,
+} from "./dbMetaState";
 import { withEnsuredPlayerPublicIds } from "./playerIdentity";
 import { recalculateAllJosesCoefficients } from "./joseCoefficient";
 import type { OlympusExportData } from "./types";
@@ -62,17 +67,39 @@ type AnalyticsContextValue = {
 
 const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
 
-/** Load + backfill public_id for legacy blobs missing the field. */
+/** Load + backfill public_id / db_meta for legacy blobs. */
 function hydrateDatasetData(
   id: string,
-  data: OlympusExportData | null
+  data: OlympusExportData | null,
+  label?: string
 ): OlympusExportData | null {
   if (!data) return null;
-  const ensured = withEnsuredPlayerPublicIds(data);
+  const withPlayers = withEnsuredPlayerPublicIds(data);
+  const ensured = withEnsuredDbMeta(withPlayers, {
+    origin: "web",
+    label: label ?? withPlayers.db_meta?.label,
+  });
   if (ensured !== data) {
     saveDatasetData(id, ensured);
   }
   return ensured;
+}
+
+function prepareImportedData(
+  parsed: OlympusExportData,
+  label?: string
+): OlympusExportData {
+  const withPlayers = withEnsuredPlayerPublicIds(parsed);
+  const withMeta = withEnsuredDbMeta(withPlayers, {
+    origin: "imported",
+    label: label || withPlayers.db_meta?.label || "",
+  });
+  // Import is a meaningful write — refresh updated_at / app versions.
+  return recalculateAllJosesCoefficients(
+    withTouchedDbMeta(withMeta, {
+      label: label || withMeta.db_meta?.label || "",
+    })
+  );
 }
 
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
@@ -87,7 +114,14 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const next = loadDatasetRegistry();
     setRegistry(next);
-    setData(hydrateDatasetData(next.activeDatasetId, loadDatasetData(next.activeDatasetId)));
+    const active = next.datasets.find((d) => d.id === next.activeDatasetId);
+    setData(
+      hydrateDatasetData(
+        next.activeDatasetId,
+        loadDatasetData(next.activeDatasetId),
+        active?.displayName
+      )
+    );
     setLoading(false);
   }, []);
 
@@ -108,18 +142,18 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   const applyParsedToActive = useCallback(
     (parsed: OlympusExportData, current: DatasetRegistry) => {
-      // Exports often omit joses_coefficient — persist the current formula.
-      // public_id is resolved during parse; ensure again for legacy safety.
-      const withIds = withEnsuredPlayerPublicIds(parsed);
-      const withJose = recalculateAllJosesCoefficients(withIds);
+      const active = current.datasets.find(
+        (d) => d.id === current.activeDatasetId
+      );
+      const prepared = prepareImportedData(parsed, active?.displayName);
       const touched = touchDatasetInRegistry(
         current,
         current.activeDatasetId,
-        withJose.fileName
+        prepared.fileName
       );
-      saveDatasetData(current.activeDatasetId, withJose);
+      saveDatasetData(current.activeDatasetId, prepared);
       persistRegistry(touched);
-      setData(withJose);
+      setData(prepared);
       setError(null);
     },
     [persistRegistry]
@@ -150,21 +184,22 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const importAsNew = useCallback(
     async (file: File, displayName?: string) => {
       const contents = await file.text();
-      const parsed = recalculateAllJosesCoefficients(
-        withEnsuredPlayerPublicIds(parseOlympusExport(contents, file.name))
-      );
       const name =
         displayName?.trim() ||
         suggestedDatasetNameFromFile(file.name) ||
         "Imported";
+      const prepared = prepareImportedData(
+        parseOlympusExport(contents, file.name),
+        name
+      );
       const { registry: next, dataset } = registerNewDatasetInRegistry(
         registry,
         name,
         file.name
       );
-      saveDatasetData(dataset.id, parsed);
+      saveDatasetData(dataset.id, prepared);
       persistRegistry(next);
-      setData(parsed);
+      setData(prepared);
       setError(null);
     },
     [persistRegistry, registry]
@@ -173,8 +208,11 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const switchDataset = useCallback(
     (id: string) => {
       const next = setActiveDatasetInRegistry(registry, id);
+      const meta = next.datasets.find((d) => d.id === id);
       persistRegistry(next);
-      setData(hydrateDatasetData(id, loadDatasetData(id)));
+      setData(
+        hydrateDatasetData(id, loadDatasetData(id), meta?.displayName)
+      );
       setError(null);
     },
     [persistRegistry, registry]
@@ -184,8 +222,20 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     (id: string, displayName: string) => {
       const next = renameDatasetInRegistry(registry, id, displayName);
       persistRegistry(next);
+      // Active dataset rename is a meaningful write — sync db_meta.label.
+      if (id === registry.activeDatasetId && data) {
+        const labeled = withDbMetaLabel(data, displayName.trim());
+        saveDatasetData(id, labeled);
+        setData(labeled);
+      } else if (id !== registry.activeDatasetId) {
+        const stored = loadDatasetData(id);
+        if (stored) {
+          saveDatasetData(id, withDbMetaLabel(stored, displayName.trim()));
+        }
+      }
+      setError(null);
     },
-    [persistRegistry, registry]
+    [data, persistRegistry, registry]
   );
 
   const deleteDataset = useCallback(
@@ -198,12 +248,14 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         saveDatasetData(next.activeDatasetId, null);
       }
       persistRegistry(next);
+      const active = next.datasets.find((d) => d.id === next.activeDatasetId);
       setData(
         wasLast
           ? null
           : hydrateDatasetData(
               next.activeDatasetId,
-              loadDatasetData(next.activeDatasetId)
+              loadDatasetData(next.activeDatasetId),
+              active?.displayName
             )
       );
       setError(null);
@@ -213,14 +265,17 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   const persistActiveData = useCallback(
     (next: OlympusExportData) => {
+      const touchedMeta = withTouchedDbMeta(next, {
+        label: next.db_meta?.label,
+      });
       const touched = touchDatasetInRegistry(
         registry,
         registry.activeDatasetId,
-        next.fileName
+        touchedMeta.fileName
       );
-      saveDatasetData(registry.activeDatasetId, next);
+      saveDatasetData(registry.activeDatasetId, touchedMeta);
       persistRegistry(touched);
-      setData(next);
+      setData(touchedMeta);
       setError(null);
     },
     [persistRegistry, registry]

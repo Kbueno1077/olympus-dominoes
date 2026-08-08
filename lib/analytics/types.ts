@@ -1,4 +1,7 @@
+import type { DbMetaRow } from "./dbMeta";
+
 export const EXPORT_TABLES = [
+  "db_meta",
   "players",
   "app_settings",
   "matches",
@@ -10,6 +13,8 @@ export const EXPORT_TABLES = [
 ] as const;
 
 export type ExportTable = (typeof EXPORT_TABLES)[number];
+
+export type { DbMetaOrigin, DbMetaRow } from "./dbMeta";
 
 export type PlayerRow = {
   id: number;
@@ -56,6 +61,8 @@ export type OlympusExportData = {
   source: "csv";
   fileName: string;
   importedAt: string;
+  /** Exactly one row describing this league / dataset file (schema v16). */
+  db_meta?: DbMetaRow;
   players: PlayerRow[];
   player_stats: PlayerStatsRow[];
   player_h2h: PlayerH2HRow[];

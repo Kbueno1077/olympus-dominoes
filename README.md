@@ -245,12 +245,30 @@ Checks: Cesar 2nds > HotWeekend 2nds; Ugly+4 > EvenBlow; Solid40 > Luis.
 ## Imports & datasets
 
 The mobile app can export SQLite tables as CSV. The web parser
-expects Olympus sectioned tables:
+expects Olympus sectioned tables (mobile `EXPORT_TABLES` order):
 
-`players`, `app_settings`, `matches`, `match_players`, `games`,
+`db_meta`, `players`, `app_settings`, `matches`, `match_players`, `games`,
 `game_team_scores`, `player_stats`, `player_h2h`
 
-See `lib/analytics/parseExport.ts` and `lib/analytics/types.ts`.
+See `lib/analytics/parseExport.ts`, `lib/analytics/dbMeta.ts`, and
+`lib/analytics/types.ts`.
+
+### `db_meta` (exactly one row, `id = 1`)
+
+| Column | Notes |
+|--------|--------|
+| `id` | Always `1` |
+| `db_identifier` | Stable **16-char** alphanumeric league identity |
+| `created_at` / `updated_at` | ISO-8601; `updated_at` bumps only on meaningful writes |
+| `schema_version` | Current schema (`16`) |
+| `app_version` | Last writer (e.g. `4.2.0`) |
+| `label` | Optional display name (often the data-set name) |
+| `origin` | `local` \| `imported` \| `web` |
+
+On import: keep a valid `db_identifier` from CSV and set `origin=imported`.
+Legacy CSV without `# db_meta` gets a new identifier with `origin=imported`.
+Export stays on the mobile app; the web app imports CSV and preserves `db_meta`
+so identity round-trips when you re-import on mobile.
 
 ### `players` columns
 
@@ -269,16 +287,13 @@ import: missing or invalid ids are generated with `crypto.getRandomValues`. When
 Matching helpers prefer `public_id` over name — see `lib/analytics/playerPublicId.ts` and
 `lib/analytics/playerIdentity.ts`.
 
-Export stays on the mobile app. The web app imports CSV/SQL and preserves `public_id`
-so identities round-trip when you re-import on mobile.
-
 Datasets live under:
 
 - Registry: `olympus-web-datasets-v1`
 - Payloads: `olympus-web-dataset-data-<id>`
 - Legacy single slot migrated on first load: `olympus-web-analytics-export-v1`
 
-Stored datasets missing `public_id` are backfilled on load.
+Stored datasets missing `public_id` or `db_meta` are backfilled on load.
 ## Notes
 
 - No account or cloud sync. Match state and imports stay in this browser.

@@ -33,16 +33,6 @@ function newId(): string {
   return `ds_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function slugifyName(name: string): string {
-  const slug = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
-  return slug || "dataset";
-}
-
 function defaultRegistry(): DatasetRegistry {
   const updatedAt = nowIso();
   return {
@@ -246,12 +236,4 @@ export function removeDatasetFromRegistryLocal(
     activeDatasetId = datasets[0].id;
   }
   return { activeDatasetId, datasets };
-}
-
-export function exportBasenameForDataset(displayName: string): string {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `olympus-${slugifyName(displayName)}-${yyyy}-${mm}-${dd}`;
 }

@@ -1,9 +1,15 @@
 "use client";
 
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
-import { suggestedDatasetNameFromFile } from "@/lib/analytics/datasets";
+import type { DbMetaRow } from "@/lib/analytics/dbMeta";
+import { withEnsuredDbMeta } from "@/lib/analytics/dbMetaState";
+import {
+  loadDatasetData,
+  suggestedDatasetNameFromFile,
+} from "@/lib/analytics/datasets";
 import { useTranslation } from "@/i18n/useTranslation";
 import useToast from "@/hooks/useToast";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import SyncIcon from "@mui/icons-material/Sync";
 import {
   Box,
@@ -21,12 +27,21 @@ import {
 import { alpha } from "@mui/material/styles";
 import { useRef, useState } from "react";
 
+function formatMetaTimestamp(value: string, locale: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value || "—";
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export default function DatasetsPanel({
   embedded = false,
 }: {
   embedded?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const displayToast = useToast();
   const {
     data,
@@ -49,10 +64,27 @@ export default function DatasetsPanel({
     | { type: "delete"; id: string; name: string }
     | { type: "switch"; id: string; name: string }
   >(null);
+  const [infoOpen, setInfoOpen] = useState<{
+    name: string;
+    meta: DbMetaRow | null;
+  } | null>(null);
   const [nameNewOpen, setNameNewOpen] = useState(false);
   const [pendingNewFile, setPendingNewFile] = useState<File | null>(null);
   const [newName, setNewName] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
+
+  const locale = language === "es" ? "es" : "en";
+
+  const openDatasetInfo = (id: string, name: string) => {
+    const active = id === registry.activeDatasetId;
+    const payload = active ? data : loadDatasetData(id);
+    if (!payload) {
+      setInfoOpen({ name, meta: null });
+      return;
+    }
+    const ensured = withEnsuredDbMeta(payload, { origin: "web" });
+    setInfoOpen({ name, meta: ensured.db_meta ?? null });
+  };
 
   const run = async (fn: () => Promise<void> | void) => {
     setBusy(true);
@@ -155,6 +187,14 @@ export default function DatasetsPanel({
                     {t("datasetsSwitch")}
                   </Button>
                 ) : null}
+                <Button
+                  size="small"
+                  disabled={busy}
+                  startIcon={<InfoOutlinedIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => openDatasetInfo(ds.id, ds.displayName)}
+                >
+                  {t("datasetsInfo")}
+                </Button>
                 <Button
                   size="small"
                   disabled={busy}
@@ -349,6 +389,59 @@ export default function DatasetsPanel({
           >
             {t("datasetsImportNew")}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={infoOpen != null}
+        onClose={() => setInfoOpen(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>
+          {infoOpen
+            ? `${t("datasetsInfoTitle")} — ${infoOpen.name}`
+            : t("datasetsInfoTitle")}
+        </DialogTitle>
+        <DialogContent>
+          {infoOpen?.meta ? (
+            <Stack spacing={1.25} sx={{ pt: 0.5 }}>
+              {(
+                [
+                  ["datasetsInfoLabel", infoOpen.meta.label || "—"],
+                  ["datasetsInfoOrigin", infoOpen.meta.origin],
+                  [
+                    "datasetsInfoSchema",
+                    String(infoOpen.meta.schema_version),
+                  ],
+                  ["datasetsInfoAppVersion", infoOpen.meta.app_version],
+                  [
+                    "datasetsInfoCreated",
+                    formatMetaTimestamp(infoOpen.meta.created_at, locale),
+                  ],
+                  [
+                    "datasetsInfoUpdated",
+                    formatMetaTimestamp(infoOpen.meta.updated_at, locale),
+                  ],
+                ] as const
+              ).map(([labelKey, value]) => (
+                <Box key={labelKey}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "text.secondary", display: "block" }}
+                  >
+                    {t(labelKey)}
+                  </Typography>
+                  <Typography variant="body2">{value}</Typography>
+                </Box>
+              ))}
+            </Stack>
+          ) : (
+            <DialogContentText>{t("datasetsInfoEmpty")}</DialogContentText>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInfoOpen(null)}>{t("done")}</Button>
         </DialogActions>
       </Dialog>
 
