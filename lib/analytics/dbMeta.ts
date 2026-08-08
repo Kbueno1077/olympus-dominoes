@@ -1,6 +1,6 @@
 /**
  * Stable identity of one league / dataset file (same alphabet as player public_id).
- * Mirrors mobile `domain/dbMeta.ts` (schema v16).
+ * Mirrors mobile `domain/dbMeta.ts` (schema v17).
  */
 
 import {
@@ -12,10 +12,10 @@ import {
 export const DB_IDENTIFIER_LENGTH = PLAYER_PUBLIC_ID_LENGTH;
 
 /** Current durable schema version — keep in sync with the mobile app. */
-export const SCHEMA_VERSION = 16;
+export const SCHEMA_VERSION = 17;
 
 /** Last web app version that writes db_meta (package.json). */
-export const WRITING_APP_VERSION = "4.2.1";
+export const WRITING_APP_VERSION = "4.3.0";
 
 export const DB_META_ORIGINS = ["local", "imported", "web"] as const;
 export type DbMetaOrigin = (typeof DB_META_ORIGINS)[number];

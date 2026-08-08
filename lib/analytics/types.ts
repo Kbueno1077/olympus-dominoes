@@ -61,11 +61,12 @@ export type OlympusExportData = {
   source: "csv";
   fileName: string;
   importedAt: string;
-  /** Exactly one row describing this league / dataset file (schema v16). */
+  /** Exactly one row describing this league / dataset file (schema v17). */
   db_meta?: DbMetaRow;
   players: PlayerRow[];
   player_stats: PlayerStatsRow[];
   player_h2h: PlayerH2HRow[];
+  /** Raw match rows (include stable `public_id` when present). */
   matches: Record<string, unknown>[];
   /** Raw tables kept for future use; analytics primarily uses the three above. */
   tables: Partial<Record<ExportTable, Record<string, unknown>[]>>;

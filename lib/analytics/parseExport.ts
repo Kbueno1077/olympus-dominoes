@@ -7,6 +7,7 @@ import {
   type PlayerStatsRow,
 } from "./types";
 import { withResolvedImportDbMeta } from "./dbMetaState";
+import { withEnsuredMatchPublicIds } from "./matchIdentity";
 import { withEnsuredPlayerPublicIds } from "./playerIdentity";
 import { resolveImportedPublicId } from "./playerPublicId";
 
@@ -225,15 +226,17 @@ export function parseOlympusExport(
     db_meta: (tables.db_meta ?? []).slice(0, 1),
   };
   return withResolvedImportDbMeta(
-    withEnsuredPlayerPublicIds({
-      source: "csv",
-      fileName,
-      importedAt: new Date().toISOString(),
-      players,
-      player_stats,
-      player_h2h,
-      matches: tablesOnce.matches ?? [],
-      tables: tablesOnce,
-    })
+    withEnsuredMatchPublicIds(
+      withEnsuredPlayerPublicIds({
+        source: "csv",
+        fileName,
+        importedAt: new Date().toISOString(),
+        players,
+        player_stats,
+        player_h2h,
+        matches: tablesOnce.matches ?? [],
+        tables: tablesOnce,
+      })
+    )
   );
 }

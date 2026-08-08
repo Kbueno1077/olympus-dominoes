@@ -260,8 +260,8 @@ See `lib/analytics/parseExport.ts`, `lib/analytics/dbMeta.ts`, and
 | `id` | Always `1` |
 | `db_identifier` | Stable **16-char** alphanumeric league identity |
 | `created_at` / `updated_at` | ISO-8601; `updated_at` bumps only on meaningful writes |
-| `schema_version` | Current schema (`16`) |
-| `app_version` | Last writer (e.g. `4.2.1`) |
+| `schema_version` | Current schema (`17`) |
+| `app_version` | Last writer (e.g. `4.3.0`) |
 | `label` | Optional display name (often the data-set name) |
 | `origin` | `local` \| `imported` \| `web` |
 
@@ -287,13 +287,25 @@ import: missing or invalid ids are generated with `crypto.getRandomValues`. When
 Matching helpers prefer `public_id` over name — see `lib/analytics/playerPublicId.ts` and
 `lib/analytics/playerIdentity.ts`.
 
+### `matches` columns
+
+| Column | Notes |
+|--------|--------|
+| `id` | Local numeric id within the export (not stable across DBs) |
+| `title` / `ended_at` / `players_amount` / `mode_label` / `max_points` | Match metadata |
+| `public_id` | Stable **16-char** alphanumeric. Cross-DB identity for the same finished match. |
+
+Legacy exports without match `public_id` still import: missing or invalid ids are
+generated on parse / load (same rules as players). See `lib/analytics/matchPublicId.ts`
+and `lib/analytics/matchIdentity.ts`.
+
 Datasets live under:
 
 - Registry: `olympus-web-datasets-v1`
 - Payloads: `olympus-web-dataset-data-<id>`
 - Legacy single slot migrated on first load: `olympus-web-analytics-export-v1`
 
-Stored datasets missing `public_id` or `db_meta` are backfilled on load.
+Stored datasets missing player/match `public_id` or `db_meta` are backfilled on load.
 ## Notes
 
 - No account or cloud sync. Match state and imports stay in this browser.
