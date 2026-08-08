@@ -10,6 +10,7 @@ const FULL_BLEED_PATHS = new Set([
   "/history",
   "/podium",
   "/leaderboard",
+  "/merge",
 ]);
 
 /** Prefer dynamic viewport height on mobile browsers (URL chrome). */

@@ -51,9 +51,13 @@ npx tsc --noEmit
 | `/compare` | Multi-player / matchup compare |
 | `/history` | Match history list + filters |
 | `/history/[matchId]` | Deep link into one imported match |
+| `/leaderboard` | Ranking by Jose's Coefficient |
+| `/podium` | System AI podium |
+| `/merge` | Prototype: merge 2+ data sets into a new one |
 
 Analytics pages share full-bleed chrome (frosted left sidebar + scrollable
-main). Import / rename / switch datasets via **Manage data**.
+main). Import / rename / switch datasets via **Manage data**. Use **Merge** to
+union players and matches by stable `public_id` (with conflict review).
 
 ## Layout
 
@@ -261,7 +265,7 @@ See `lib/analytics/parseExport.ts`, `lib/analytics/dbMeta.ts`, and
 | `db_identifier` | Stable **16-char** alphanumeric league identity |
 | `created_at` / `updated_at` | ISO-8601; `updated_at` bumps only on meaningful writes |
 | `schema_version` | Current schema (`17`) |
-| `app_version` | Last writer (e.g. `4.3.0`) |
+| `app_version` | Last writer (e.g. `4.4.0`) |
 | `label` | Optional display name (often the data-set name) |
 | `origin` | `local` \| `imported` \| `web` |
 

@@ -10,6 +10,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
 import LeaderboardOutlined from "@mui/icons-material/LeaderboardOutlined";
+import CallMergeOutlined from "@mui/icons-material/CallMergeOutlined";
 import SportsEsportsOutlined from "@mui/icons-material/SportsEsportsOutlined";
 import {
   Box,
@@ -81,6 +82,12 @@ export default function NavMenu() {
         label: t("podiumNav"),
         match: (p) => p === "/podium" || p.startsWith("/podium/"),
         Icon: EmojiEventsOutlined,
+      },
+      {
+        href: "/merge",
+        label: t("mergeNav"),
+        match: (p) => p === "/merge" || p.startsWith("/merge/"),
+        Icon: CallMergeOutlined,
       },
     ],
     [t, matchInProgress]
