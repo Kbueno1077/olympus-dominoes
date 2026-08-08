@@ -37,8 +37,15 @@ import {
   withTouchedDbMeta,
 } from "./dbMetaState";
 import { withEnsuredMatchPublicIds } from "./matchIdentity";
+import {
+  analyzeMerge,
+  materializeMergedExport,
+  type MergeResolutions,
+  type MergeSource,
+} from "./mergeDatasets";
 import { withEnsuredPlayerPublicIds } from "./playerIdentity";
 import { recalculateAllJosesCoefficients } from "./joseCoefficient";
+import { withStatsFilledFromMatches } from "./recomputeFromMatches";
 import type { OlympusExportData } from "./types";
 
 type AnalyticsContextValue = {
@@ -52,6 +59,16 @@ type AnalyticsContextValue = {
   importText: (contents: string, fileName: string) => void;
   /** Import file as a brand-new named data set and switch to it. */
   importAsNew: (file: File, displayName?: string) => Promise<void>;
+  /**
+   * Merge 2+ saved datasets into a brand-new dataset (never overwrites sources).
+   * Switches active to the merged set.
+   */
+  createMergedDataset: (
+    displayName: string,
+    datasetIds: string[],
+    resolutions: MergeResolutions,
+    options?: { excludeMatchKeys?: Iterable<string> }
+  ) => DatasetMeta;
   switchDataset: (id: string) => void;
   renameDataset: (id: string, displayName: string) => void;
   deleteDataset: (id: string) => void;
@@ -68,7 +85,7 @@ type AnalyticsContextValue = {
 
 const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
 
-/** Load + backfill public_id / db_meta for legacy blobs. */
+/** Load + backfill public_id / db_meta / empty stats for legacy blobs. */
 function hydrateDatasetData(
   id: string,
   data: OlympusExportData | null,
@@ -77,9 +94,10 @@ function hydrateDatasetData(
   if (!data) return null;
   const withPlayers = withEnsuredPlayerPublicIds(data);
   const withMatches = withEnsuredMatchPublicIds(withPlayers);
-  const ensured = withEnsuredDbMeta(withMatches, {
+  const withStats = withStatsFilledFromMatches(withMatches);
+  const ensured = withEnsuredDbMeta(withStats, {
     origin: "web",
-    label: label ?? withMatches.db_meta?.label,
+    label: label ?? withStats.db_meta?.label,
   });
   if (ensured !== data) {
     saveDatasetData(id, ensured);
@@ -93,9 +111,10 @@ function prepareImportedData(
 ): OlympusExportData {
   const withPlayers = withEnsuredPlayerPublicIds(parsed);
   const withMatches = withEnsuredMatchPublicIds(withPlayers);
-  const withMeta = withEnsuredDbMeta(withMatches, {
+  const withStats = withStatsFilledFromMatches(withMatches);
+  const withMeta = withEnsuredDbMeta(withStats, {
     origin: "imported",
-    label: label || withMatches.db_meta?.label || "",
+    label: label || withStats.db_meta?.label || "",
   });
   // Import is a meaningful write — refresh updated_at / app versions.
   return recalculateAllJosesCoefficients(
@@ -204,6 +223,52 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       persistRegistry(next);
       setData(prepared);
       setError(null);
+    },
+    [persistRegistry, registry]
+  );
+
+  const createMergedDataset = useCallback(
+    (
+      displayName: string,
+      datasetIds: string[],
+      resolutions: MergeResolutions,
+      options?: { excludeMatchKeys?: Iterable<string> }
+    ): DatasetMeta => {
+      const name = displayName.trim();
+      if (!name) throw new Error("empty_name");
+      if (datasetIds.length < 2) throw new Error("merge_need_two");
+
+      const sources: MergeSource[] = [];
+      for (const id of datasetIds) {
+        const meta = registry.datasets.find((d) => d.id === id);
+        const raw = loadDatasetData(id);
+        if (!meta || !raw) throw new Error("merge_missing_source");
+        const hydrated =
+          hydrateDatasetData(id, raw, meta.displayName) ?? raw;
+        sources.push({
+          datasetId: id,
+          displayName: meta.displayName,
+          data: hydrated,
+        });
+      }
+
+      const plan = analyzeMerge(sources);
+      const merged = materializeMergedExport(sources, plan, resolutions, {
+        displayName: name,
+        fileName: `merged-${name}.csv`,
+        excludeMatchKeys: options?.excludeMatchKeys,
+      });
+
+      const { registry: next, dataset } = registerNewDatasetInRegistry(
+        registry,
+        name,
+        merged.fileName
+      );
+      saveDatasetData(dataset.id, merged);
+      persistRegistry(next);
+      setData(merged);
+      setError(null);
+      return dataset;
     },
     [persistRegistry, registry]
   );
@@ -329,6 +394,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       importFile,
       importText,
       importAsNew,
+      createMergedDataset,
       switchDataset,
       renameDataset,
       deleteDataset,
@@ -348,6 +414,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       importFile,
       importText,
       importAsNew,
+      createMergedDataset,
       switchDataset,
       renameDataset,
       deleteDataset,

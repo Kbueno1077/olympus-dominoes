@@ -51,9 +51,13 @@ npx tsc --noEmit
 | `/compare` | Multi-player / matchup compare |
 | `/history` | Match history list + filters |
 | `/history/[matchId]` | Deep link into one imported match |
+| `/leaderboard` | Ranking by Jose's Coefficient |
+| `/podium` | System AI podium |
+| `/merge` | Prototype: merge 2+ data sets into a new one |
 
 Analytics pages share full-bleed chrome (frosted left sidebar + scrollable
-main). Import / rename / switch datasets via **Manage data**.
+main). Import / rename / switch datasets via **Manage data**. Use **Merge** to
+union players and matches by stable `public_id` (with conflict review).
 
 ## Layout
 
