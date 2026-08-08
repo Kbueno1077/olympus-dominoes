@@ -6,6 +6,7 @@ import {
   type PlayerRow,
   type PlayerStatsRow,
 } from "./types";
+import { withResolvedImportDbMeta } from "./dbMetaState";
 import { withEnsuredPlayerPublicIds } from "./playerIdentity";
 import { resolveImportedPublicId } from "./playerPublicId";
 
@@ -217,15 +218,22 @@ export function parseOlympusExport(
     throw new Error("empty_export");
   }
 
-  // Mirror public_id onto raw table rows and catch any remaining gaps.
-  return withEnsuredPlayerPublicIds({
-    source: "csv",
-    fileName,
-    importedAt: new Date().toISOString(),
-    players,
-    player_stats,
-    player_h2h,
-    matches: tables.matches ?? [],
-    tables,
-  });
+  // Mirror public_id onto raw rows, then resolve exactly one db_meta row.
+  // Keep at most one db_meta data row from CSV (never 2+).
+  const tablesOnce = {
+    ...tables,
+    db_meta: (tables.db_meta ?? []).slice(0, 1),
+  };
+  return withResolvedImportDbMeta(
+    withEnsuredPlayerPublicIds({
+      source: "csv",
+      fileName,
+      importedAt: new Date().toISOString(),
+      players,
+      player_stats,
+      player_h2h,
+      matches: tablesOnce.matches ?? [],
+      tables: tablesOnce,
+    })
+  );
 }
