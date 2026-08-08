@@ -15,7 +15,7 @@ export const DB_IDENTIFIER_LENGTH = PLAYER_PUBLIC_ID_LENGTH;
 export const SCHEMA_VERSION = 16;
 
 /** Last web app version that writes db_meta (package.json). */
-export const WRITING_APP_VERSION = "4.2.0";
+export const WRITING_APP_VERSION = "4.2.1";
 
 export const DB_META_ORIGINS = ["local", "imported", "web"] as const;
 export type DbMetaOrigin = (typeof DB_META_ORIGINS)[number];
