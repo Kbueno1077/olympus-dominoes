@@ -70,6 +70,32 @@ const en = {
     "Export a CSV save from the mobile app, then open Analytics to load it. History and player stats use that same save.",
   webHistoryNote: "Upload a save",
   webHistoryCta: "Open analytics",
+  homeSplitTitle: "Same league. Two jobs.",
+  homeSplitSubtitle:
+    "The mobile app runs the table for real. This site is for reading your history and casual scorekeeping that never becomes official.",
+  homeSplitToggleTitle: "App and web do different jobs",
+  homeSplitToggleHint: "Tap to see what each one is for",
+  homeAppBadge: "Where matches live",
+  homeAppTitle: "Mobile app",
+  homeAppBody:
+    "Play at the mesa: open several matches, keep the real score, and save the league.",
+  homeAppCap1: "Multiple matches open at once",
+  homeAppCap2: "Sit-outs, waiting tables, and every roster combo",
+  homeAppCap3: "Durable history written on the device",
+  homeAppCap4: "Export a CSV when you want the web to see it",
+  homeAppFootnote: "Multi-match play ships on the app — not here.",
+  homeWebBadge: "Companion site",
+  homeWebTitle: "This website",
+  homeWebBody:
+    "Browse imported data with clearer views, or scratch a throwaway pad when you just need numbers.",
+  homeWebCap1: "Import a save and explore History, Stats, and Podium",
+  homeWebCap2: "Compare players and formats without the phone",
+  homeWebCap3: "Casual annotation that is not saved to the league",
+  homeWebCap4: "Nothing here replaces the app as the source of truth",
+  homeWebViewCta: "View imported data",
+  homeWebCasualCta: "Casual score pad",
+  homeWebCasualNote:
+    "Browser-only scratch scoring. Ending a match clears it — it never joins History.",
 
   // Analytics
   analyticsTitle: "Analytics",
@@ -618,6 +644,32 @@ const es = {
     "Exporta un CSV desde la app móvil y ábrelo en Analítica. El historial y las estadísticas usan ese mismo archivo.",
   webHistoryNote: "Sube un respaldo",
   webHistoryCta: "Abrir analítica",
+  homeSplitTitle: "La misma liga. Dos trabajos.",
+  homeSplitSubtitle:
+    "La app móvil corre la mesa de verdad. Este sitio es para leer el historial y anotar partidas casuales que nunca pasan a oficiales.",
+  homeSplitToggleTitle: "La app y la web hacen trabajos distintos",
+  homeSplitToggleHint: "Toca para ver qué hace cada una",
+  homeAppBadge: "Donde viven las partidas",
+  homeAppTitle: "App móvil",
+  homeAppBody:
+    "Juega en la mesa: abre varias partidas, lleva el marcador real y guarda la liga.",
+  homeAppCap1: "Varias partidas abiertas a la vez",
+  homeAppCap2: "Esperas, mesas en pausa y cualquier combinación de jugadores",
+  homeAppCap3: "Historial durable en el dispositivo",
+  homeAppCap4: "Exporta un CSV cuando quieras verlo en la web",
+  homeAppFootnote: "El multi-partida sale en la app — no aquí.",
+  homeWebBadge: "Sitio compañero",
+  homeWebTitle: "Este sitio",
+  homeWebBody:
+    "Revisa los datos importados con vistas más claras, o usa una libreta descartable cuando solo necesitas números.",
+  homeWebCap1: "Importa un respaldo y explora Historial, Stats y Podio",
+  homeWebCap2: "Compara jugadores y formatos sin el teléfono",
+  homeWebCap3: "Anotación casual que no se guarda en la liga",
+  homeWebCap4: "Nada aquí reemplaza a la app como fuente de verdad",
+  homeWebViewCta: "Ver datos importados",
+  homeWebCasualCta: "Libreta casual",
+  homeWebCasualNote:
+    "Anotación solo en el navegador. Al terminar se borra — nunca entra al Historial.",
 
   // Analytics
   analyticsTitle: "Analítica",
