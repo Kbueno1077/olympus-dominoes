@@ -15,7 +15,7 @@ export const DB_IDENTIFIER_LENGTH = PLAYER_PUBLIC_ID_LENGTH;
 export const SCHEMA_VERSION = 17;
 
 /** Last web app version that writes db_meta (package.json). */
-export const WRITING_APP_VERSION = "4.4.0";
+export const WRITING_APP_VERSION = "4.4.1";
 
 /** UI-only brand line — not stored as app_version. */
 export const APP_UI_SIGNATURE = `kbueno's v${WRITING_APP_VERSION}`;
