@@ -4,8 +4,6 @@ import DominoTile from "@/components/DominoTile";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
-import PhoneIphoneOutlined from "@mui/icons-material/PhoneIphoneOutlined";
-import LanguageOutlined from "@mui/icons-material/LanguageOutlined";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import { PlayArrow } from "@mui/icons-material";
 import {
@@ -39,8 +37,10 @@ const HOW_STEPS = [
   { title: "howStep3Title", body: "howStep3Body" },
 ];
 
-const APP_CAPS = ["homeAppCap1", "homeAppCap2", "homeAppCap3", "homeAppCap4"];
-const WEB_CAPS = ["homeWebCap1", "homeWebCap2", "homeWebCap3", "homeWebCap4"];
+const SPLIT_SIDES = [
+  { title: "homeAppTitle", body: "homeAppBody" },
+  { title: "homeWebTitle", body: "homeWebBody" },
+];
 
 function FeatureRow({ t }) {
   return (
@@ -174,194 +174,71 @@ function HistoryNotice({ t, onOpenAnalytics }) {
   );
 }
 
-function CapList({ keys, t, accent }) {
-  return (
-    <Stack component="ul" spacing={1} sx={{ m: 0, p: 0, listStyle: "none" }}>
-      {keys.map((key) => (
-        <Stack
-          key={key}
-          component="li"
-          direction="row"
-          spacing={1.25}
-          alignItems="flex-start"
-        >
-          <Box
-            sx={{
-              width: 6,
-              height: 6,
-              mt: 0.85,
-              borderRadius: "50%",
-              backgroundColor: accent,
-              flexShrink: 0,
-            }}
-          />
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            {t(key)}
-          </Typography>
-        </Stack>
-      ))}
-    </Stack>
-  );
-}
-
-function SurfaceColumn({ t, Icon, titleKey, bodyKey, badgeKey, caps, accent }) {
-  return (
-    <Stack spacing={1.75}>
-      <Stack direction="row" spacing={1.25} alignItems="center">
-        <Box
-          sx={{
-            width: 32,
-            height: 32,
-            borderRadius: 1.25,
-            display: "grid",
-            placeItems: "center",
-            backgroundColor: (theme) =>
-              alpha(
-                accent === "primary.main"
-                  ? theme.palette.primary.main
-                  : theme.palette.secondary.main,
-                0.12
-              ),
-            color: accent,
-            flexShrink: 0,
-          }}
-        >
-          <Icon sx={{ fontSize: 18 }} />
-        </Box>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography
-            variant="overline"
-            sx={{
-              display: "block",
-              color: accent,
-              fontSize: 10,
-              letterSpacing: "0.08em",
-              lineHeight: 1.2,
-            }}
-          >
-            {t(badgeKey)}
-          </Typography>
-          <Typography
-            variant="subtitle1"
-            sx={{ color: "text.primary", fontWeight: 700, lineHeight: 1.2 }}
-          >
-            {t(titleKey)}
-          </Typography>
-        </Box>
-      </Stack>
-      <Typography variant="body2" sx={{ color: "text.secondary" }}>
-        {t(bodyKey)}
-      </Typography>
-      <CapList keys={caps} t={t} accent={accent} />
-    </Stack>
-  );
-}
-
-/** Collapsed by default — App vs Web story without crowding the simple home. */
+/** Quiet disclosure — same tone as How it works, not a feature-matrix card. */
 function AppVsWebDetails({ t }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <Box
-      sx={{
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor: "divider",
-        backgroundColor: "background.paper",
-        overflow: "hidden",
-      }}
-    >
+    <Box>
       <Button
-        fullWidth
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         endIcon={
           <ExpandMore
             sx={{
+              fontSize: 18,
               transform: open ? "rotate(180deg)" : "none",
               transition: "transform 160ms ease",
             }}
           />
         }
         sx={{
-          justifyContent: "space-between",
-          px: { xs: 2, sm: 2.5 },
-          py: 1.75,
-          color: "text.primary",
+          px: 0,
+          py: 0.5,
+          minWidth: 0,
+          color: "text.secondary",
           textTransform: "none",
-          borderRadius: 0,
-          fontWeight: 600,
+          fontWeight: 500,
           "&:hover": {
-            backgroundColor: (theme) => alpha(theme.palette.grey[600], 0.06),
+            backgroundColor: "transparent",
+            color: "text.primary",
           },
         }}
       >
-        <Box sx={{ textAlign: "left", minWidth: 0, pr: 1 }}>
-          <Typography
-            variant="subtitle1"
-            sx={{ fontWeight: 600, lineHeight: 1.3 }}
-          >
-            {t("homeSplitToggleTitle")}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ color: "text.secondary", display: "block" }}
-          >
-            {t("homeSplitToggleHint")}
-          </Typography>
-        </Box>
+        <Typography
+          variant="overline"
+          component="span"
+          sx={{ letterSpacing: "0.08em", color: "inherit" }}
+        >
+          {t("homeSplitToggleTitle")}
+        </Typography>
       </Button>
 
       <Collapse in={open} timeout="auto" unmountOnExit>
         <Box
           sx={{
-            px: { xs: 2, sm: 2.5 },
-            pb: { xs: 2.5, sm: 3 },
-            pt: 0.5,
-            borderTop: "1px solid",
-            borderColor: "divider",
+            mt: 2,
+            display: "grid",
+            gap: 2.5,
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, minmax(0, 1fr))",
+            },
           }}
         >
-          <Typography
-            variant="body2"
-            sx={{ color: "text.secondary", mb: 2.5, maxWidth: 640 }}
-          >
-            {t("homeSplitSubtitle")}
-          </Typography>
-
-          <Box
-            sx={{
-              display: "grid",
-              gap: { xs: 3, md: 3.5 },
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-            }}
-          >
-            <SurfaceColumn
-              t={t}
-              Icon={PhoneIphoneOutlined}
-              titleKey="homeAppTitle"
-              bodyKey="homeAppBody"
-              badgeKey="homeAppBadge"
-              caps={APP_CAPS}
-              accent="primary.main"
-            />
-            <SurfaceColumn
-              t={t}
-              Icon={LanguageOutlined}
-              titleKey="homeWebTitle"
-              bodyKey="homeWebBody"
-              badgeKey="homeWebBadge"
-              caps={WEB_CAPS}
-              accent="secondary.dark"
-            />
-          </Box>
-
-          <Typography
-            variant="caption"
-            sx={{ color: "text.disabled", display: "block", mt: 2.5 }}
-          >
-            {t("homeAppFootnote")}
-          </Typography>
+          {SPLIT_SIDES.map((side) => (
+            <Box key={side.title}>
+              <Typography
+                variant="subtitle1"
+                sx={{ color: "text.primary", fontWeight: 600, mb: 0.5 }}
+              >
+                {t(side.title)}
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                {t(side.body)}
+              </Typography>
+            </Box>
+          ))}
         </Box>
       </Collapse>
     </Box>
