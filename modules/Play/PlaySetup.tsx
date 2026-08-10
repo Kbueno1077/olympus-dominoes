@@ -2,7 +2,6 @@
 
 import type { DominoSetId, PlayModeId } from "@/lib/play/types";
 import { useTranslation } from "@/i18n/useTranslation";
-import ScreenRotationOutlined from "@mui/icons-material/ScreenRotationOutlined";
 import TouchAppOutlined from "@mui/icons-material/TouchAppOutlined";
 import {
   Box,
@@ -93,45 +92,6 @@ export default function PlaySetup({
           >
             {t("playSetupBody")}
           </Typography>
-        </Box>
-
-        <Box
-          sx={{
-            display: { xs: "flex", sm: "none" },
-            alignItems: "flex-start",
-            gap: 1.25,
-            p: 1.5,
-            borderRadius: 2,
-            backgroundColor: alpha("#1F6B58", 0.1),
-            border: `1px solid ${alpha("#1F6B58", 0.28)}`,
-          }}
-        >
-          <ScreenRotationOutlined
-            sx={{ color: "primary.main", fontSize: 22, mt: 0.15, flexShrink: 0 }}
-          />
-          <Box>
-            <Typography
-              sx={{
-                fontWeight: 800,
-                fontSize: 13,
-                color: "primary.dark",
-                lineHeight: 1.25,
-              }}
-            >
-              {t("playLandscapeTitle")}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                display: "block",
-                mt: 0.35,
-                lineHeight: 1.4,
-              }}
-            >
-              {t("playLandscapeBody")}
-            </Typography>
-          </Box>
         </Box>
 
         <Box
