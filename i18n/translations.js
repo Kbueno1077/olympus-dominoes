@@ -602,9 +602,6 @@ const en = {
   playSetupTitle: "Play the bots",
   playSetupBody:
     "Square baize, partners facing, score to a target like the real annotator — with a debug log of every move.",
-  playLandscapeTitle: "Play in landscape",
-  playLandscapeBody:
-    "Rotate your phone sideways for a wider table, roomier train, and less cramped seats.",
   playTrainTitle: "Train controls",
   playTrainBody:
     "Tap a played tile to rotate that arm of the train 90°. Tap the opening tile in the middle to change the overall layout.",
@@ -1259,9 +1256,6 @@ const es = {
   playSetupTitle: "Juega contra bots",
   playSetupBody:
     "Paño cuadrado, parejas frente a frente, anota hasta una meta como en la libreta — con registro de cada jugada.",
-  playLandscapeTitle: "Juega en horizontal",
-  playLandscapeBody:
-    "Gira el teléfono de lado para una mesa más ancha, más tren y asientos menos apretados.",
   playTrainTitle: "Controles del tren",
   playTrainBody:
     "Toca una ficha jugada para girar ese brazo del tren 90°. Toca la ficha de apertura en el centro para cambiar el layout.",

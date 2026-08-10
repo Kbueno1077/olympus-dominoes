@@ -894,7 +894,8 @@ export default function PlayGame() {
             )}
           </Box>
 
-          {game.phase === "playing" && (
+          {/* Keep the rack mounted after you go out — empty stand, not gone. */}
+          {(game.phase === "playing" || game.phase === "finished") && (
             <Box sx={{ flexShrink: 0, width: "100%" }}>
               <PlayHand
                 hand={game.seats[0].hand}
