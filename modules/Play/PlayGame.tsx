@@ -121,8 +121,11 @@ export default function PlayGame() {
   const [passFlash, setPassFlash] = useState<{
     seatIndex: number;
     nameKey: string;
+    token: number;
   } | null>(null);
   const passFlashTimerRef = useRef<number | null>(null);
+  const passFlashTokenRef = useRef(0);
+  const passFlashArmedKeyRef = useRef<string | null>(null);
   const matchRef = useRef(match);
   matchRef.current = match;
   const seatAnchorRefs = useRef<Partial<Record<SeatPos, HTMLElement | null>>>(
@@ -135,6 +138,38 @@ export default function PlayGame() {
 
   const game = match?.current ?? null;
 
+  const clearPassFlashTimer = useCallback(() => {
+    if (passFlashTimerRef.current != null) {
+      window.clearTimeout(passFlashTimerRef.current);
+      passFlashTimerRef.current = null;
+    }
+  }, []);
+
+  const dismissPassFlash = useCallback(() => {
+    clearPassFlashTimer();
+    passFlashArmedKeyRef.current = null;
+    setPassFlash(null);
+  }, [clearPassFlashTimer]);
+
+  const showPassFlash = useCallback(
+    (seatIndex: number, nameKey: string, armedKey: string) => {
+      if (passFlashArmedKeyRef.current === armedKey) return;
+      passFlashArmedKeyRef.current = armedKey;
+      const token = passFlashTokenRef.current + 1;
+      passFlashTokenRef.current = token;
+      setPassFlash({ seatIndex, nameKey, token });
+      clearPassFlashTimer();
+      passFlashTimerRef.current = window.setTimeout(() => {
+        setPassFlash((cur) => (cur?.token === token ? null : cur));
+        passFlashTimerRef.current = null;
+        if (passFlashArmedKeyRef.current === armedKey) {
+          passFlashArmedKeyRef.current = null;
+        }
+      }, 2000);
+    },
+    [clearPassFlashTimer]
+  );
+
   const start = useCallback(() => {
     setSelectedId(null);
     setBusy(false);
@@ -143,8 +178,8 @@ export default function PlayGame() {
     setMatch(createMatch(modeId, setId, maxPoints));
     setLogOpen(false);
     setNotesOpen(false);
-    setPassFlash(null);
-  }, [modeId, setId, maxPoints]);
+    dismissPassFlash();
+  }, [modeId, setId, maxPoints, dismissPassFlash]);
 
   const humanTurn =
     !!game &&
@@ -218,29 +253,34 @@ export default function PlayGame() {
     return () => window.cancelAnimationFrame(raf);
   }, [pendingFlight, flight, finishFlight]);
 
-  // Keep a clear "passed" callout for ~2s (engine clears lastPasser on the next action).
+  // Pass callout: replace on each pass, auto-dismiss after 2s.
   useEffect(() => {
-    if (!game || game.lastPasserIndex == null) return;
-    const idx = game.lastPasserIndex;
-    const seat = game.seats[idx];
-    if (!seat) return;
-    setPassFlash({ seatIndex: idx, nameKey: seat.name });
-    if (passFlashTimerRef.current != null) {
-      window.clearTimeout(passFlashTimerRef.current);
+    if (!game || game.phase !== "playing") {
+      dismissPassFlash();
+      return;
     }
-    passFlashTimerRef.current = window.setTimeout(() => {
-      setPassFlash((cur) => (cur?.seatIndex === idx ? null : cur));
-      passFlashTimerRef.current = null;
-    }, 2000);
-  }, [game?.lastPasserIndex, game?.passesInRow, game?.handIndex]);
+    if (game.lastPasserIndex == null) return;
+    const seat = game.seats[game.lastPasserIndex];
+    if (!seat) return;
+    showPassFlash(
+      game.lastPasserIndex,
+      seat.name,
+      `${game.handIndex}:${game.lastPasserIndex}:${game.passesInRow}`
+    );
+  }, [
+    game?.lastPasserIndex,
+    game?.passesInRow,
+    game?.handIndex,
+    game?.phase,
+    showPassFlash,
+    dismissPassFlash,
+  ]);
 
   useEffect(() => {
     return () => {
-      if (passFlashTimerRef.current != null) {
-        window.clearTimeout(passFlashTimerRef.current);
-      }
+      clearPassFlashTimer();
     };
-  }, []);
+  }, [clearPassFlashTimer]);
 
   useEffect(() => {
     if (!match || !game || game.phase !== "playing") return;
@@ -427,12 +467,14 @@ export default function PlayGame() {
   const continueAfterHand = () => {
     if (!match) return;
     setSelectedId(null);
+    dismissPassFlash();
     setMatch(dealNextHand(match));
   };
 
   const continueAfterGame = () => {
     if (!match) return;
     setSelectedId(null);
+    dismissPassFlash();
     setMatch(startNextGame(match));
   };
 
@@ -996,10 +1038,10 @@ export default function PlayGame() {
                       justifyContent: "flex-start",
                     }}
                   >
-                    <AnimatePresence mode="wait" initial={false}>
+                    <AnimatePresence initial={false}>
                       {passFlash && (
                         <motion.div
-                          key={`pass-${passFlash.seatIndex}-${passFlash.nameKey}`}
+                          key={`pass-${passFlash.token}`}
                           initial={{ opacity: 0, x: -6 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -4 }}
@@ -1307,6 +1349,7 @@ export default function PlayGame() {
           setBusy(false);
           setPendingFlight(null);
           setFlight(null);
+          dismissPassFlash();
         }}
       />
 
