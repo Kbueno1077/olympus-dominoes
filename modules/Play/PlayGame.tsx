@@ -548,7 +548,6 @@ export default function PlayGame() {
     <PlaySeat
       seat={seat}
       isTurn={turnActive && game.turn === seat.index}
-      passed={passFlash?.seatIndex === seat.index}
       position={pos}
       variant="chip"
       anchorRef={(el) => setSeatAnchor(pos, el)}
@@ -591,7 +590,6 @@ export default function PlayGame() {
                   isTurn={
                     turnActive && game.turn === seatByPosition.top.index
                   }
-                  passed={passFlash?.seatIndex === seatByPosition.top.index}
                   position="top"
                   anchorRef={(el) => setSeatAnchor("top", el)}
                 />
@@ -624,7 +622,6 @@ export default function PlayGame() {
                   isTurn={
                     turnActive && game.turn === seatByPosition.left.index
                   }
-                  passed={passFlash?.seatIndex === seatByPosition.left.index}
                   position="left"
                   anchorRef={(el) => setSeatAnchor("left", el)}
                 />
@@ -1231,7 +1228,6 @@ export default function PlayGame() {
                   isTurn={
                     turnActive && game.turn === seatByPosition.right.index
                   }
-                  passed={passFlash?.seatIndex === seatByPosition.right.index}
                   position="right"
                   anchorRef={(el) => setSeatAnchor("right", el)}
                 />
@@ -1276,7 +1272,6 @@ export default function PlayGame() {
                   isTurn={
                     turnActive && game.turn === seatByPosition.bottom.index
                   }
-                  passed={passFlash?.seatIndex === seatByPosition.bottom.index}
                   position="bottom"
                   anchorRef={(el) => setSeatAnchor("bottom", el)}
                 />
