@@ -103,8 +103,8 @@ export default function PlayChain({
   let face: number;
   switch (tileScale) {
     case "portrait":
-      // ~30% smaller than the original phone face.
-      face = Math.max(15, Math.min(25, Math.floor(base * 0.7)));
+      // ~37% smaller than original (~10% under the prior portrait size).
+      face = Math.max(14, Math.min(23, Math.floor(base * 0.63)));
       break;
     case "landscape":
       // Original sizing (before the 50% cut).
