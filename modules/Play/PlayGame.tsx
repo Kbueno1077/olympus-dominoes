@@ -70,9 +70,15 @@ export default function PlayGame() {
   const narrowWidth = useMediaQuery(theme.breakpoints.down("sm"));
   const shortHeight = useMediaQuery(`(max-height:${mobileEdge}px)`);
   const landscapePhone = useMediaQuery(
-    "(orientation: landscape) and (max-height: 500px)"
+    `(max-height: 500px) and (min-width: ${mobileEdge}px)`
   );
   const compact = narrowWidth || shortHeight || landscapePhone;
+  const tileScale =
+    landscapePhone
+      ? "landscape"
+      : narrowWidth || shortHeight
+        ? "portrait"
+        : "default";
   const [modeId, setModeId] = useState<PlayModeId>("2v2");
   const [setId, setSetId] = useState<DominoSetId>("double_six");
   const [maxPoints, setMaxPoints] = useState(150);
@@ -513,7 +519,7 @@ export default function PlayGame() {
                       flyingTileId={
                         pendingFlight?.tileId ?? flight?.tileId ?? null
                       }
-                      compact={compact}
+                      tileScale={tileScale}
                     />
                   </Box>
 
