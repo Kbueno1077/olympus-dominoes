@@ -11,7 +11,7 @@ import type { ChainSide, PlacedTile } from "@/lib/play/types";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Box, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent } from "react";
 
 export const TEAM_TINT: Record<number, string> = {
   1: "#1F6B58",
@@ -145,7 +145,7 @@ export default function PlayChain({
     window.setTimeout(() => setFlashId(null), 220);
   };
 
-  const handleEndDrop = (side: ChainSide, event: React.DragEvent) => {
+  const handleEndDrop = (side: ChainSide, event: DragEvent) => {
     if (!dropEnabled) return;
     event.preventDefault();
     const tileId =
@@ -168,11 +168,11 @@ export default function PlayChain({
       {chain.length === 0 ? (
         <Box
           data-drop-side="right"
-          onDragOver={(event) => {
+          onDragOver={(event: DragEvent) => {
             if (!dropEnabled) return;
             event.preventDefault();
           }}
-          onDrop={(event) => handleEndDrop("right", event)}
+          onDrop={(event: DragEvent) => handleEndDrop("right", event)}
           onClick={() => {
             if (!dropEnabled || !onTapSide || activeSides.length === 0) return;
             onTapSide(activeSides[0]);
@@ -275,11 +275,11 @@ export default function PlayChain({
             size={Math.round(
               face * (tileScale === "default" ? 1.5 : 2.05)
             )}
-            onDragOver={(e) => {
+            onDragOver={(e: DragEvent) => {
               if (!dropEnabled) return;
               e.preventDefault();
             }}
-            onDrop={(e) => handleEndDrop("left", e)}
+            onDrop={(e: DragEvent) => handleEndDrop("left", e)}
             onTap={
               onTapSide && activeSides.includes("left")
                 ? () => onTapSide("left")
@@ -298,11 +298,11 @@ export default function PlayChain({
             size={Math.round(
               face * (tileScale === "default" ? 1.5 : 2.05)
             )}
-            onDragOver={(e) => {
+            onDragOver={(e: DragEvent) => {
               if (!dropEnabled) return;
               e.preventDefault();
             }}
-            onDrop={(e) => handleEndDrop("right", e)}
+            onDrop={(e: DragEvent) => handleEndDrop("right", e)}
             onTap={
               onTapSide && activeSides.includes("right")
                 ? () => onTapSide("right")
@@ -333,8 +333,8 @@ function DropAnchor({
   label: string;
   active: boolean;
   enabled: boolean;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent) => void;
+  onDragOver: (e: DragEvent) => void;
+  onDrop: (e: DragEvent) => void;
   onTap?: () => void;
   size?: number;
 }) {
@@ -347,18 +347,18 @@ function DropAnchor({
       data-drop-side={side}
       onClick={
         tapable
-          ? (e) => {
+          ? (e: MouseEvent) => {
               e.stopPropagation();
               onTap();
             }
           : undefined
       }
-      onDragOver={(e) => {
+      onDragOver={(e: DragEvent) => {
         onDragOver(e);
         setOver(true);
       }}
       onDragLeave={() => setOver(false)}
-      onDrop={(e) => {
+      onDrop={(e: DragEvent) => {
         setOver(false);
         onDrop(e);
       }}

@@ -1,4 +1,4 @@
-import { alpha } from "@mui/material/styles";
+import { alpha, type Theme } from "@mui/material/styles";
 
 /**
  * Optional haptic tick on supported phones.
@@ -38,6 +38,6 @@ export const pressableRowSx = {
   transition: "transform 90ms ease, background-color 120ms ease",
   "&:active": {
     transform: "scale(0.985)",
-    backgroundColor: (theme) => alpha(theme.palette.grey[700], 0.12),
+    backgroundColor: (theme: Theme) => alpha(theme.palette.grey[700], 0.12),
   },
 };

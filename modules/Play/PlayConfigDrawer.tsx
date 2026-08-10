@@ -39,7 +39,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { alpha, type Theme } from "@mui/material/styles";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, type ReactNode } from "react";
@@ -77,7 +77,7 @@ function paceSliderSx(accent: PaceAccent) {
     px: 0.5,
     "& .MuiSlider-rail": {
       opacity: 1,
-      bgcolor: (theme) => alpha(theme.palette.grey[600], 0.18),
+      bgcolor: (theme: Theme) => alpha(theme.palette.grey[600], 0.18),
       height: 8,
       borderRadius: 4,
     },
@@ -93,11 +93,11 @@ function paceSliderSx(accent: PaceAccent) {
       border: "2px solid currentColor",
       boxShadow: "0 1px 4px rgba(40, 30, 16, 0.22)",
       "&:hover, &.Mui-focusVisible": {
-        boxShadow: (theme) =>
+        boxShadow: (theme: Theme) =>
           `0 0 0 8px ${alpha(theme.palette[accent].main, 0.16)}`,
       },
       "&.Mui-active": {
-        boxShadow: (theme) =>
+        boxShadow: (theme: Theme) =>
           `0 0 0 10px ${alpha(theme.palette[accent].main, 0.2)}`,
       },
     },
@@ -105,7 +105,7 @@ function paceSliderSx(accent: PaceAccent) {
       width: 4,
       height: 4,
       borderRadius: "50%",
-      bgcolor: (theme) => alpha(theme.palette.grey[700], 0.35),
+      bgcolor: (theme: Theme) => alpha(theme.palette.grey[700], 0.35),
       "&.MuiSlider-markActive": {
         bgcolor: "currentColor",
         opacity: 0.85,
@@ -248,7 +248,11 @@ export default function PlayConfigDrawer({
   pace = null,
   debugLog = null,
 }: Props) {
-  const { t, language, setLanguage } = useTranslation();
+  const { t, language, setLanguage } = useTranslation() as {
+    t: (key: string, values?: Record<string, string | number>) => string;
+    language: string;
+    setLanguage: (code: string) => void;
+  };
   const pathname = usePathname();
   const hasMounted = useHasMounted();
   const isGameStarted = useRecoilValue(isGameStartedRecoil);
