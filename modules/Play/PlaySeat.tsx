@@ -150,7 +150,7 @@ export default function PlaySeat({
           justifyContent: "flex-start",
           backgroundColor: alpha(
             "#FBF5E9",
-            passed ? 0.72 : isTurn ? 0.97 : 0.88
+            passed ? 0.85 : isTurn ? 1 : 0.92
           ),
           // Always 1.5px border — only color/alpha change (no size jump).
           border: `1.5px solid ${alpha(
@@ -161,7 +161,8 @@ export default function PlaySeat({
           boxShadow: isTurn
             ? `0 0 0 2px ${alpha(tint, 0.45)}, 0 2px 8px ${alpha("#000", 0.22)}`
             : `0 0 0 2px transparent, 0 2px 6px ${alpha("#000", 0.18)}`,
-          opacity: passed && !isTurn ? 0.78 : 1,
+          // Active seat full opacity; waiting seats clearer at 70%.
+          opacity: isTurn ? 1 : 0.7,
           transition:
             "box-shadow 160ms ease, border-color 160ms ease, opacity 160ms ease",
         }}
