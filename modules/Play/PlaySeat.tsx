@@ -11,7 +11,6 @@ type SeatPosition = "top" | "left" | "right" | "bottom";
 type Props = {
   seat: Seat;
   isTurn: boolean;
-  passed: boolean;
   position: SeatPosition;
   /** Mobile stand densify (desktop unused when variant=chip). */
   compact?: boolean;
@@ -120,7 +119,6 @@ function SeatLabel({
 export default function PlaySeat({
   seat,
   isTurn,
-  passed,
   position,
   compact = false,
   variant = "stand",
@@ -139,36 +137,23 @@ export default function PlaySeat({
         alignItems="center"
         spacing={0.5}
         role="status"
-        aria-label={`${displayName}, ${t("playTilesRemaining", { n: tiles })}${isTurn ? ", turn" : ""}${passed ? `, ${t("playPassed")}` : ""}`}
+        aria-label={`${displayName}, ${t("playTilesRemaining", { n: tiles })}${isTurn ? ", turn" : ""}`}
         sx={{
           boxSizing: "border-box",
-          width: passed ? 118 : 102,
+          width: 102,
           height: 26,
           px: 0.75,
           py: 0,
           borderRadius: 999,
           justifyContent: "flex-start",
-          backgroundColor: passed
-            ? alpha("#8A6440", 0.92)
-            : alpha("#FBF5E9", isTurn ? 1 : 0.92),
-          border: `1.5px solid ${alpha(
-            passed ? "#5C4028" : tint,
-            isTurn ? 0.95 : passed ? 0.95 : 0.28
-          )}`,
-          boxShadow: passed
-            ? `0 0 0 2px ${alpha("#C08A2E", 0.55)}, 0 2px 10px ${alpha("#000", 0.28)}`
-            : isTurn
-              ? `0 0 0 2px ${alpha(tint, 0.45)}, 0 2px 8px ${alpha("#000", 0.22)}`
-              : `0 0 0 2px transparent, 0 2px 6px ${alpha("#000", 0.18)}`,
-          opacity: isTurn || passed ? 1 : 0.7,
+          backgroundColor: alpha("#FBF5E9", isTurn ? 1 : 0.92),
+          border: `1.5px solid ${alpha(tint, isTurn ? 0.95 : 0.28)}`,
+          boxShadow: isTurn
+            ? `0 0 0 2px ${alpha(tint, 0.45)}, 0 2px 8px ${alpha("#000", 0.22)}`
+            : `0 0 0 2px transparent, 0 2px 6px ${alpha("#000", 0.18)}`,
+          opacity: isTurn ? 1 : 0.7,
           transition:
-            "box-shadow 160ms ease, border-color 160ms ease, opacity 160ms ease, background-color 160ms ease, width 160ms ease",
-          animation: passed ? "seatPassPop 420ms ease-out" : "none",
-          "@keyframes seatPassPop": {
-            "0%": { transform: "scale(0.92)", opacity: 0.7 },
-            "55%": { transform: "scale(1.06)" },
-            "100%": { transform: "scale(1)", opacity: 1 },
-          },
+            "box-shadow 160ms ease, border-color 160ms ease, opacity 160ms ease, background-color 160ms ease",
         }}
       >
         <Box
@@ -177,16 +162,14 @@ export default function PlaySeat({
             width: 7,
             height: 7,
             borderRadius: "50%",
-            backgroundColor: passed ? "#FBF5E9" : tint,
+            backgroundColor: tint,
             flexShrink: 0,
-            boxShadow:
-              isTurn && !passed
-                ? `0 0 0 2px ${alpha(tint, 0.9)}, 0 0 8px ${alpha(tint, 0.55)}`
-                : `0 0 0 2px transparent`,
-            animation:
-              isTurn && !passed
-                ? "seatTurnPulse 1.4s ease-in-out infinite"
-                : "none",
+            boxShadow: isTurn
+              ? `0 0 0 2px ${alpha(tint, 0.9)}, 0 0 8px ${alpha(tint, 0.55)}`
+              : `0 0 0 2px transparent`,
+            animation: isTurn
+              ? "seatTurnPulse 1.4s ease-in-out infinite"
+              : "none",
             "@keyframes seatTurnPulse": {
               "0%, 100%": { opacity: 1 },
               "50%": { opacity: 0.5 },
@@ -197,7 +180,7 @@ export default function PlaySeat({
           sx={{
             fontWeight: 800,
             fontSize: 11,
-            color: alpha(passed ? "#FBF5E9" : "#241D14", 0.95),
+            color: alpha("#241D14", 0.95),
             lineHeight: 1,
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -208,40 +191,20 @@ export default function PlaySeat({
         >
           {displayName}
         </Typography>
-        {passed ? (
-          <Typography
-            sx={{
-              fontWeight: 900,
-              fontSize: 10,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "#FBF5E9",
-              lineHeight: 1,
-              flexShrink: 0,
-              px: 0.45,
-              py: 0.2,
-              borderRadius: 0.5,
-              backgroundColor: alpha("#1A120C", 0.35),
-            }}
-          >
-            {t("playPassed")}
-          </Typography>
-        ) : (
-          <Typography
-            sx={{
-              fontWeight: 800,
-              fontSize: 11,
-              fontVariantNumeric: "tabular-nums",
-              color: alpha("#241D14", 0.55),
-              lineHeight: 1,
-              flexShrink: 0,
-              minWidth: 14,
-              textAlign: "right",
-            }}
-          >
-            {tiles}
-          </Typography>
-        )}
+        <Typography
+          sx={{
+            fontWeight: 800,
+            fontSize: 11,
+            fontVariantNumeric: "tabular-nums",
+            color: alpha("#241D14", 0.55),
+            lineHeight: 1,
+            flexShrink: 0,
+            minWidth: 14,
+            textAlign: "right",
+          }}
+        >
+          {tiles}
+        </Typography>
       </Stack>
     );
   }
@@ -290,10 +253,10 @@ export default function PlaySeat({
   } as const;
 
   const tray = {
-    backgroundColor: alpha("#FBF5E9", isTurn || passed ? 0.97 : 0.9),
+    backgroundColor: alpha("#FBF5E9", isTurn ? 0.97 : 0.9),
     border: `${compact ? 1 : 1.5}px solid ${alpha(
-      passed ? "#8A6440" : tint,
-      isTurn || passed ? 0.9 : 0.28
+      tint,
+      isTurn ? 0.9 : 0.28
     )}`,
     // Always reserve outer ring so turn highlight doesn't shift size.
     boxShadow: isTurn
@@ -389,25 +352,6 @@ export default function PlaySeat({
             isTurn={isTurn}
             compact
           />
-          {passed && (
-            <Typography
-              sx={{
-                fontWeight: 900,
-                fontSize: compact ? 9 : 11,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "#FBF5E9",
-                backgroundColor: alpha("#8A6440", 0.95),
-                px: 0.65,
-                py: 0.25,
-                borderRadius: 0.75,
-                lineHeight: 1,
-                boxShadow: `0 1px 4px ${alpha("#000", 0.25)}`,
-              }}
-            >
-              {t("playPassed")}
-            </Typography>
-          )}
           <Stack
             direction="column"
             alignItems="center"
@@ -480,25 +424,6 @@ export default function PlaySeat({
           isTurn={isTurn}
           compact
         />
-        {passed && (
-          <Typography
-            sx={{
-              fontWeight: 900,
-              fontSize: compact ? 9 : 11,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "#FBF5E9",
-              backgroundColor: alpha("#8A6440", 0.95),
-              px: 0.65,
-              py: 0.25,
-              borderRadius: 0.75,
-              lineHeight: 1,
-              boxShadow: `0 1px 4px ${alpha("#000", 0.25)}`,
-            }}
-          >
-            {t("playPassed")}
-          </Typography>
-        )}
         <Stack
           direction="row"
           alignItems="center"
