@@ -1,5 +1,6 @@
 import { atom, selector } from "recoil";
 import { recoilPersist } from "recoil-persist";
+import { DEFAULT_DOMINO_SET_ID } from "../utils/dominoSets";
 import { gameModes4 } from "../utils/matchSettings";
 
 const { persistAtom } = recoilPersist();
@@ -44,6 +45,11 @@ export const renderGameModesRecoil = atom({
 export const gameModeRecoil = atom({
     key: "gameMode",
     default: { label: "2 vs 2" },
+    effects_UNSTABLE: [persistAtom],
+});
+export const dominoSetRecoil = atom({
+    key: "dominoSet",
+    default: DEFAULT_DOMINO_SET_ID,
     effects_UNSTABLE: [persistAtom],
 });
 export const maxPointsRecoil = atom({

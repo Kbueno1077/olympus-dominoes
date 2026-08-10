@@ -2,24 +2,25 @@
 
 import DominoTile from "@/components/DominoTile";
 import { useTranslation } from "@/i18n/useTranslation";
-import { gameModeRecoil, playersAmountRecoil } from "@/recoil/recoilState";
+import {
+  dominoSetRecoil,
+  gameModeRecoil,
+  playersAmountRecoil,
+} from "@/recoil/recoilState";
+import { getDominoSet } from "@/utils/dominoSets";
 import { Box, Card, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useRecoilValue } from "recoil";
 
-// A Cuban set is double-nine: 55 tiles. Every tile drawn on this table is
-// accounted for, so the picture always adds back up to the real set.
-const TILES_IN_SET = 55;
-const TILES_PER_HAND = 10;
 const TILES_PLAYED = 3;
 
 /**
- * Tiles still held by each seat. Everyone is dealt ten; the three tiles laid
- * in the centre come off the first three hands, so a four handed game shows
- * 10 / 9 / 9 / 9 and the arithmetic still closes on 55.
+ * Tiles still held by each seat. Everyone is dealt the set's hand size; the
+ * three tiles laid in the centre come off the first hands so the arithmetic
+ * still closes on the full set.
  */
-function buildHandCounts(playersAmount) {
-  const counts = Array.from({ length: playersAmount }, () => TILES_PER_HAND);
+function buildHandCounts(playersAmount, tilesPerHand) {
+  const counts = Array.from({ length: playersAmount }, () => tilesPerHand);
 
   for (let i = 0; i < TILES_PLAYED; i += 1) {
     counts[i % playersAmount] -= 1;
@@ -28,8 +29,8 @@ function buildHandCounts(playersAmount) {
   return counts;
 }
 
-const poolCount = (playersAmount) =>
-  TILES_IN_SET - TILES_PER_HAND * playersAmount;
+const poolCount = (playersAmount, tilesInSet, tilesPerHand) =>
+  tilesInSet - tilesPerHand * playersAmount;
 
 /**
  * Seats around the table. Partners sit opposite each other, which is how a
@@ -225,11 +226,16 @@ export default function TableDraw() {
   const { t, teamName } = useTranslation();
   const gameMode = useRecoilValue(gameModeRecoil);
   const playersAmount = useRecoilValue(playersAmountRecoil);
+  const dominoSetId = useRecoilValue(dominoSetRecoil);
+  const dominoSet = getDominoSet(dominoSetId);
 
   const isFreeForAll = gameMode?.label === "Free For All";
   const seats = buildSeats(playersAmount, isFreeForAll);
-  const handCounts = buildHandCounts(playersAmount);
-  const pool = poolCount(playersAmount);
+  const handCounts = buildHandCounts(playersAmount, dominoSet.tilesPerHand);
+  const pool = Math.max(
+    0,
+    poolCount(playersAmount, dominoSet.tilesInSet, dominoSet.tilesPerHand)
+  );
 
   return (
     <Card sx={{ p: { xs: 2.5, sm: 3 } }}>
@@ -327,8 +333,8 @@ export default function TableDraw() {
         sx={{ mt: 1.5, textAlign: "center", color: "text.secondary" }}
       >
         {t("tableCaption", {
-          total: TILES_IN_SET,
-          perHand: TILES_PER_HAND,
+          total: dominoSet.tilesInSet,
+          perHand: dominoSet.tilesPerHand,
         })}
       </Typography>
     </Card>

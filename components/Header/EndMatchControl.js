@@ -4,6 +4,7 @@ import ConfirmDeleteMatch from "@/components/Dialogs/ConfirmDialog/ConfirmDelete
 import {
   completedGamesRecoil,
   currentGameRecoil,
+  dominoSetRecoil,
   gameModeRecoil,
   isGameStartedRecoil,
   matchDescriptionRecoil,
@@ -16,6 +17,10 @@ import {
   renderGameModesRecoil,
   whoWonRecoil,
 } from "@/recoil/recoilState";
+import {
+  DEFAULT_DOMINO_SET_ID,
+  getDominoSet,
+} from "@/utils/dominoSets";
 import { gameModes4 } from "@/utils/matchSettings";
 import { useRouter } from "next/navigation";
 import { useSetRecoilState } from "recoil";
@@ -38,6 +43,7 @@ export default function EndMatchControl({ fullWidth = false }) {
   const setPlayersAmount = useSetRecoilState(playersAmountRecoil);
   const setRenderGamesModes = useSetRecoilState(renderGameModesRecoil);
   const setGameMode = useSetRecoilState(gameModeRecoil);
+  const setDominoSet = useSetRecoilState(dominoSetRecoil);
   const setMaxPoints = useSetRecoilState(maxPointsRecoil);
   const setPlayer1 = useSetRecoilState(player1Recoil);
   const setPlayer2 = useSetRecoilState(player2Recoil);
@@ -50,10 +56,13 @@ export default function EndMatchControl({ fullWidth = false }) {
   const setMatchDescription = useSetRecoilState(matchDescriptionRecoil);
 
   const handleCancelGame = () => {
+    const defaultSet = getDominoSet(DEFAULT_DOMINO_SET_ID);
+
     setPlayersAmount(4);
     setRenderGamesModes(gameModes4);
     setGameMode({ label: "2 vs 2" });
-    setMaxPoints(150);
+    setDominoSet(defaultSet.id);
+    setMaxPoints(defaultSet.defaultMaxPoints);
 
     setPlayer1("");
     setPlayer2("");
