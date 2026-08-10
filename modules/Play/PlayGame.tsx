@@ -125,7 +125,8 @@ export default function PlayGame() {
   } | null>(null);
   const passFlashTimerRef = useRef<number | null>(null);
   const passFlashTokenRef = useRef(0);
-  const passFlashArmedKeyRef = useRef<string | null>(null);
+  /** Last pass signal we already surfaced — avoids re-arming on unrelated renders. */
+  const passFlashSignalRef = useRef<string | null>(null);
   const matchRef = useRef(match);
   matchRef.current = match;
   const seatAnchorRefs = useRef<Partial<Record<SeatPos, HTMLElement | null>>>(
@@ -147,14 +148,12 @@ export default function PlayGame() {
 
   const dismissPassFlash = useCallback(() => {
     clearPassFlashTimer();
-    passFlashArmedKeyRef.current = null;
+    passFlashSignalRef.current = null;
     setPassFlash(null);
   }, [clearPassFlashTimer]);
 
   const showPassFlash = useCallback(
-    (seatIndex: number, nameKey: string, armedKey: string) => {
-      if (passFlashArmedKeyRef.current === armedKey) return;
-      passFlashArmedKeyRef.current = armedKey;
+    (seatIndex: number, nameKey: string) => {
       const token = passFlashTokenRef.current + 1;
       passFlashTokenRef.current = token;
       setPassFlash({ seatIndex, nameKey, token });
@@ -162,9 +161,6 @@ export default function PlayGame() {
       passFlashTimerRef.current = window.setTimeout(() => {
         setPassFlash((cur) => (cur?.token === token ? null : cur));
         passFlashTimerRef.current = null;
-        if (passFlashArmedKeyRef.current === armedKey) {
-          passFlashArmedKeyRef.current = null;
-        }
       }, 2000);
     },
     [clearPassFlashTimer]
@@ -253,21 +249,30 @@ export default function PlayGame() {
     return () => window.cancelAnimationFrame(raf);
   }, [pendingFlight, flight, finishFlight]);
 
-  // Pass callout: replace on each pass, auto-dismiss after 2s.
+  // Pass callout: one live notice. Replace on each new pass, clear on play /
+  // hand end / game end, otherwise auto-dismiss after 2s.
   useEffect(() => {
-    if (!game || game.phase !== "playing") {
+    if (!match || !game || game.phase !== "playing" || match.gameOver) {
       dismissPassFlash();
       return;
     }
-    if (game.lastPasserIndex == null) return;
+
+    // A play (or new hand) cleared the passer — drop any leftover banner.
+    if (game.lastPasserIndex == null) {
+      dismissPassFlash();
+      return;
+    }
+
+    const signal = `${match.gameIndex}:${game.handIndex}:${game.lastPasserIndex}:${game.passesInRow}`;
+    if (passFlashSignalRef.current === signal) return;
+    passFlashSignalRef.current = signal;
+
     const seat = game.seats[game.lastPasserIndex];
     if (!seat) return;
-    showPassFlash(
-      game.lastPasserIndex,
-      seat.name,
-      `${game.handIndex}:${game.lastPasserIndex}:${game.passesInRow}`
-    );
+    showPassFlash(game.lastPasserIndex, seat.name);
   }, [
+    match?.gameIndex,
+    match?.gameOver,
     game?.lastPasserIndex,
     game?.passesInRow,
     game?.handIndex,
@@ -1039,7 +1044,9 @@ export default function PlayGame() {
                     }}
                   >
                     <AnimatePresence initial={false}>
-                      {passFlash && (
+                      {passFlash &&
+                        game.phase === "playing" &&
+                        !match.gameOver && (
                         <motion.div
                           key={`pass-${passFlash.token}`}
                           initial={{ opacity: 0, x: -6 }}
