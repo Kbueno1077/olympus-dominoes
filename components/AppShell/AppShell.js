@@ -3,6 +3,7 @@
 import Header from "@/components/Header/Header";
 import { Box } from "@mui/material";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 const FULL_BLEED_PATHS = new Set([
   "/stats",
@@ -25,13 +26,21 @@ const VIEWPORT_HEIGHT = {
  * so mobile does not stack html/body scroll under this section (overscroll past
  * content). Full-bleed dashboards still use inner pane scroll on md+.
  *
- * Header publishes --app-header-height so /play mobile can reclaim chrome space.
+ * /play hides the site header — table chrome owns nav via the config drawer.
  */
 export default function AppShell({ children }) {
   const pathname = usePathname();
   const fullBleed =
     FULL_BLEED_PATHS.has(pathname) || pathname.startsWith("/history/");
-  const noScroll = pathname === "/play";
+  const playTable = pathname === "/play";
+
+  useEffect(() => {
+    if (!playTable) return;
+    document.documentElement.style.setProperty("--app-header-height", "0px");
+    return () => {
+      document.documentElement.style.removeProperty("--app-header-height");
+    };
+  }, [playTable]);
 
   return (
     <Box
@@ -45,7 +54,7 @@ export default function AppShell({ children }) {
         overflow: "hidden",
       }}
     >
-      <Header />
+      {!playTable && <Header />}
       <Box
         id="app-shell-scroll"
         component="section"
@@ -53,20 +62,17 @@ export default function AppShell({ children }) {
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          // Play uses --app-header-height (slim on compact width OR height).
-          pt: noScroll ? "var(--app-header-height, 64px)" : 8,
+          pt: playTable ? 0 : 8,
           minHeight: 0,
           width: "100%",
           maxWidth: "100%",
-          // Modest pad — large bottom padding invented empty scroll room.
-          pb: noScroll
+          pb: playTable
             ? 0
             : fullBleed
               ? { xs: 2, md: 0 }
               : { xs: 10, sm: 8 },
           overflowX: "clip",
-          // Play locks to the viewport; other full-bleed pages scroll on mobile.
-          overflowY: noScroll
+          overflowY: playTable
             ? "hidden"
             : fullBleed
               ? { xs: "auto", md: "hidden" }

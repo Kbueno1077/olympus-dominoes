@@ -3,12 +3,14 @@
 import { chooseBotMove } from "@/lib/play/bot";
 import {
   accountFinishedHand,
+  chooseHandOpener,
   createMatch,
   dealNextHand,
   drawOrPass,
   legalMovesForSeat,
   playMove,
   seatPositions,
+  startNextGame,
   teamLabels,
 } from "@/lib/play/engine";
 import type {
@@ -20,18 +22,29 @@ import type {
 } from "@/lib/play/types";
 import PlayChain from "@/modules/Play/PlayChain";
 import PlayHand from "@/modules/Play/PlayHand";
+import PlayLeftoverCorner from "@/modules/Play/PlayLeftoverCorner";
+import PlayConfigDrawer from "@/modules/Play/PlayConfigDrawer";
 import PlayNotesDrawer from "@/modules/Play/PlayNotesDrawer";
+import PlayOpenerDialog from "@/modules/Play/PlayOpenerDialog";
 import PlaySeat from "@/modules/Play/PlaySeat";
 import PlaySetup from "@/modules/Play/PlaySetup";
 import PlayTileFlight, {
   type TileFlight,
 } from "@/modules/Play/PlayTileFlight";
+import { pressableSx, tapFeedback } from "@/modules/Play/pressFeedback";
+import {
+  animMsFromLevel,
+  botMsFromLevel,
+  PACE_LEVEL_NORMAL,
+} from "@/modules/Play/paceLevels";
 import { useTranslation } from "@/i18n/useTranslation";
+import AutoModeOutlined from "@mui/icons-material/AutoModeOutlined";
 import MenuBookOutlined from "@mui/icons-material/MenuBookOutlined";
+import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
 import {
   Box,
   Button,
-  Chip,
+  IconButton,
   Stack,
   Typography,
   useMediaQuery,
@@ -48,6 +61,8 @@ import {
 } from "react";
 
 type SeatPos = "top" | "left" | "right" | "bottom";
+
+const AUTO_PASS_KEY = "olympus-play-auto-pass";
 
 type PendingFlight = {
   tileId: string;
@@ -86,13 +101,28 @@ export default function PlayGame() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [logOpen, setLogOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [botDelayMs, setBotDelayMs] = useState(900);
-  const [animMs, setAnimMs] = useState(480);
+  const [botDelayMs, setBotDelayMs] = useState(() =>
+    botMsFromLevel(PACE_LEVEL_NORMAL)
+  );
+  const [animMs, setAnimMs] = useState(() => animMsFromLevel(PACE_LEVEL_NORMAL));
+  const [autoPass, setAutoPass] = useState(() => {
+    try {
+      return sessionStorage.getItem(AUTO_PASS_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
   const [pendingFlight, setPendingFlight] = useState<PendingFlight | null>(
     null
   );
   const [flight, setFlight] = useState<TileFlight | null>(null);
+  const [passFlash, setPassFlash] = useState<{
+    seatIndex: number;
+    nameKey: string;
+  } | null>(null);
+  const passFlashTimerRef = useRef<number | null>(null);
   const matchRef = useRef(match);
   matchRef.current = match;
   const seatAnchorRefs = useRef<Partial<Record<SeatPos, HTMLElement | null>>>(
@@ -113,11 +143,13 @@ export default function PlayGame() {
     setMatch(createMatch(modeId, setId, maxPoints));
     setLogOpen(false);
     setNotesOpen(false);
+    setPassFlash(null);
   }, [modeId, setId, maxPoints]);
 
   const humanTurn =
     !!game &&
     game.phase === "playing" &&
+    !game.awaitingOpenerChoice &&
     game.seats[game.turn]?.kind === "human" &&
     !busy &&
     !pendingFlight &&
@@ -186,8 +218,33 @@ export default function PlayGame() {
     return () => window.cancelAnimationFrame(raf);
   }, [pendingFlight, flight, finishFlight]);
 
+  // Keep a clear "passed" callout for ~2s (engine clears lastPasser on the next action).
+  useEffect(() => {
+    if (!game || game.lastPasserIndex == null) return;
+    const idx = game.lastPasserIndex;
+    const seat = game.seats[idx];
+    if (!seat) return;
+    setPassFlash({ seatIndex: idx, nameKey: seat.name });
+    if (passFlashTimerRef.current != null) {
+      window.clearTimeout(passFlashTimerRef.current);
+    }
+    passFlashTimerRef.current = window.setTimeout(() => {
+      setPassFlash((cur) => (cur?.seatIndex === idx ? null : cur));
+      passFlashTimerRef.current = null;
+    }, 2000);
+  }, [game?.lastPasserIndex, game?.passesInRow, game?.handIndex]);
+
+  useEffect(() => {
+    return () => {
+      if (passFlashTimerRef.current != null) {
+        window.clearTimeout(passFlashTimerRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (!match || !game || game.phase !== "playing") return;
+    if (game.awaitingOpenerChoice) return;
     if (pendingFlight || flight) return;
     const seat = game.seats[game.turn];
     if (!seat || seat.kind !== "bot") return;
@@ -313,16 +370,70 @@ export default function PlayGame() {
     }
   };
 
-  const handlePassOrDraw = () => {
-    if (!match?.current || !humanTurn) return;
-    if (legal.length > 0) return;
-    setMatch(withGame(match, drawOrPass(match.current, match.current.turn)));
+  const handlePassOrDraw = useCallback(() => {
+    setMatch((current) => {
+      if (!current?.current) return current;
+      const g = current.current;
+      if (g.phase !== "playing" || g.awaitingOpenerChoice) return current;
+      const seat = g.seats[g.turn];
+      if (!seat || seat.kind !== "human") return current;
+      if (legalMovesForSeat(g, g.turn).length > 0) return current;
+      return withGame(current, drawOrPass(g, g.turn));
+    });
+  }, []);
+
+  const toggleAutoPass = () => {
+    setAutoPass((prev) => {
+      const next = !prev;
+      try {
+        sessionStorage.setItem(AUTO_PASS_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
   };
+
+  const handleChooseOpener = (seatIndex: number) => {
+    setMatch((current) => {
+      if (!current?.current) return current;
+      return withGame(current, chooseHandOpener(current.current, seatIndex));
+    });
+  };
+
+  // Auto-pass/draw when you have nothing playable — no waiting on Pass.
+  useEffect(() => {
+    if (!autoPass || !match || !game) return;
+    if (game.phase !== "playing" || game.awaitingOpenerChoice) return;
+    if (pendingFlight || flight || busy) return;
+    const seat = game.seats[game.turn];
+    if (!seat || seat.kind !== "human") return;
+    if (legalMovesForSeat(game, game.turn).length > 0) return;
+
+    const timer = window.setTimeout(() => {
+      handlePassOrDraw();
+    }, 280);
+    return () => window.clearTimeout(timer);
+  }, [
+    autoPass,
+    match,
+    game,
+    pendingFlight,
+    flight,
+    busy,
+    handlePassOrDraw,
+  ]);
 
   const continueAfterHand = () => {
     if (!match) return;
     setSelectedId(null);
     setMatch(dealNextHand(match));
+  };
+
+  const continueAfterGame = () => {
+    if (!match) return;
+    setSelectedId(null);
+    setMatch(startNextGame(match));
   };
 
   if (!match || !game) {
@@ -332,6 +443,7 @@ export default function PlayGame() {
           flex: 1,
           minHeight: 0,
           width: "100%",
+          position: "relative",
           overflowY: "auto",
           WebkitOverflowScrolling: "touch",
           overscrollBehaviorY: "contain",
@@ -340,6 +452,27 @@ export default function PlayGame() {
           pb: { xs: 4, md: 6 },
         }}
       >
+        <IconButton
+          aria-label={t("playConfigAria")}
+          onPointerDown={tapFeedback}
+          onClick={() => setConfigOpen(true)}
+          sx={{
+            ...pressableSx,
+            position: "absolute",
+            top: { xs: 8, sm: 12 },
+            right: { xs: 8, sm: 12 },
+            zIndex: 2,
+            color: "primary.dark",
+            backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.9),
+            border: "1px solid",
+            borderColor: "divider",
+            "&:hover": {
+              backgroundColor: (theme) => alpha(theme.palette.grey[100], 1),
+            },
+          }}
+        >
+          <SettingsOutlined />
+        </IconButton>
         <PlaySetup
           modeId={modeId}
           setId={setId}
@@ -348,6 +481,16 @@ export default function PlayGame() {
           onSet={setSetId}
           onMaxPoints={setMaxPoints}
           onStart={start}
+        />
+        <PlayConfigDrawer
+          open={configOpen}
+          onClose={() => setConfigOpen(false)}
+          pace={{
+            botDelayMs,
+            onBotDelay: setBotDelayMs,
+            animMs,
+            onAnimMs: setAnimMs,
+          }}
         />
       </Box>
     );
@@ -360,17 +503,39 @@ export default function PlayGame() {
 
   const labels = teamLabels(game.modeId);
 
-  // Games won per side (points live on the scorepad).
-  const gamesGlance = Object.keys(labels)
-    .map(Number)
-    .sort((a, b) => a - b)
-    .map(
-      (team) => match.hands.filter((hand) => hand.winnerTeam === team).length
-    )
-    .join("–");
-
   const canPass = humanTurn && legal.length === 0;
   const showSideButtons = !!selectedId && selectedMoves.length >= 1;
+  const humanTeam = game.seats[0]?.team ?? 1;
+  const partnerSeat = game.seats.find(
+    (s) => s.team === humanTeam && s.index !== 0
+  );
+  const turnActive = game.phase === "playing" && !game.awaitingOpenerChoice;
+  /** Same height for every control in the table action bar. */
+  /** Action bar: taller tap targets on phones; width stays compact. */
+  const actionHeight = { xs: 40, sm: 36 } as const;
+  const actionWidth = { xs: 34, sm: 36 } as const;
+  const actionBtnSx = {
+    height: actionHeight,
+    minHeight: actionHeight,
+    minWidth: actionWidth,
+    px: { xs: 1, sm: 1.15 },
+    py: 0,
+    fontSize: { xs: 12, sm: 13 },
+    fontWeight: 800,
+    borderRadius: 1,
+    lineHeight: 1,
+  };
+  const actionSideBtnSx = {
+    ...actionBtnSx,
+    width: actionWidth,
+    minWidth: actionWidth,
+    px: 0,
+  };
+  const actionIconSx = {
+    width: actionWidth,
+    height: actionHeight,
+    borderRadius: 1,
+  };
   /** Same clearance from every stand lip to the wood table edge. */
   const seatTableGap = { xs: 0.5, sm: 1.25 };
   /** Phones: corner chips; sm+ keeps wooden stands. */
@@ -382,8 +547,8 @@ export default function PlayGame() {
   ) => (
     <PlaySeat
       seat={seat}
-      isTurn={game.turn === seat.index && game.phase === "playing"}
-      passed={game.lastPasserIndex === seat.index}
+      isTurn={turnActive && game.turn === seat.index}
+      passed={passFlash?.seatIndex === seat.index}
       position={pos}
       variant="chip"
       anchorRef={(el) => setSeatAnchor(pos, el)}
@@ -424,10 +589,9 @@ export default function PlayGame() {
                 <PlaySeat
                   seat={seatByPosition.top}
                   isTurn={
-                    game.turn === seatByPosition.top.index &&
-                    game.phase === "playing"
+                    turnActive && game.turn === seatByPosition.top.index
                   }
-                  passed={game.lastPasserIndex === seatByPosition.top.index}
+                  passed={passFlash?.seatIndex === seatByPosition.top.index}
                   position="top"
                   anchorRef={(el) => setSeatAnchor("top", el)}
                 />
@@ -458,10 +622,9 @@ export default function PlayGame() {
                 <PlaySeat
                   seat={seatByPosition.left}
                   isTurn={
-                    game.turn === seatByPosition.left.index &&
-                    game.phase === "playing"
+                    turnActive && game.turn === seatByPosition.left.index
                   }
-                  passed={game.lastPasserIndex === seatByPosition.left.index}
+                  passed={passFlash?.seatIndex === seatByPosition.left.index}
                   position="left"
                   anchorRef={(el) => setSeatAnchor("left", el)}
                 />
@@ -516,6 +679,12 @@ export default function PlayGame() {
                       highlightSide={highlightSide}
                       dropEnabled={humanTurn}
                       onDropSide={handleDropSide}
+                      onTapSide={(side) => {
+                        if (!selectedId) return;
+                        if (!selectedMoves.some((m) => m.side === side)) return;
+                        commitMove(side, selectedId);
+                      }}
+                      activeSides={selectedMoves.map((m) => m.side)}
                       flyingTileId={
                         pendingFlight?.tileId ?? flight?.tileId ?? null
                       }
@@ -523,7 +692,7 @@ export default function PlayGame() {
                     />
                   </Box>
 
-                  {useChips && (
+                  {useChips && game.phase === "playing" && (
                     <>
                       {seatByPosition.top && (
                         <Box
@@ -608,7 +777,7 @@ export default function PlayGame() {
                   )}
 
                   <AnimatePresence>
-                    {(game.phase === "finished" || match.matchOver) && (
+                    {game.phase === "finished" && (
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -623,36 +792,82 @@ export default function PlayGame() {
                           zIndex: 5,
                         }}
                       >
+                        {(
+                          [
+                            "top",
+                            "left",
+                            "right",
+                            "bottom",
+                          ] as const
+                        ).map((pos) => {
+                          const seat = seatByPosition[pos];
+                          if (!seat) return null;
+                          const isWinner =
+                            !!game.result &&
+                            (game.result.winners.includes(seat.index) ||
+                              seat.team === game.result.winnerTeam);
+                          return (
+                            <PlayLeftoverCorner
+                              key={pos}
+                              seat={seat}
+                              position={pos}
+                              isWinner={isWinner}
+                              compact={compact}
+                            />
+                          );
+                        })}
+
                         <Box
                           sx={{
-                            px: 2.5,
-                            py: 2,
+                            position: "relative",
+                            zIndex: 7,
+                            px: { xs: 2, sm: 2.5 },
+                            py: { xs: 1.75, sm: 2 },
                             borderRadius: 2,
-                            backgroundColor: alpha("#FDF8EE", 0.96),
+                            backgroundColor: alpha("#FDF8EE", 0.97),
                             textAlign: "center",
-                            maxWidth: 300,
+                            maxWidth: 320,
                             mx: 1.5,
+                            boxShadow: `0 10px 28px ${alpha("#000", 0.28)}`,
+                            border: `1px solid ${alpha("#C08A2E", 0.35)}`,
                           }}
                         >
-                          {match.matchOver ? (
+                          {match.gameOver ? (
                             <>
+                              <Typography
+                                sx={{
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  letterSpacing: "0.08em",
+                                  textTransform: "uppercase",
+                                  color: "text.secondary",
+                                }}
+                              >
+                                {t("gameNumber", { n: match.gameIndex })}
+                              </Typography>
                               <Typography
                                 sx={{
                                   fontFamily: (theme) =>
                                     theme.typography.h2.fontFamily,
-                                  fontWeight: 700,
-                                  fontSize: 20,
+                                  fontWeight: 800,
+                                  fontSize: { xs: 22, sm: 26 },
                                   color: "primary.dark",
+                                  lineHeight: 1.15,
+                                  mt: 0.5,
                                 }}
                               >
-                                {t("playMatchOver")}
+                                {t("tookIt", {
+                                  team: match.gameWinnerTeams
+                                    .map((team) => t(labels[team]))
+                                    .join(" & "),
+                                })}
                               </Typography>
                               <Typography
                                 variant="body2"
                                 sx={{ color: "text.secondary", mt: 0.5 }}
                               >
                                 {t("playReached", {
-                                  team: match.matchWinnerTeams
+                                  team: match.gameWinnerTeams
                                     .map((team) => t(labels[team]))
                                     .join(" & "),
                                   points: match.maxPoints,
@@ -667,16 +882,20 @@ export default function PlayGame() {
                                 <Button
                                   variant="outlined"
                                   size="small"
+                                  onPointerDown={tapFeedback}
                                   onClick={() => setNotesOpen(true)}
+                                  sx={pressableSx}
                                 >
                                   {t("playScorepad")}
                                 </Button>
                                 <Button
                                   variant="contained"
                                   size="small"
-                                  onClick={start}
+                                  onPointerDown={tapFeedback}
+                                  onClick={continueAfterGame}
+                                  sx={pressableSx}
                                 >
-                                  {t("playNewMatch")}
+                                  {t("nextGame")}
                                 </Button>
                               </Stack>
                             </>
@@ -684,28 +903,43 @@ export default function PlayGame() {
                             <>
                               <Typography
                                 sx={{
-                                  fontFamily: (theme) =>
-                                    theme.typography.h2.fontFamily,
+                                  fontSize: 11,
                                   fontWeight: 700,
-                                  fontSize: 20,
-                                  color: "primary.dark",
+                                  letterSpacing: "0.08em",
+                                  textTransform: "uppercase",
+                                  color: "text.secondary",
                                 }}
                               >
                                 {t("playHandDone", { n: game.handIndex })}
                               </Typography>
                               <Typography
-                                variant="body2"
-                                sx={{ color: "text.secondary", mt: 0.5 }}
+                                sx={{
+                                  fontFamily: (theme) =>
+                                    theme.typography.h2.fontFamily,
+                                  fontWeight: 800,
+                                  fontSize: { xs: 22, sm: 26 },
+                                  color: "primary.dark",
+                                  lineHeight: 1.15,
+                                  mt: 0.5,
+                                }}
                               >
-                                {game.result.reason === "blocked"
-                                  ? t("playHandAwardBlocked", {
-                                      team: t(labels[game.result.winnerTeam]),
-                                      points: game.result.pointsAwarded,
-                                    })
-                                  : t("playHandAward", {
-                                      team: t(labels[game.result.winnerTeam]),
-                                      points: game.result.pointsAwarded,
-                                    })}
+                                {t("playHandWinner", {
+                                  name: t(labels[game.result.winnerTeam]),
+                                })}
+                              </Typography>
+                              <Typography
+                                sx={{
+                                  fontWeight: 800,
+                                  fontSize: { xs: 28, sm: 32 },
+                                  color: "secondary.main",
+                                  fontVariantNumeric: "tabular-nums",
+                                  lineHeight: 1.1,
+                                  mt: 0.5,
+                                }}
+                              >
+                                {t("playHandPoints", {
+                                  points: game.result.pointsAwarded,
+                                })}
                               </Typography>
                               <Stack
                                 direction="row"
@@ -716,14 +950,18 @@ export default function PlayGame() {
                                 <Button
                                   variant="outlined"
                                   size="small"
+                                  onPointerDown={tapFeedback}
                                   onClick={() => setNotesOpen(true)}
+                                  sx={pressableSx}
                                 >
                                   {t("playScorepad")}
                                 </Button>
                                 <Button
                                   variant="contained"
                                   size="small"
+                                  onPointerDown={tapFeedback}
                                   onClick={continueAfterHand}
+                                  sx={pressableSx}
                                 >
                                   {t("playNextHand")}
                                 </Button>
@@ -744,103 +982,152 @@ export default function PlayGame() {
                     flexShrink: 0,
                     mt: { xs: landscapePhone ? "2px" : "3px", sm: "6px" },
                     px: { xs: 0.4, sm: 0.75 },
-                    py: { xs: landscapePhone ? 0.15 : 0.3, sm: 0.55 },
+                    py: { xs: landscapePhone ? 0.2 : 0.35, sm: 0.45 },
                     borderRadius: { xs: "6px", sm: "8px" },
-                    background: alpha("#1A120C", 0.28),
-                    boxShadow: `inset 0 1px 3px ${alpha("#000", 0.25)}`,
+                    background: alpha("#1A120C", 0.42),
+                    boxShadow: `inset 0 1px 3px ${alpha("#000", 0.3)}`,
                     minWidth: 0,
                   }}
                 >
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography
-                      sx={{
-                        fontWeight: 800,
-                        fontSize: { xs: 10, sm: 13 },
-                        color: alpha("#FBF5E9", 0.95),
-                        lineHeight: 1.15,
-                        fontFamily: (theme) => theme.typography.h2.fontFamily,
-                      }}
-                      noWrap
-                    >
-                      {t("playGameN", { n: game.handIndex })}
-                      <Box
-                        component="span"
-                        sx={{
-                          fontWeight: 600,
-                          opacity: 0.75,
-                          mx: 0.5,
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        ·
-                      </Box>
-                      {gamesGlance}
-                    </Typography>
+                  {/* Left: pass callout */}
+                  <Box
+                    sx={{
+                      flex: "1 1 0",
+                      minWidth: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-start",
+                    }}
+                  >
+                    <AnimatePresence mode="wait" initial={false}>
+                      {passFlash && (
+                        <motion.div
+                          key={`pass-${passFlash.seatIndex}-${passFlash.nameKey}`}
+                          initial={{ opacity: 0, x: -6 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -4 }}
+                          transition={{ duration: 0.18 }}
+                          style={{ minWidth: 0, maxWidth: "100%" }}
+                        >
+                          <Box
+                            role="status"
+                            aria-live="polite"
+                            sx={{
+                              px: { xs: 0.75, sm: 1 },
+                              py: { xs: 0.35, sm: 0.45 },
+                              borderRadius: { xs: "5px", sm: "6px" },
+                              backgroundColor: "#C23B2E",
+                              border: `1px solid ${alpha("#F7C4BC", 0.75)}`,
+                              boxShadow: `0 0 0 1px ${alpha("#8F1F16", 0.45)}`,
+                              maxWidth: "100%",
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontWeight: 800,
+                                fontSize: { xs: 10, sm: 12 },
+                                lineHeight: 1.2,
+                                color: "#FFF6F4",
+                                letterSpacing: "0.01em",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {t("playSeatPassed", {
+                                name: t(passFlash.nameKey),
+                              })}
+                            </Typography>
+                          </Box>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </Box>
 
-                  <Stack direction="row" spacing={0.4} alignItems="center">
+                  {/* Center: L — Auto-pass — Pass — R */}
+                  <Stack
+                    direction="row"
+                    spacing={0.45}
+                    alignItems="center"
+                    justifyContent="center"
+                    sx={{ flexShrink: 0 }}
+                  >
                     <Button
                       size="small"
                       variant="contained"
-                      color="secondary"
                       disabled={
                         !showSideButtons ||
                         !selectedMoves.some((m) => m.side === "left")
                       }
+                      onPointerDown={tapFeedback}
                       onClick={() =>
                         selectedId && commitMove("left", selectedId)
                       }
                       sx={{
-                        minWidth: { xs: 30, sm: 36 },
-                        px: { xs: 0.55, sm: 0.75 },
-                        py: { xs: 0.25, sm: 0.35 },
-                        fontSize: { xs: 11, sm: 12 },
-                        fontWeight: 800,
+                        ...pressableSx,
+                        ...actionSideBtnSx,
+                        color: "#1A120C",
+                        backgroundColor: "#E8A04A",
+                        boxShadow: "none",
+                        "&:hover": {
+                          backgroundColor: "#F0B25E",
+                          boxShadow: "none",
+                        },
+                        "&.Mui-disabled": {
+                          color: alpha("#FBF5E9", 0.45),
+                          backgroundColor: alpha("#FBF5E9", 0.12),
+                        },
                       }}
                     >
                       L
                     </Button>
+                    <IconButton
+                      size="small"
+                      aria-label={
+                        autoPass ? t("playAutoPassOn") : t("playAutoPassOff")
+                      }
+                      aria-pressed={autoPass}
+                      onPointerDown={tapFeedback}
+                      onClick={toggleAutoPass}
+                      sx={{
+                        ...pressableSx,
+                        ...actionIconSx,
+                        color: autoPass ? "#1A120C" : alpha("#FBF5E9", 0.92),
+                        backgroundColor: autoPass
+                          ? "#E8A04A"
+                          : alpha("#FBF5E9", 0.14),
+                        border: `1px solid ${
+                          autoPass ? "#C8842E" : alpha("#FBF5E9", 0.42)
+                        }`,
+                        "&:hover": {
+                          backgroundColor: autoPass
+                            ? "#F0B25E"
+                            : alpha("#FBF5E9", 0.22),
+                        },
+                      }}
+                    >
+                      <AutoModeOutlined sx={{ fontSize: { xs: 17, sm: 19 } }} />
+                    </IconButton>
                     <Button
                       size="small"
                       variant="contained"
-                      color="secondary"
-                      disabled={
-                        !showSideButtons ||
-                        !selectedMoves.some((m) => m.side === "right")
-                      }
-                      onClick={() =>
-                        selectedId && commitMove("right", selectedId)
-                      }
-                      sx={{
-                        minWidth: { xs: 30, sm: 36 },
-                        px: { xs: 0.55, sm: 0.75 },
-                        py: { xs: 0.25, sm: 0.35 },
-                        fontSize: { xs: 11, sm: 12 },
-                        fontWeight: 800,
-                      }}
-                    >
-                      R
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
                       disabled={!canPass}
+                      onPointerDown={tapFeedback}
                       onClick={handlePassOrDraw}
                       sx={{
-                        minWidth: { xs: 44, sm: 52 },
-                        px: { xs: 0.55, sm: 0.75 },
-                        py: { xs: 0.25, sm: 0.35 },
-                        fontSize: { xs: 10, sm: 11 },
-                        fontWeight: 700,
-                        color: alpha("#FBF5E9", canPass ? 0.95 : 0.4),
-                        borderColor: alpha("#FBF5E9", canPass ? 0.45 : 0.2),
+                        ...pressableSx,
+                        ...actionBtnSx,
+                        minWidth: { xs: 56, sm: 64 },
+                        color: "#1A120C",
+                        backgroundColor: "#FBF5E9",
+                        boxShadow: "none",
                         "&:hover": {
-                          borderColor: alpha("#FBF5E9", 0.7),
-                          backgroundColor: alpha("#FBF5E9", 0.08),
+                          backgroundColor: "#FFFBF3",
+                          boxShadow: "none",
                         },
                         "&.Mui-disabled": {
-                          color: alpha("#FBF5E9", 0.35),
-                          borderColor: alpha("#FBF5E9", 0.15),
+                          color: alpha("#FBF5E9", 0.45),
+                          backgroundColor: alpha("#FBF5E9", 0.12),
                         },
                       }}
                     >
@@ -848,22 +1135,81 @@ export default function PlayGame() {
                         ? t("playDraw")
                         : t("playPass")}
                     </Button>
-                    <Chip
+                    <Button
                       size="small"
-                      icon={<MenuBookOutlined sx={{ fontSize: 14 }} />}
-                      label={gamesGlance}
-                      onClick={() => setNotesOpen(true)}
-                      clickable
+                      variant="contained"
+                      disabled={
+                        !showSideButtons ||
+                        !selectedMoves.some((m) => m.side === "right")
+                      }
+                      onPointerDown={tapFeedback}
+                      onClick={() =>
+                        selectedId && commitMove("right", selectedId)
+                      }
                       sx={{
-                        height: { xs: 24, sm: 28 },
-                        fontWeight: 700,
-                        fontSize: { xs: 11, sm: 12 },
-                        backgroundColor: alpha("#FBF5E9", 0.92),
-                        color: "primary.dark",
-                        "& .MuiChip-icon": { color: "secondary.main" },
-                        "&:hover": { backgroundColor: "#FBF5E9" },
+                        ...pressableSx,
+                        ...actionSideBtnSx,
+                        color: "#1A120C",
+                        backgroundColor: "#E8A04A",
+                        boxShadow: "none",
+                        "&:hover": {
+                          backgroundColor: "#F0B25E",
+                          boxShadow: "none",
+                        },
+                        "&.Mui-disabled": {
+                          color: alpha("#FBF5E9", 0.45),
+                          backgroundColor: alpha("#FBF5E9", 0.12),
+                        },
                       }}
-                    />
+                    >
+                      R
+                    </Button>
+                  </Stack>
+
+                  {/* Right: Settings — Notebook */}
+                  <Stack
+                    direction="row"
+                    spacing={0.45}
+                    alignItems="center"
+                    justifyContent="flex-end"
+                    sx={{ flex: "1 1 0", minWidth: 0 }}
+                  >
+                    <IconButton
+                      size="small"
+                      aria-label={t("playConfigAria")}
+                      onPointerDown={tapFeedback}
+                      onClick={() => setConfigOpen(true)}
+                      sx={{
+                        ...pressableSx,
+                        ...actionIconSx,
+                        color: "#1A120C",
+                        backgroundColor: "#FBF5E9",
+                        border: `1px solid ${alpha("#FBF5E9", 0.7)}`,
+                        "&:hover": {
+                          backgroundColor: "#FFFBF3",
+                        },
+                      }}
+                    >
+                      <SettingsOutlined sx={{ fontSize: { xs: 17, sm: 19 } }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      aria-label={t("playScorepad")}
+                      onPointerDown={tapFeedback}
+                      onClick={() => setNotesOpen(true)}
+                      sx={{
+                        ...pressableSx,
+                        ...actionIconSx,
+                        color: "#1A120C",
+                        backgroundColor: "#FBF5E9",
+                        border: `1px solid ${alpha("#FBF5E9", 0.7)}`,
+                        "&:hover": {
+                          backgroundColor: "#FFFBF3",
+                        },
+                      }}
+                    >
+                      <MenuBookOutlined sx={{ fontSize: { xs: 17, sm: 19 } }} />
+                    </IconButton>
                   </Stack>
                 </Stack>
               </Box>
@@ -883,10 +1229,9 @@ export default function PlayGame() {
                 <PlaySeat
                   seat={seatByPosition.right}
                   isTurn={
-                    game.turn === seatByPosition.right.index &&
-                    game.phase === "playing"
+                    turnActive && game.turn === seatByPosition.right.index
                   }
-                  passed={game.lastPasserIndex === seatByPosition.right.index}
+                  passed={passFlash?.seatIndex === seatByPosition.right.index}
                   position="right"
                   anchorRef={(el) => setSeatAnchor("right", el)}
                 />
@@ -896,13 +1241,21 @@ export default function PlayGame() {
 
           {/* Keep the rack mounted after you go out — empty stand, not gone. */}
           {(game.phase === "playing" || game.phase === "finished") && (
-            <Box sx={{ flexShrink: 0, width: "100%" }}>
+            <Box
+              sx={{
+                flexShrink: 0,
+                width: "100%",
+                position: "relative",
+                zIndex: selectedId ? 25 : 2,
+              }}
+            >
               <PlayHand
                 hand={game.seats[0].hand}
                 legal={legal}
                 selectedId={selectedId}
                 disabled={!humanTurn}
                 onSelect={handleSelectTile}
+                onDropSide={handleDropSide}
                 compact={compact}
               />
             </Box>
@@ -921,10 +1274,9 @@ export default function PlayGame() {
                 <PlaySeat
                   seat={seatByPosition.bottom}
                   isTurn={
-                    game.turn === seatByPosition.bottom.index &&
-                    game.phase === "playing"
+                    turnActive && game.turn === seatByPosition.bottom.index
                   }
-                  passed={game.lastPasserIndex === seatByPosition.bottom.index}
+                  passed={passFlash?.seatIndex === seatByPosition.bottom.index}
                   position="bottom"
                   anchorRef={(el) => setSeatAnchor("bottom", el)}
                 />
@@ -941,25 +1293,41 @@ export default function PlayGame() {
         />
       )}
 
+      <PlayOpenerDialog
+        open={game.awaitingOpenerChoice}
+        onChooseYou={() => handleChooseOpener(0)}
+        onChoosePartner={() => {
+          if (partnerSeat) handleChooseOpener(partnerSeat.index);
+        }}
+      />
+
       <PlayNotesDrawer
         open={notesOpen}
         onClose={() => setNotesOpen(false)}
         match={match}
-        game={game}
-        botDelayMs={botDelayMs}
-        onBotDelay={setBotDelayMs}
-        animMs={animMs}
-        onAnimMs={setAnimMs}
-        logOpen={logOpen}
-        onToggleLog={() => setLogOpen((v) => !v)}
-        onNewMatch={() => {
-          setNotesOpen(false);
-          start();
-        }}
-        onSetup={() => {
+        onEndGame={() => {
           setNotesOpen(false);
           setMatch(null);
           setSelectedId(null);
+          setBusy(false);
+          setPendingFlight(null);
+          setFlight(null);
+        }}
+      />
+
+      <PlayConfigDrawer
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+        pace={{
+          botDelayMs,
+          onBotDelay: setBotDelayMs,
+          animMs,
+          onAnimMs: setAnimMs,
+        }}
+        debugLog={{
+          logs: game.logs,
+          open: logOpen,
+          onToggle: () => setLogOpen((v) => !v),
         }}
       />
     </>

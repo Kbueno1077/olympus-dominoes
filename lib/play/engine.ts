@@ -10,6 +10,7 @@ import {
 } from "./tiles";
 import type {
   ChainSide,
+  CompletedPlayGame,
   DominoSetId,
   GameLogEntry,
   GameResult,
@@ -81,7 +82,9 @@ function placementFor(
   return null;
 }
 
-/** Highest double in a hand, if any; otherwise the heaviest tile. */
+/** Highest double in a hand, if any; otherwise the heaviest tile.
+ * Used to decide who/which team opens — not to force the lead tile.
+ */
 export function bestOpeningTile(hand: Tile[]): Tile | null {
   let bestDouble: Tile | null = null;
   for (const tile of hand) {
@@ -102,19 +105,20 @@ export function legalMovesForSeat(state: GameSnapshot, seatIndex: number): Legal
   if (!seat) return [];
   const ends = openEnds(state.chain);
 
+  // Opening lead: any tile from the hand (doubles are optional, not required).
   if (!ends) {
-    const opener = bestOpeningTile(seat.hand);
-    if (!opener) return [];
-    const placed = placementFor(opener, "right", null);
-    if (!placed) return [];
-    return [
-      {
-        tileId: opener.id,
+    const moves: LegalMove[] = [];
+    for (const tile of seat.hand) {
+      const placed = placementFor(tile, "right", null);
+      if (!placed) continue;
+      moves.push({
+        tileId: tile.id,
         side: "right",
         left: placed.left,
         right: placed.right,
-      },
-    ];
+      });
+    }
+    return moves;
   }
 
   const moves: LegalMove[] = [];
@@ -177,15 +181,37 @@ export function seatPositions(
   }
 }
 
+function openingScore(tile: Tile): number {
+  return isDouble(tile) ? 1000 + tile.a : tilePips(tile);
+}
+
+/** First hand: seat with the highest double (else highest pips) opens. */
 function pickStarter(hands: Tile[][]): number {
   let bestSeat = 0;
   let bestScore = -1;
   hands.forEach((hand, index) => {
     for (const tile of hand) {
-      const score = isDouble(tile) ? 1000 + tile.a : tilePips(tile);
+      const score = openingScore(tile);
       if (score > bestScore) {
         bestScore = score;
         bestSeat = index;
+      }
+    }
+  });
+  return bestSeat;
+}
+
+/** Later hands: best opener among seats on the team that won the last hand. */
+function pickStarterOnTeam(seats: Seat[], team: number): number {
+  let bestSeat = seats.find((s) => s.team === team)?.index ?? 0;
+  let bestScore = -1;
+  seats.forEach((seat) => {
+    if (seat.team !== team) return;
+    for (const tile of seat.hand) {
+      const score = openingScore(tile);
+      if (score > bestScore) {
+        bestScore = score;
+        bestSeat = seat.index;
       }
     }
   });
@@ -201,13 +227,16 @@ export function createGame(
   modeId: PlayModeId,
   setId: DominoSetId = "double_six",
   handIndex = 1,
-  seed?: number
+  seed?: number,
+  /** Team that won the previous hand — they open this one. Omit on hand 1. */
+  previousWinnerTeam?: number
 ): GameSnapshot {
   const set = setConfig(setId);
   const mode = modeConfig(modeId);
   const deck = shuffleTiles(buildSet(set.maxPip), seed);
   const names = seatNames(modeId);
   const canDraw = allowsDraw(setId);
+  const humanTeam = teamFor(modeId, 0);
 
   const seats: Seat[] = [];
   let cursor = 0;
@@ -227,8 +256,17 @@ export function createGame(
   const remainder = deck.slice(cursor);
   const boneyard = canDraw ? remainder : [];
 
-  const starter = pickStarter(seats.map((s) => s.hand));
+  // Hand 1: highest double/tile. Later hands: winners of the previous hand.
+  const byHandWin =
+    previousWinnerTeam != null &&
+    seats.some((s) => s.team === previousWinnerTeam);
+  const starter = byHandWin
+    ? pickStarterOnTeam(seats, previousWinnerTeam!)
+    : pickStarter(seats.map((s) => s.hand));
   const starterTile = bestOpeningTile(seats[starter].hand)!;
+  const openingTeam = seats[starter].team;
+  // Partners: when your team opens, human chooses You vs Partner.
+  const awaitingOpenerChoice = modeId === "2v2" && openingTeam === humanTeam;
 
   let state: GameSnapshot = {
     phase: "playing",
@@ -246,6 +284,7 @@ export function createGame(
     result: null,
     logs: [],
     starter,
+    awaitingOpenerChoice,
     handIndex,
   };
 
@@ -270,14 +309,52 @@ export function createGame(
     );
   });
 
-  state = appendLog(
-    state,
-    "info",
-    `${seats[starter].name} opens`,
-    `Must lead ${formatTile(starterTile)}`
-  );
+  if (awaitingOpenerChoice) {
+    state = appendLog(
+      state,
+      "info",
+      "Your team opens",
+      byHandWin
+        ? "Won the last hand — choose who starts"
+        : `Highest tile ${formatTile(starterTile)} decides the team — choose who starts`
+    );
+  } else {
+    state = appendLog(
+      state,
+      "info",
+      `${seats[starter].name} opens`,
+      byHandWin
+        ? "Won the last hand — lead any tile"
+        : `Highest tile ${formatTile(starterTile)} · lead any tile`
+    );
+  }
 
   return state;
+}
+
+/**
+ * 2v2: after the deal, human picks which partner seat opens the empty chain.
+ * Chosen seat may lead with any tile from their hand.
+ */
+export function chooseHandOpener(
+  state: GameSnapshot,
+  seatIndex: number
+): GameSnapshot {
+  if (!state.awaitingOpenerChoice || state.phase !== "playing") return state;
+  if (state.modeId !== "2v2" || state.chain.length > 0) return state;
+
+  const seat = state.seats[seatIndex];
+  const humanTeam = teamFor(state.modeId, 0);
+  if (!seat || seat.team !== humanTeam) return state;
+
+  let next: GameSnapshot = {
+    ...state,
+    awaitingOpenerChoice: false,
+    turn: seatIndex,
+    starter: seatIndex,
+  };
+  next = appendLog(next, "info", `${seat.name} opens`, "Lead any tile");
+  return next;
 }
 
 function removeFromHand(hand: Tile[], tileId: string): Tile[] {
@@ -334,6 +411,9 @@ function finishIfNeeded(state: GameSnapshot): GameSnapshot {
     const cfg = modeConfig(state.modeId);
     let winners: number[] = [];
     let winnerTeam = 1;
+    const starterSeat = state.seats[state.starter];
+    const starterTeam = starterSeat?.team ?? 1;
+    let usedStarterTiebreak = false;
 
     if (cfg.teams) {
       const teamPips = new Map<number, number>();
@@ -347,19 +427,30 @@ function finishIfNeeded(state: GameSnapshot): GameSnapshot {
       teamPips.forEach((pips) => {
         if (pips < best) best = pips;
       });
-      const winningTeams: number[] = [];
+      const tiedTeams: number[] = [];
       teamPips.forEach((pips, team) => {
-        if (pips === best) winningTeams.push(team);
+        if (pips === best) tiedTeams.push(team);
       });
-      winnerTeam = winningTeams[0];
+      if (tiedTeams.length > 1 && tiedTeams.includes(starterTeam)) {
+        winnerTeam = starterTeam;
+        usedStarterTiebreak = true;
+      } else {
+        winnerTeam = tiedTeams[0] ?? starterTeam;
+      }
       winners = state.seats
-        .filter((s) => winningTeams.includes(s.team))
+        .filter((s) => s.team === winnerTeam)
         .map((s) => s.index);
     } else {
       const best = Math.min(...totals);
-      winners = totals
+      const tiedSeats = totals
         .map((p, i) => (p === best ? i : -1))
         .filter((i) => i >= 0);
+      if (tiedSeats.length > 1 && tiedSeats.includes(state.starter)) {
+        winners = [state.starter];
+        usedStarterTiebreak = true;
+      } else {
+        winners = [tiedSeats[0]];
+      }
       winnerTeam = state.seats[winners[0]].team;
     }
 
@@ -376,7 +467,10 @@ function finishIfNeeded(state: GameSnapshot): GameSnapshot {
       next,
       "win",
       `Blocked · team ${winnerTeam} +${pointsAwarded}`,
-      `Pips [${totals.join(", ")}]`
+      `Pips [${totals.join(", ")}]` +
+        (usedStarterTiebreak
+          ? ` · tie → opener (seat ${state.starter}) wins`
+          : "")
     );
     return next;
   }
@@ -390,7 +484,11 @@ export function playMove(
   move: LegalMove,
   reason?: string
 ): GameSnapshot {
-  if (state.phase !== "playing" || state.turn !== seatIndex) {
+  if (
+    state.awaitingOpenerChoice ||
+    state.phase !== "playing" ||
+    state.turn !== seatIndex
+  ) {
     return appendLog(state, "warn", "Illegal play rejected", `seat ${seatIndex} turn ${state.turn}`);
   }
 
@@ -453,7 +551,11 @@ export function playMove(
 }
 
 export function drawOrPass(state: GameSnapshot, seatIndex: number): GameSnapshot {
-  if (state.phase !== "playing" || state.turn !== seatIndex) {
+  if (
+    state.awaitingOpenerChoice ||
+    state.phase !== "playing" ||
+    state.turn !== seatIndex
+  ) {
     return appendLog(state, "warn", "Draw/pass out of turn", `seat ${seatIndex}`);
   }
 
@@ -552,23 +654,29 @@ export function createMatch(
 ): MatchSnapshot {
   const labels = teamLabels(modeId);
   const teamScores: Record<number, number> = {};
+  const gamesWon: Record<number, number> = {};
   Object.keys(labels).forEach((key) => {
-    teamScores[Number(key)] = 0;
+    const team = Number(key);
+    teamScores[team] = 0;
+    gamesWon[team] = 0;
   });
 
   return {
     modeId,
     setId,
     maxPoints,
+    gamesWon,
+    completedGames: [],
+    gameIndex: 1,
     teamScores,
     hands: [],
     current: createGame(modeId, setId, 1),
-    matchOver: false,
-    matchWinnerTeams: [],
+    gameOver: false,
+    gameWinnerTeams: [],
   };
 }
 
-/** Credit a finished hand onto the scorepad immediately (idempotent). */
+/** Credit a finished hand onto the current-game scorepad (idempotent). */
 export function accountFinishedHand(match: MatchSnapshot): MatchSnapshot {
   const game = match.current;
   if (!game || game.phase !== "finished" || !game.result) return match;
@@ -596,32 +704,97 @@ export function accountFinishedHand(match: MatchSnapshot): MatchSnapshot {
     .filter(([, pts]) => pts >= match.maxPoints)
     .map(([team]) => Number(team));
 
+  if (reached.length === 0) {
+    return {
+      ...match,
+      teamScores,
+      hands,
+      current: game,
+      gameOver: false,
+      gameWinnerTeams: [],
+    };
+  }
+
+  // Tiebreak: team that opened this hand / game prefers if both hit target.
+  const starterTeam =
+    game.seats[game.starter]?.team ?? reached[0];
+  const winnerTeam = reached.includes(starterTeam) ? starterTeam : reached[0];
+
   return {
     ...match,
     teamScores,
     hands,
     current: game,
-    matchOver: reached.length > 0,
-    matchWinnerTeams: reached,
+    gameOver: true,
+    gameWinnerTeams: [winnerTeam],
   };
 }
 
-/** Deal the next hand after scores are already on the pad. */
+/** Deal the next hand inside the current game (not after game over). */
 export function dealNextHand(match: MatchSnapshot): MatchSnapshot {
   const accounted = accountFinishedHand(match);
   const game = accounted.current;
   if (!game || game.phase !== "finished") return accounted;
-  if (accounted.matchOver) return accounted;
+  if (accounted.gameOver) return accounted;
 
   return {
     ...accounted,
-    current: createGame(accounted.modeId, accounted.setId, game.handIndex + 1),
-    matchOver: false,
-    matchWinnerTeams: [],
+    current: createGame(
+      accounted.modeId,
+      accounted.setId,
+      game.handIndex + 1,
+      undefined,
+      game.result?.winnerTeam
+    ),
+    gameOver: false,
+    gameWinnerTeams: [],
   };
 }
 
-/** Apply finished-hand scores and deal the next hand if the match continues. */
+/** Archive the finished game and deal hand 1 of the next game. */
+export function startNextGame(match: MatchSnapshot): MatchSnapshot {
+  const accounted = accountFinishedHand(match);
+  if (!accounted.gameOver || !accounted.current) return accounted;
+
+  const winnerTeam = accounted.gameWinnerTeams[0];
+  if (winnerTeam == null) return accounted;
+
+  const completed: CompletedPlayGame = {
+    gameIndex: accounted.gameIndex,
+    winnerTeam,
+    hands: accounted.hands,
+    finalScores: { ...accounted.teamScores },
+  };
+
+  const labels = teamLabels(accounted.modeId);
+  const teamScores: Record<number, number> = {};
+  Object.keys(labels).forEach((key) => {
+    teamScores[Number(key)] = 0;
+  });
+
+  const gamesWon = { ...accounted.gamesWon };
+  gamesWon[winnerTeam] = (gamesWon[winnerTeam] ?? 0) + 1;
+
+  return {
+    ...accounted,
+    gamesWon,
+    completedGames: [...accounted.completedGames, completed],
+    gameIndex: accounted.gameIndex + 1,
+    teamScores,
+    hands: [],
+    current: createGame(
+      accounted.modeId,
+      accounted.setId,
+      1,
+      undefined,
+      winnerTeam
+    ),
+    gameOver: false,
+    gameWinnerTeams: [],
+  };
+}
+
+/** @deprecated Prefer dealNextHand / startNextGame. */
 export function recordFinishedHand(match: MatchSnapshot): MatchSnapshot {
   return dealNextHand(match);
 }

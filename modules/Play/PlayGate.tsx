@@ -1,10 +1,14 @@
 "use client";
 
+import PlayConfigDrawer from "@/modules/Play/PlayConfigDrawer";
+import { pressableSx, tapFeedback } from "@/modules/Play/pressFeedback";
 import { useTranslation } from "@/i18n/useTranslation";
+import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
 import {
   Box,
   Button,
   Card,
+  IconButton,
   Stack,
   TextField,
   Typography,
@@ -26,6 +30,7 @@ export default function PlayGate({ children }: Props) {
   const [unlocked, setUnlocked] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -74,6 +79,7 @@ export default function PlayGate({ children }: Props) {
         flex: 1,
         minHeight: 0,
         width: "100%",
+        position: "relative",
         overflowY: "auto",
         WebkitOverflowScrolling: "touch",
         overscrollBehaviorY: "contain",
@@ -84,6 +90,27 @@ export default function PlayGate({ children }: Props) {
         alignItems: "flex-start",
       }}
     >
+      <IconButton
+        aria-label={t("playConfigAria")}
+        onPointerDown={tapFeedback}
+        onClick={() => setConfigOpen(true)}
+        sx={{
+          ...pressableSx,
+          position: "absolute",
+          top: { xs: 8, sm: 12 },
+          right: { xs: 8, sm: 12 },
+          zIndex: 2,
+          color: "primary.dark",
+          backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.9),
+          border: "1px solid",
+          borderColor: "divider",
+          "&:hover": {
+            backgroundColor: (theme) => alpha(theme.palette.grey[100], 1),
+          },
+        }}
+      >
+        <SettingsOutlined />
+      </IconButton>
       <Card
         component="form"
         onSubmit={submit}
@@ -124,11 +151,21 @@ export default function PlayGate({ children }: Props) {
             fullWidth
             size="small"
           />
-          <Button type="submit" variant="contained" color="primary">
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            onPointerDown={tapFeedback}
+            sx={pressableSx}
+          >
             {t("playGateUnlock")}
           </Button>
         </Stack>
       </Card>
+      <PlayConfigDrawer
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+      />
     </Box>
   );
 }
