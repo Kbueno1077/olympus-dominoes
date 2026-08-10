@@ -22,6 +22,12 @@ export const MODE_LABEL_KEYS = {
   "Free For All": "modeFreeForAll",
 };
 
+/** Domino set ids are stored in Recoil; map them to display strings. */
+export const SET_LABEL_KEYS = {
+  double_nine: "setDoubleNine",
+  double_six: "setDoubleSix",
+};
+
 const en = {
   tagline: "Score · Double nine · 55 tiles",
   language: "Language",
@@ -42,6 +48,9 @@ const en = {
   mode2v2: "2 vs 2",
   modeFreeForAll: "Free for all",
 
+  setDoubleNine: "Double nine · 55",
+  setDoubleSix: "Double six · 28",
+
   // Dashboard
   heroTitle: "Keep score, not arguments",
   heroSubtitle:
@@ -58,6 +67,8 @@ const en = {
   startMatch: "Start a new match",
   continueMatch: "Continue match",
   madeForTheTable: "Made for the table",
+  privacyLink: "Privacy Policy",
+  changelogLink: "Changelog",
   howItWorksTitle: "How it works",
   howStep1Title: "Set the table",
   howStep1Body: "Name the players, choose partners or free for all, and pick a target.",
@@ -512,6 +523,7 @@ const en = {
   setupSubtitle: "Lock this in before the first hand.",
   playersAtTable: "Players at the table",
   format: "Format",
+  dominoSet: "Set",
   pointsToWin: "Points to win",
   target: "Target",
   freeForAllNote: "In Free For All every player keeps their own score.",
@@ -519,6 +531,7 @@ const en = {
   firstTo: "First to {n}",
   startPlaying: "Start playing",
   playerCountAria: "{n} players",
+  setAria: "Domino set",
 
   // Table
   tableTitle: "The table",
@@ -597,6 +610,9 @@ const es = {
   mode2v2: "2 vs 2",
   modeFreeForAll: "Todos contra todos",
 
+  setDoubleNine: "Doble nueve · 55",
+  setDoubleSix: "Doble seis · 28",
+
   // Dashboard
   heroTitle: "Anota los puntos, no las discusiones",
   heroSubtitle:
@@ -613,6 +629,8 @@ const es = {
   startMatch: "Empezar una partida",
   continueMatch: "Continuar partida",
   madeForTheTable: "Hecho para la mesa",
+  privacyLink: "Política de privacidad",
+  changelogLink: "Novedades",
   howItWorksTitle: "Cómo funciona",
   howStep1Title: "Arma la mesa",
   howStep1Body: "Pon los nombres, elige parejas o todos contra todos, y fija la meta.",
@@ -1072,6 +1090,7 @@ const es = {
   setupSubtitle: "Déjalo listo antes de la primera mano.",
   playersAtTable: "Jugadores en la mesa",
   format: "Modo de juego",
+  dominoSet: "Fichas",
   pointsToWin: "Puntos para ganar",
   target: "Meta",
   freeForAllNote:
@@ -1080,6 +1099,7 @@ const es = {
   firstTo: "Primero a {n}",
   startPlaying: "Empezar a jugar",
   playerCountAria: "{n} jugadores",
+  setAria: "Tipo de fichas",
 
   // Table
   tableTitle: "La mesa",

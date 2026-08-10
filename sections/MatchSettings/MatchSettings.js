@@ -18,9 +18,11 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { Fragment } from "react";
 
 import { useTranslation } from "@/i18n/useTranslation";
+import { DOMINO_SETS, getDominoSet } from "@/utils/dominoSets";
 import { gameModes2, gameModes3, gameModes4 } from "@/utils/matchSettings";
 import { buildRandomRoster } from "@/utils/randomNames";
 import {
+  dominoSetRecoil,
   gameModeRecoil,
   isGameStartedRecoil,
   maxPointsRecoil,
@@ -74,10 +76,11 @@ function buildTeams(playersAmount, isFreeForAll, slots) {
  * dot.
  */
 export function MatchSummary() {
-  const { t, teamName, modeName } = useTranslation();
+  const { t, teamName, modeName, setName } = useTranslation();
 
   const [playersAmount] = useRecoilState(playersAmountRecoil);
   const [gameMode] = useRecoilState(gameModeRecoil);
+  const [dominoSet] = useRecoilState(dominoSetRecoil);
   const [maxPoints] = useRecoilState(maxPointsRecoil);
   const [player1] = useRecoilState(player1Recoil);
   const [player2] = useRecoilState(player2Recoil);
@@ -95,6 +98,7 @@ export function MatchSummary() {
 
   const facts = [
     { key: "players", text: t("playersCount", { n: playersAmount }) },
+    { key: "set", text: setName(dominoSet) },
     ...(gameMode?.label
       ? [{ key: "mode", text: modeName(gameMode.label) }]
       : []),
@@ -323,13 +327,14 @@ function TeamBlock({ team }) {
 export default function MatchSettings() {
   const theme = useTheme();
   const isNarrow = useMediaQuery(theme.breakpoints.down("sm"));
-  const { t, modeName } = useTranslation();
+  const { t, modeName, setName } = useTranslation();
 
   const [playersAmount, setPlayersAmount] = useRecoilState(playersAmountRecoil);
   const [renderGameModes, setRenderGamesModes] = useRecoilState(
     renderGameModesRecoil
   );
   const [gameMode, setGameMode] = useRecoilState(gameModeRecoil);
+  const [dominoSet, setDominoSet] = useRecoilState(dominoSetRecoil);
   const [maxPoints, setMaxPoints] = useRecoilState(maxPointsRecoil);
 
   const [player1, setPlayer1] = useRecoilState(player1Recoil);
@@ -383,6 +388,14 @@ export default function MatchSettings() {
     if (nextLabel === null) return;
     const nextMode = renderGameModes.find((mode) => mode.label === nextLabel);
     if (nextMode) setGameMode(nextMode);
+  };
+
+  const handleDominoSetChange = (_event, nextSetId) => {
+    if (nextSetId === null) return;
+    const nextSet = getDominoSet(nextSetId);
+    setDominoSet(nextSet.id);
+    // Apply the usual target for this set; the user can still override.
+    setMaxPoints(String(nextSet.defaultMaxPoints));
   };
 
   const handleMaxPointsInput = (raw) => {
@@ -475,10 +488,25 @@ export default function MatchSettings() {
               </ToggleButtonGroup>
             </FieldGroup>
 
-            <FieldGroup
-              label={t("pointsToWin")}
-              sx={{ gridColumn: { md: "1 / -1" } }}
-            >
+            <FieldGroup label={t("dominoSet")}>
+              <ToggleButtonGroup
+                exclusive
+                fullWidth
+                size="small"
+                disabled={isGameStarted}
+                value={dominoSet}
+                onChange={handleDominoSetChange}
+                aria-label={t("setAria")}
+              >
+                {DOMINO_SETS.map((set) => (
+                  <ToggleButton key={set.id} value={set.id}>
+                    {setName(set.id)}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </FieldGroup>
+
+            <FieldGroup label={t("pointsToWin")}>
               <Stack
                 direction={isNarrow ? "column" : "row"}
                 spacing={1.5}

@@ -391,19 +391,41 @@ export default function Dashboard({ onStartNewGame, onOpenAnalytics }) {
             >
               {t("madeForTheTable")}
             </Typography>
-            <Typography
-              component={Link}
-              href="/privacy"
-              variant="caption"
-              sx={{
-                color: "text.disabled",
-                textDecoration: "underline",
-                textUnderlineOffset: 2,
-                "&:hover": { color: "text.secondary" },
-              }}
-            >
-              Privacy Policy
-            </Typography>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Typography
+                component={Link}
+                href="/privacy"
+                variant="caption"
+                sx={{
+                  color: "text.disabled",
+                  textDecoration: "underline",
+                  textUnderlineOffset: 2,
+                  "&:hover": { color: "text.secondary" },
+                }}
+              >
+                {t("privacyLink")}
+              </Typography>
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{ color: "text.disabled" }}
+              >
+                ·
+              </Typography>
+              <Typography
+                component={Link}
+                href="/changelog"
+                variant="caption"
+                sx={{
+                  color: "text.disabled",
+                  textDecoration: "underline",
+                  textUnderlineOffset: 2,
+                  "&:hover": { color: "text.secondary" },
+                }}
+              >
+                {t("changelogLink")}
+              </Typography>
+            </Stack>
           </Stack>
         </Stack>
       </motion.div>

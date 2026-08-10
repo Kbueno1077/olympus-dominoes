@@ -31,7 +31,12 @@ export default function PrivacyPage() {
             Last updated: {LAST_UPDATED}
           </p>
           <p className="text-xs font-medium tracking-wide text-[rgb(var(--text-muted))]">
-            {APP_UI_SIGNATURE}
+            <Link
+              href="/changelog"
+              className="underline decoration-[rgb(var(--border))] underline-offset-2 hover:text-[rgb(var(--primary))]"
+            >
+              {APP_UI_SIGNATURE}
+            </Link>
           </p>
         </header>
 

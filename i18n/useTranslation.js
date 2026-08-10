@@ -5,6 +5,7 @@ import { LanguageContext } from "./LanguageProvider";
 import {
   DEFAULT_LANGUAGE,
   MODE_LABEL_KEYS,
+  SET_LABEL_KEYS,
   translations,
 } from "./translations";
 
@@ -47,8 +48,16 @@ export function useTranslation() {
     [t]
   );
 
+  const setName = useCallback(
+    (setId) => {
+      const key = SET_LABEL_KEYS[setId];
+      return key ? t(key) : setId;
+    },
+    [t]
+  );
+
   return useMemo(
-    () => ({ t, teamName, modeName, language, setLanguage }),
-    [t, teamName, modeName, language, setLanguage]
+    () => ({ t, teamName, modeName, setName, language, setLanguage }),
+    [t, teamName, modeName, setName, language, setLanguage]
   );
 }
