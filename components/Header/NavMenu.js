@@ -28,8 +28,9 @@ import { useRecoilValue } from "recoil";
 
 /**
  * Standard nav dropdown — closed trigger shows the current section.
+ * `dense` hides the label (icon-only) so /play landscape keeps chrome tiny.
  */
-export default function NavMenu() {
+export default function NavMenu({ dense = false }) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const hasMounted = useHasMounted();
@@ -109,11 +110,11 @@ export default function NavMenu() {
         aria-haspopup="menu"
         aria-expanded={open ? "true" : undefined}
         onClick={(e) => setAnchorEl(e.currentTarget)}
-        startIcon={<ActiveIcon sx={{ fontSize: 18 }} />}
+        startIcon={<ActiveIcon sx={{ fontSize: dense ? 16 : 18 }} />}
         endIcon={
           <ExpandMore
             sx={{
-              fontSize: 18,
+              fontSize: dense ? 16 : 18,
               transform: open ? "rotate(180deg)" : "none",
               transition: "transform 160ms ease",
             }}
@@ -122,8 +123,10 @@ export default function NavMenu() {
         sx={{
           color: "text.primary",
           fontWeight: 600,
-          px: { xs: 0.75, sm: 1.25 },
+          px: dense ? 0.55 : { xs: 0.75, sm: 1.25 },
+          py: dense ? 0.15 : undefined,
           minWidth: 0,
+          minHeight: dense ? 28 : undefined,
           flexShrink: 0,
           textTransform: "none",
           border: "1px solid",
@@ -136,17 +139,17 @@ export default function NavMenu() {
             borderColor: "divider",
           },
           "& .MuiButton-startIcon": {
-            mr: { xs: 0, sm: 0.75 },
+            mr: dense ? 0 : { xs: 0, sm: 0.75 },
             ml: 0,
           },
           "& .MuiButton-endIcon": {
-            ml: { xs: 0.25, sm: 0.5 },
+            ml: dense ? 0.15 : { xs: 0.25, sm: 0.5 },
           },
         }}
       >
         <Box
           component="span"
-          sx={{ display: { xs: "none", sm: "inline" } }}
+          sx={{ display: dense ? "none" : { xs: "none", sm: "inline" } }}
         >
           {activeItem.label}
         </Box>

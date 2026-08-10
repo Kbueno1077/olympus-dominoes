@@ -33,6 +33,7 @@ type Props = {
 
 /**
  * Right-side notebook: standings, pace controls, debug log.
+ * Body scrolls on short / landscape phones so sliders stay reachable.
  */
 export default function PlayNotesDrawer({
   open,
@@ -71,12 +72,15 @@ export default function PlayNotesDrawer({
       anchor="right"
       open={open}
       onClose={onClose}
+      ModalProps={{
+        keepMounted: true,
+      }}
       PaperProps={{
         sx: {
           width: { xs: "100%", sm: 400 },
           maxWidth: "100%",
-          height: "100%",
-          maxHeight: "100%",
+          height: "100dvh",
+          maxHeight: "100dvh",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -91,15 +95,15 @@ export default function PlayNotesDrawer({
         spacing={1}
         sx={{
           flexShrink: 0,
-          px: 2.5,
-          pt: 2.5,
-          pb: 1.5,
+          px: { xs: 2, sm: 2.5 },
+          pt: { xs: 1.5, sm: 2.5 },
+          pb: 1.25,
           borderBottom: "1px solid",
           borderColor: "divider",
         }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h5" sx={{ mb: 0.25 }}>
+          <Typography variant="h5" sx={{ mb: 0.25, fontSize: { xs: 18, sm: undefined } }}>
             {t("playNotesTitle")}
           </Typography>
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
@@ -118,15 +122,16 @@ export default function PlayNotesDrawer({
 
       <Box
         sx={{
-          flex: 1,
+          flex: "1 1 auto",
           minHeight: 0,
           overflowX: "hidden",
-          overflowY: "auto",
+          overflowY: "scroll",
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
-          px: 2.5,
+          touchAction: "pan-y",
+          px: { xs: 2, sm: 2.5 },
           py: 2,
-          pb: { xs: 4, sm: 2.5 },
+          pb: { xs: "max(24px, env(safe-area-inset-bottom))", sm: 2.5 },
           display: "flex",
           flexDirection: "column",
           gap: 2,
@@ -186,7 +191,7 @@ export default function PlayNotesDrawer({
 
         <PlayLog logs={game.logs} open={logOpen} onToggle={onToggleLog} />
 
-        <Stack direction="row" spacing={1} sx={{ pt: 0.5 }}>
+        <Stack direction="row" spacing={1} sx={{ pt: 0.5, pb: 1 }}>
           <Button
             variant="outlined"
             size="small"

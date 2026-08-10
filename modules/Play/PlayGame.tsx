@@ -69,7 +69,10 @@ export default function PlayGame() {
   const mobileEdge = theme.breakpoints.values.sm;
   const narrowWidth = useMediaQuery(theme.breakpoints.down("sm"));
   const shortHeight = useMediaQuery(`(max-height:${mobileEdge}px)`);
-  const compact = narrowWidth || shortHeight;
+  const landscapePhone = useMediaQuery(
+    "(orientation: landscape) and (max-height: 500px)"
+  );
+  const compact = narrowWidth || shortHeight || landscapePhone;
   const [modeId, setModeId] = useState<PlayModeId>("2v2");
   const [setId, setSetId] = useState<DominoSetId>("double_six");
   const [maxPoints, setMaxPoints] = useState(150);
@@ -474,12 +477,12 @@ export default function PlayGame() {
               <Box
                 sx={{
                   flex: "1 1 0",
-                  minHeight: { xs: 120, sm: 200 },
+                  minHeight: { xs: landscapePhone ? 72 : 120, sm: 200 },
                   width: "100%",
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: { xs: "10px", sm: "12px" },
-                  p: { xs: "4px", sm: "6px" },
+                  p: { xs: landscapePhone ? "2px" : "4px", sm: "6px" },
                   background:
                     "linear-gradient(150deg, #8A6440 0%, #6B4A2D 45%, #4A3320 100%)",
                   boxShadow: (t) =>
@@ -491,7 +494,7 @@ export default function PlayGame() {
                   sx={{
                     position: "relative",
                     flex: "1 1 0",
-                    minHeight: { xs: 88, sm: 160 },
+                    minHeight: { xs: landscapePhone ? 56 : 88, sm: 160 },
                     width: "100%",
                     borderRadius: { xs: "6px", sm: "8px" },
                     overflow: "hidden",
@@ -510,6 +513,7 @@ export default function PlayGame() {
                       flyingTileId={
                         pendingFlight?.tileId ?? flight?.tileId ?? null
                       }
+                      compact={compact}
                     />
                   </Box>
 
@@ -732,9 +736,9 @@ export default function PlayGame() {
                   spacing={0.5}
                   sx={{
                     flexShrink: 0,
-                    mt: { xs: "3px", sm: "6px" },
+                    mt: { xs: landscapePhone ? "2px" : "3px", sm: "6px" },
                     px: { xs: 0.4, sm: 0.75 },
-                    py: { xs: 0.3, sm: 0.55 },
+                    py: { xs: landscapePhone ? 0.15 : 0.3, sm: 0.55 },
                     borderRadius: { xs: "6px", sm: "8px" },
                     background: alpha("#1A120C", 0.28),
                     boxShadow: `inset 0 1px 3px ${alpha("#000", 0.25)}`,
