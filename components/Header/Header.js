@@ -11,16 +11,34 @@ import {
   Stack,
   Toolbar,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+const DEFAULT_HEADER_PX = 64;
+const PLAY_SLIM_PX = 44;
+
+/**
+ * Site chrome. On /play when either viewport edge is at mobile size or less
+ * (portrait width or landscape height), use a slim always-open bar with nav
+ * + language so the table keeps room.
+ */
 export default function Header() {
   const theme = useTheme();
   const { t } = useTranslation();
+  const pathname = usePathname();
+  const mobileEdge = theme.breakpoints.values.sm;
+  const narrowWidth = useMediaQuery(theme.breakpoints.down("sm"));
+  const shortHeight = useMediaQuery(`(max-height:${mobileEdge}px)`);
+  const compactViewport = narrowWidth || shortHeight;
+  const playSlim = pathname === "/play" && compactViewport;
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const headerPx = playSlim ? PLAY_SLIM_PX : DEFAULT_HEADER_PX;
 
   useEffect(() => {
     // Document scroll is locked; AppShell section owns scroll on mobile.
@@ -38,6 +56,16 @@ export default function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--app-header-height",
+      `${headerPx}px`
+    );
+    return () => {
+      document.documentElement.style.removeProperty("--app-header-height");
+    };
+  }, [headerPx]);
+
   return (
     <AppBar
       position="fixed"
@@ -52,21 +80,26 @@ export default function Header() {
         color: "text.primary",
         borderBottom: `1px solid ${alpha(
           theme.palette.grey[600],
-          isScrolled ? 0.24 : 0
+          isScrolled || playSlim ? 0.2 : 0
         )}`,
         boxShadow: isScrolled ? theme.customShadows.z8 : "none",
         transition: "border-color 200ms ease, box-shadow 200ms ease",
       }}
     >
-      <Container maxWidth={false} sx={{ px: { xs: 1.5, sm: 2, md: 2.5 } }}>
+      <Container
+        maxWidth={false}
+        sx={{ px: { xs: playSlim ? 1 : 1.5, sm: 2, md: 2.5 } }}
+      >
         <Toolbar
           disableGutters
           sx={{
             justifyContent: "space-between",
             alignItems: "center",
-            gap: { xs: 1, sm: 1.5 },
-            minHeight: 64,
+            gap: { xs: 0.75, sm: 1.5 },
+            minHeight: headerPx,
+            height: headerPx,
             flexWrap: "nowrap",
+            transition: "min-height 160ms ease, height 160ms ease",
           }}
         >
           <Box sx={{ minWidth: 0, flex: "1 1 auto" }}>
@@ -88,7 +121,12 @@ export default function Header() {
                   maxWidth: "100%",
                 }}
               >
-                <Box sx={{ display: { xs: "none", sm: "block" }, flexShrink: 0 }}>
+                <Box
+                  sx={{
+                    display: playSlim ? "none" : { xs: "none", sm: "block" },
+                    flexShrink: 0,
+                  }}
+                >
                   <DominoTile
                     top={9}
                     bottom={9}
@@ -104,27 +142,29 @@ export default function Header() {
                       fontFamily: (muiTheme) =>
                         muiTheme.typography.h2.fontFamily,
                       fontWeight: 700,
-                      fontSize: { xs: 16, sm: 22 },
+                      fontSize: playSlim ? 15 : { xs: 16, sm: 22 },
                       lineHeight: 1.1,
                       letterSpacing: "-0.01em",
                       color: "primary.dark",
                     }}
                   >
-                    Olympus Dominoes
+                    {playSlim ? "Olympus" : "Olympus Dominoes"}
                   </Typography>
-                  <Typography
-                    variant="overline"
-                    noWrap
-                    sx={{
-                      display: { xs: "none", sm: "block" },
-                      color: "text.disabled",
-                      fontSize: 9,
-                      lineHeight: 1.35,
-                      letterSpacing: "0.06em",
-                    }}
-                  >
-                    {t("tagline")}
-                  </Typography>
+                  {!playSlim && (
+                    <Typography
+                      variant="overline"
+                      noWrap
+                      sx={{
+                        display: { xs: "none", sm: "block" },
+                        color: "text.disabled",
+                        fontSize: 9,
+                        lineHeight: 1.35,
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      {t("tagline")}
+                    </Typography>
+                  )}
                 </Box>
               </Stack>
             </motion.div>
@@ -133,7 +173,7 @@ export default function Header() {
           <Stack
             direction="row"
             alignItems="center"
-            spacing={{ xs: 0.5, sm: 1 }}
+            spacing={{ xs: 0.35, sm: 1 }}
             sx={{
               flexShrink: 0,
               flexWrap: "nowrap",
