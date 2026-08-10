@@ -21,12 +21,15 @@ import { useEffect, useState } from "react";
 
 const DEFAULT_HEADER_PX = 64;
 const PLAY_SLIM_PX = 44;
-const PLAY_LANDSCAPE_PX = 34;
+const PLAY_LANDSCAPE_PX = 28;
 
 /**
  * Site chrome. On /play when either viewport edge is at mobile size or less
  * (portrait width or landscape height), use a slim always-open bar with nav
  * + language so the table keeps room. Landscape phones go even tighter.
+ *
+ * MUI Toolbar injects min-height: 64px from sm+ via media query — override
+ * with `@media all` or landscape /play stays stuck at 64px on wide phones.
  */
 export default function Header() {
   const theme = useTheme();
@@ -35,8 +38,9 @@ export default function Header() {
   const mobileEdge = theme.breakpoints.values.sm;
   const narrowWidth = useMediaQuery(theme.breakpoints.down("sm"));
   const shortHeight = useMediaQuery(`(max-height:${mobileEdge}px)`);
+  // Wide + short ≈ phone landscape (don't rely on orientation alone).
   const landscapePhone = useMediaQuery(
-    "(orientation: landscape) and (max-height: 500px)"
+    `(max-height: 500px) and (min-width: ${mobileEdge}px)`
   );
   const compactViewport = narrowWidth || shortHeight || landscapePhone;
   const playSlim = pathname === "/play" && compactViewport;
@@ -97,16 +101,23 @@ export default function Header() {
     >
       <Container
         maxWidth={false}
-        sx={{ px: { xs: playSlim ? 1 : 1.5, sm: 2, md: 2.5 } }}
+        sx={{ px: { xs: playLandscape ? 0.75 : playSlim ? 1 : 1.5, sm: playLandscape ? 1 : 2, md: 2.5 } }}
       >
         <Toolbar
+          variant={playSlim ? "dense" : "regular"}
           disableGutters
           sx={{
             justifyContent: "space-between",
             alignItems: "center",
-            gap: { xs: 0.75, sm: 1.5 },
+            gap: { xs: 0.5, sm: playLandscape ? 0.5 : 1.5 },
+            // Beat theme mixin media queries (sm+ minHeight 64).
+            "@media all": {
+              minHeight: headerPx,
+              height: headerPx,
+            },
             minHeight: headerPx,
             height: headerPx,
+            maxHeight: headerPx,
             flexWrap: "nowrap",
             transition: "min-height 160ms ease, height 160ms ease",
           }}
@@ -144,25 +155,23 @@ export default function Header() {
                   />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography
-                    component="p"
-                    noWrap
-                    sx={{
-                      fontFamily: (muiTheme) =>
-                        muiTheme.typography.h2.fontFamily,
-                      fontWeight: 700,
-                      fontSize: playLandscape
-                        ? 13
-                        : playSlim
-                          ? 15
-                          : { xs: 16, sm: 22 },
-                      lineHeight: 1.1,
-                      letterSpacing: "-0.01em",
-                      color: "primary.dark",
-                    }}
-                  >
-                    {playSlim ? "Olympus" : "Olympus Dominoes"}
-                  </Typography>
+                  {!playLandscape && (
+                    <Typography
+                      component="p"
+                      noWrap
+                      sx={{
+                        fontFamily: (muiTheme) =>
+                          muiTheme.typography.h2.fontFamily,
+                        fontWeight: 700,
+                        fontSize: playSlim ? 15 : { xs: 16, sm: 22 },
+                        lineHeight: 1.1,
+                        letterSpacing: "-0.01em",
+                        color: "primary.dark",
+                      }}
+                    >
+                      {playSlim ? "Olympus" : "Olympus Dominoes"}
+                    </Typography>
+                  )}
                   {!playSlim && (
                     <Typography
                       variant="overline"
