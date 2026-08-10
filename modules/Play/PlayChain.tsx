@@ -26,6 +26,10 @@ type Props = {
   highlightSide?: ChainSide | null;
   dropEnabled: boolean;
   onDropSide: (side: ChainSide, tileId: string) => void;
+  /** Tap L/R (or opening) when a hand tile is already selected. */
+  onTapSide?: (side: ChainSide) => void;
+  /** Sides the current selection can legally play (for tap + highlight). */
+  activeSides?: ChainSide[];
   /** Hide while a fly-in animation covers this tile. */
   flyingTileId?: string | null;
   /**
@@ -47,6 +51,8 @@ export default function PlayChain({
   highlightSide = null,
   dropEnabled,
   onDropSide,
+  onTapSide,
+  activeSides = [],
   flyingTileId = null,
   tileScale = "default",
 }: Props) {
@@ -161,11 +167,16 @@ export default function PlayChain({
     >
       {chain.length === 0 ? (
         <Box
+          data-drop-side="right"
           onDragOver={(event) => {
             if (!dropEnabled) return;
             event.preventDefault();
           }}
           onDrop={(event) => handleEndDrop("right", event)}
+          onClick={() => {
+            if (!dropEnabled || !onTapSide || activeSides.length === 0) return;
+            onTapSide(activeSides[0]);
+          }}
           sx={{
             position: "absolute",
             left: "50%",
@@ -177,11 +188,21 @@ export default function PlayChain({
             placeItems: "center",
             px: 2,
             borderRadius: 2,
-            border: `2px dashed ${alpha("#FBF5E9", 0.45)}`,
+            border: `2px dashed ${alpha(
+              "#FBF5E9",
+              highlightSide || activeSides.length > 0 ? 0.95 : 0.45
+            )}`,
             color: alpha("#FBF5E9", 0.9),
             fontSize: 13,
             fontWeight: 600,
-            backgroundColor: alpha("#0B2E24", 0.28),
+            backgroundColor: alpha(
+              "#0B2E24",
+              highlightSide || activeSides.length > 0 ? 0.42 : 0.28
+            ),
+            cursor: dropEnabled && onTapSide && activeSides.length > 0
+              ? "pointer"
+              : "default",
+            touchAction: "manipulation",
           }}
         >
           {t("playDropOpening")}
@@ -245,49 +266,50 @@ export default function PlayChain({
           <DropAnchor
             x={layout.leftAnchor.x}
             y={layout.leftAnchor.y}
+            side="left"
             label="L"
-            active={highlightSide === "left"}
+            active={
+              highlightSide === "left" || activeSides.includes("left")
+            }
             enabled={dropEnabled}
-            size={Math.round(face * 1.5)}
+            size={Math.round(
+              face * (tileScale === "default" ? 1.5 : 2.05)
+            )}
             onDragOver={(e) => {
               if (!dropEnabled) return;
               e.preventDefault();
             }}
             onDrop={(e) => handleEndDrop("left", e)}
+            onTap={
+              onTapSide && activeSides.includes("left")
+                ? () => onTapSide("left")
+                : undefined
+            }
           />
           <DropAnchor
             x={layout.rightAnchor.x}
             y={layout.rightAnchor.y}
+            side="right"
             label="R"
-            active={highlightSide === "right"}
+            active={
+              highlightSide === "right" || activeSides.includes("right")
+            }
             enabled={dropEnabled}
-            size={Math.round(face * 1.5)}
+            size={Math.round(
+              face * (tileScale === "default" ? 1.5 : 2.05)
+            )}
             onDragOver={(e) => {
               if (!dropEnabled) return;
               e.preventDefault();
             }}
             onDrop={(e) => handleEndDrop("right", e)}
+            onTap={
+              onTapSide && activeSides.includes("right")
+                ? () => onTapSide("right")
+                : undefined
+            }
           />
         </>
-      )}
-
-      {chain.length > 0 && !compactChrome && (
-        <Typography
-          sx={{
-            position: "absolute",
-            left: 6,
-            bottom: 4,
-            fontSize: 9,
-            fontWeight: 600,
-            letterSpacing: "0.04em",
-            color: alpha("#FBF5E9", 0.45),
-            pointerEvents: "none",
-            zIndex: 2,
-            display: { xs: "none", sm: "block" },
-          }}
-        >
-          {t("playTapToTurn")}
-        </Typography>
       )}
     </Box>
   );
@@ -296,25 +318,41 @@ export default function PlayChain({
 function DropAnchor({
   x,
   y,
+  side,
   label,
   active,
   enabled,
   onDragOver,
   onDrop,
+  onTap,
   size = 28,
 }: {
   x: number;
   y: number;
+  side: ChainSide;
   label: string;
   active: boolean;
   enabled: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
+  onTap?: () => void;
   size?: number;
 }) {
   const [over, setOver] = useState(false);
+  const tapable = enabled && !!onTap;
   return (
     <Box
+      component={tapable ? "button" : "div"}
+      type={tapable ? "button" : undefined}
+      data-drop-side={side}
+      onClick={
+        tapable
+          ? (e) => {
+              e.stopPropagation();
+              onTap();
+            }
+          : undefined
+      }
       onDragOver={(e) => {
         onDragOver(e);
         setOver(true);
@@ -331,13 +369,21 @@ function DropAnchor({
         transform: "translate(-50%, -50%)",
         width: size,
         height: size,
+        p: 0,
+        m: 0,
         borderRadius: `${Math.max(3, Math.round(size * 0.14))}px`,
         display: "grid",
         placeItems: "center",
         border: `2px dashed ${alpha("#FBF5E9", over || active ? 0.95 : 0.45)}`,
         backgroundColor: alpha("#C08A2E", over ? 0.5 : active ? 0.28 : 0.12),
         pointerEvents: enabled ? "auto" : "none",
+        cursor: tapable ? "pointer" : "default",
+        touchAction: "manipulation",
         zIndex: 4,
+        appearance: "none",
+        WebkitAppearance: "none",
+        color: "inherit",
+        font: "inherit",
       }}
     >
       <Typography

@@ -88,12 +88,18 @@ export type GameSnapshot = {
   passesInRow: number;
   result: GameResult | null;
   logs: GameLogEntry[];
-  /** Seat that must open (had highest double / tile). */
+  /** Seat that opens (had highest double / tile on hand 1, or prior winners). */
   starter: number;
+  /**
+   * 2v2: your team won the open — human picks You vs Partner before play.
+   * Cleared by `chooseHandOpener`.
+   */
+  awaitingOpenerChoice: boolean;
+  /** Hand number within the current game (1-based). */
   handIndex: number;
 };
 
-/** One finished hand in a match (scorepad row). */
+/** One finished hand in the current (or archived) game scorepad. */
 export type HandRecord = {
   handIndex: number;
   reason: FinishReason;
@@ -101,19 +107,39 @@ export type HandRecord = {
   winners: number[];
   pointsAwarded: number;
   pipTotals: number[];
-  /** Running team totals after this hand. */
+  /** Running team totals within this game after this hand. */
   teamTotals: Record<number, number>;
 };
 
+/** One finished game (race to maxPoints), like annotator completedGames. */
+export type CompletedPlayGame = {
+  gameIndex: number;
+  winnerTeam: number;
+  hands: HandRecord[];
+  finalScores: Record<number, number>;
+};
+
+/**
+ * Match = many games. Each game races to maxPoints; standing is games won.
+ * Same shape as the live annotator (standing + current pad + past games).
+ */
 export type MatchSnapshot = {
   modeId: PlayModeId;
   setId: DominoSetId;
   maxPoints: number;
-  /** Running points by team number. */
+  /** Games won by team (match standing). */
+  gamesWon: Record<number, number>;
+  /** Finished games, oldest → newest. */
+  completedGames: CompletedPlayGame[];
+  /** Current game number (1-based). */
+  gameIndex: number;
+  /** Points in the current game by team. */
   teamScores: Record<number, number>;
+  /** Hands in the current game. */
   hands: HandRecord[];
   current: GameSnapshot | null;
-  /** Match ends when a team reaches maxPoints. */
-  matchOver: boolean;
-  matchWinnerTeams: number[];
+  /** Current game finished (someone reached maxPoints). */
+  gameOver: boolean;
+  /** Winning team(s) of the current finished game. */
+  gameWinnerTeams: number[];
 };

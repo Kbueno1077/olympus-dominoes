@@ -2,6 +2,7 @@
 
 import type { DominoSetId, PlayModeId } from "@/lib/play/types";
 import { useTranslation } from "@/i18n/useTranslation";
+import { pressableSx, tapFeedback } from "@/modules/Play/pressFeedback";
 import TouchAppOutlined from "@mui/icons-material/TouchAppOutlined";
 import {
   Box,
@@ -223,8 +224,10 @@ export default function PlaySetup({
         <Button
           variant="contained"
           size="large"
+          onPointerDown={tapFeedback}
           onClick={onStart}
           sx={{
+            ...pressableSx,
             py: 1.35,
             fontWeight: 700,
             letterSpacing: "0.02em",

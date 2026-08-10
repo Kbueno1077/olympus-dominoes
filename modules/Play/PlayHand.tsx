@@ -1,7 +1,7 @@
 "use client";
 
 import DominoTile from "@/components/DominoTile";
-import type { LegalMove, Tile } from "@/lib/play/types";
+import type { ChainSide, LegalMove, Tile } from "@/lib/play/types";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Box, Stack, Typography, useMediaQuery } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -16,6 +16,8 @@ type Props = {
   selectedId: string | null;
   disabled: boolean;
   onSelect: (tileId: string) => void;
+  /** Pointer / touch drop onto board L·R / opening zones (`data-drop-side`). */
+  onDropSide?: (side: ChainSide, tileId: string) => void;
   /**
    * Phone layout: smaller real tile/stand height (not CSS transform),
    * rack still spans full width.
@@ -25,13 +27,22 @@ type Props = {
 
 type Density = "desktop" | "portrait" | "landscape";
 
+type PointerDrag = {
+  tileId: string;
+  a: number;
+  b: number;
+  x: number;
+  y: number;
+  pointerId: number;
+};
+
 function rackFaceSize(count: number, width: number, density: Density) {
   if (count <= 0) {
     switch (density) {
       case "landscape":
-        return 16;
+        return 18;
       case "portrait":
-        return 22;
+        return 25;
       case "desktop":
         return 36;
       default: {
@@ -43,17 +54,17 @@ function rackFaceSize(count: number, width: number, density: Density) {
   const pad = density === "desktop" ? 28 : density === "landscape" ? 14 : 18;
   const usable = Math.max(100, width - pad);
   const raw = Math.floor(usable / count) - (density === "desktop" ? 2 : 1);
-  // Real size caps — landscape prioritizes baize height (~12–14% viewport).
+  // Face drives stand height / spacing. Mobile tiles scale visually separately.
   let max: number;
   let min: number;
   switch (density) {
     case "landscape":
-      max = 17;
-      min = 12;
+      max = 20;
+      min = 14;
       break;
     case "portrait":
-      max = 23;
-      min = 15;
+      max = 26;
+      min = 17;
       break;
     case "desktop":
       max = 38;
@@ -67,9 +78,24 @@ function rackFaceSize(count: number, width: number, density: Density) {
   return Math.max(min, Math.min(max, raw));
 }
 
+/** Mobile-only visual bump; stand height stays on layout `face`. */
+const MOBILE_TILE_SCALE = 1.15 * 1.1;
+
+function dropSideAtPoint(x: number, y: number): ChainSide | null {
+  const stack = document.elementsFromPoint(x, y);
+  for (const node of stack) {
+    if (!(node instanceof Element)) continue;
+    const host = node.closest("[data-drop-side]");
+    const side = host?.getAttribute("data-drop-side");
+    if (side === "left" || side === "right") return side;
+  }
+  return null;
+}
+
 /**
  * Player rack: tiles stand close on a wooden lip, like a real mesa stand.
  * Width is controlled by the parent (full page on mobile).
+ * Desktop uses HTML5 drag; phones use pointer drag onto `data-drop-side` zones.
  */
 export default function PlayHand({
   hand,
@@ -77,6 +103,7 @@ export default function PlayHand({
   selectedId,
   disabled,
   onSelect,
+  onDropSide,
   compact = false,
 }: Props) {
   const { t } = useTranslation();
@@ -92,6 +119,14 @@ export default function PlayHand({
   const playableIds = new Set(legal.map((m) => m.tileId));
   const [rackWidth, setRackWidth] = useState(360);
   const rackRef = useRef<HTMLDivElement | null>(null);
+  const pressRef = useRef<{
+    tileId: string;
+    startX: number;
+    startY: number;
+    dragging: boolean;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
+  const [pointerDrag, setPointerDrag] = useState<PointerDrag | null>(null);
 
   useEffect(() => {
     const el = rackRef.current;
@@ -105,15 +140,30 @@ export default function PlayHand({
   }, []);
 
   const face = rackFaceSize(hand.length, rackWidth, density);
-  const lift = density === "landscape" ? 3 : density === "portrait" ? 5 : 8;
   const tight = density !== "desktop";
   const landscape = density === "landscape";
+  const tileScale = tight ? MOBILE_TILE_SCALE : 1;
+  const lift = density === "landscape" ? 3 : density === "portrait" ? 5 : 8;
+
+  const endPointerDrag = (
+    clientX: number,
+    clientY: number,
+    tileId: string,
+    wasDragging: boolean
+  ) => {
+    pressRef.current = null;
+    setPointerDrag(null);
+    if (!wasDragging || !onDropSide) return;
+    const side = dropSideAtPoint(clientX, clientY);
+    if (side) onDropSide(side, tileId);
+  };
 
   return (
     <Box
       ref={rackRef}
       sx={{
         position: "relative",
+        zIndex: selectedId || pointerDrag ? 30 : 1,
         width: "100%",
         borderRadius: landscape
           ? "6px 6px 4px 4px"
@@ -122,8 +172,8 @@ export default function PlayHand({
             : "10px 10px 8px 8px",
         background:
           "linear-gradient(180deg, #9A7350 0%, #7A5638 38%, #5C4028 100%)",
-        boxShadow: (t) =>
-          `0 8px 22px -12px ${alpha(t.palette.common.black, 0.5)}, inset 0 1px 0 ${alpha("#FBF5E9", 0.22)}`,
+        boxShadow: (theme) =>
+          `0 8px 22px -12px ${alpha(theme.palette.common.black, 0.5)}, inset 0 1px 0 ${alpha("#FBF5E9", 0.22)}`,
         px: landscape ? 0.35 : tight ? 0.45 : { xs: 0.6, sm: 1 },
         pt: landscape ? 0.3 : tight ? 0.45 : { xs: 0.75, sm: 0.9 },
         pb: landscape ? 0.2 : tight ? 0.3 : { xs: 0.55, sm: 0.7 },
@@ -136,14 +186,14 @@ export default function PlayHand({
           background: `linear-gradient(180deg, ${alpha("#2A1C12", 0.35)} 0%, ${alpha("#1A120C", 0.5)} 100%)`,
           boxShadow: `inset 0 2px 6px ${alpha("#000", 0.35)}`,
           px: landscape ? 0.2 : tight ? 0.3 : 0.4,
-          pt: landscape ? 0.2 : tight ? 0.3 : 0.55,
+          pt: (landscape ? 0.2 : tight ? 0.3 : 0.55) + lift / 8,
           pb: landscape ? 0.15 : tight ? 0.25 : 0.45,
-          minHeight: face * 2 + (landscape ? 3 : tight ? 5 : 10),
+          minHeight: face * 2 + lift + (landscape ? 3 : tight ? 5 : 10),
           display: "flex",
           alignItems: "flex-end",
           justifyContent: "center",
           overflowX: "auto",
-          overflowY: "hidden",
+          overflowY: "visible",
           WebkitOverflowScrolling: "touch",
         }}
       >
@@ -166,32 +216,48 @@ export default function PlayHand({
             sx={{
               gap: landscape ? "0px" : tight ? "1px" : "2px",
               minHeight: face * 2 + 2,
+              position: "relative",
+              zIndex: 1,
             }}
           >
             {hand.map((tile, index) => {
               const canPlay = playableIds.has(tile.id);
               const selected = selectedId === tile.id;
+              const ghosting = pointerDrag?.tileId === tile.id;
               return (
                 <motion.div
                   key={tile.id}
                   initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: selected ? -lift : 0 }}
+                  animate={{
+                    opacity: ghosting ? 0.35 : 1,
+                    y: selected && !ghosting ? -lift : 0,
+                  }}
                   transition={{
                     delay: index * 0.015,
                     type: "spring",
                     stiffness: 400,
                     damping: 28,
                   }}
-                  style={{ flexShrink: 0 }}
+                  style={{
+                    flexShrink: 0,
+                    position: "relative",
+                    zIndex: selected || ghosting ? 40 : canPlay ? 2 : 1,
+                  }}
                 >
                   <Box
                     component="button"
                     type="button"
-                    draggable={!disabled && canPlay}
+                    draggable={!disabled && canPlay && !tight}
                     disabled={disabled || !canPlay}
-                    onClick={() => onSelect(tile.id)}
+                    onClick={() => {
+                      if (suppressClickRef.current) {
+                        suppressClickRef.current = false;
+                        return;
+                      }
+                      onSelect(tile.id);
+                    }}
                     onDragStart={(event) => {
-                      if (disabled || !canPlay) {
+                      if (disabled || !canPlay || tight) {
                         event.preventDefault();
                         return;
                       }
@@ -199,6 +265,62 @@ export default function PlayHand({
                       event.dataTransfer.setData(DRAG_TILE_MIME, tile.id);
                       event.dataTransfer.setData("text/plain", tile.id);
                       event.dataTransfer.effectAllowed = "move";
+                    }}
+                    onPointerDown={(event) => {
+                      if (disabled || !canPlay || !onDropSide) return;
+                      // Desktop keeps HTML5 DnD; pointer path is for touch / compact.
+                      if (!tight && event.pointerType === "mouse") return;
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      pressRef.current = {
+                        tileId: tile.id,
+                        startX: event.clientX,
+                        startY: event.clientY,
+                        dragging: false,
+                      };
+                    }}
+                    onPointerMove={(event) => {
+                      const press = pressRef.current;
+                      if (!press || press.tileId !== tile.id) return;
+                      const dist = Math.hypot(
+                        event.clientX - press.startX,
+                        event.clientY - press.startY
+                      );
+                      if (!press.dragging && dist < 10) return;
+                      if (!press.dragging) {
+                        press.dragging = true;
+                        suppressClickRef.current = true;
+                        onSelect(tile.id);
+                      }
+                      setPointerDrag({
+                        tileId: tile.id,
+                        a: tile.a,
+                        b: tile.b,
+                        x: event.clientX,
+                        y: event.clientY,
+                        pointerId: event.pointerId,
+                      });
+                    }}
+                    onPointerUp={(event) => {
+                      const press = pressRef.current;
+                      if (!press || press.tileId !== tile.id) return;
+                      const wasDragging = press.dragging;
+                      endPointerDrag(
+                        event.clientX,
+                        event.clientY,
+                        tile.id,
+                        wasDragging
+                      );
+                      try {
+                        event.currentTarget.releasePointerCapture(
+                          event.pointerId
+                        );
+                      } catch {
+                        /* already released */
+                      }
+                    }}
+                    onPointerCancel={() => {
+                      pressRef.current = null;
+                      setPointerDrag(null);
                     }}
                     aria-label={`${t("playTileAria", { a: tile.a, b: tile.b })}${canPlay ? t("playTilePlayable") : ""}`}
                     data-hand-tile={tile.id}
@@ -220,17 +342,29 @@ export default function PlayHand({
                       outlineOffset: 1,
                       borderRadius: 1,
                       lineHeight: 0,
+                      touchAction: canPlay ? "none" : "manipulation",
+                      WebkitUserSelect: "none",
+                      userSelect: "none",
                       "&:active": {
                         cursor: canPlay ? "grabbing" : "default",
                       },
                     }}
                   >
-                    <DominoTile
-                      top={tile.a}
-                      bottom={tile.b}
-                      size={face}
-                      highContrast
-                    />
+                    <Box
+                      sx={{
+                        lineHeight: 0,
+                        transform:
+                          tileScale === 1 ? undefined : `scale(${tileScale})`,
+                        transformOrigin: "center bottom",
+                      }}
+                    >
+                      <DominoTile
+                        top={tile.a}
+                        bottom={tile.b}
+                        size={face}
+                        highContrast
+                      />
+                    </Box>
                   </Box>
                 </motion.div>
               );
@@ -252,6 +386,29 @@ export default function PlayHand({
           boxShadow: `inset 0 1px 0 ${alpha("#FBF5E9", 0.2)}`,
         }}
       />
+
+      {pointerDrag && (
+        <Box
+          sx={{
+            position: "fixed",
+            left: pointerDrag.x,
+            top: pointerDrag.y,
+            transform: `translate(-50%, -60%)${
+              tileScale === 1 ? "" : ` scale(${tileScale})`
+            }`,
+            zIndex: 1400,
+            pointerEvents: "none",
+            filter: `drop-shadow(0 8px 14px ${alpha("#000", 0.45)})`,
+          }}
+        >
+          <DominoTile
+            top={pointerDrag.a}
+            bottom={pointerDrag.b}
+            size={face}
+            highContrast
+          />
+        </Box>
+      )}
     </Box>
   );
 }
