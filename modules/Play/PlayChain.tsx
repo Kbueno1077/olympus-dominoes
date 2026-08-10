@@ -28,6 +28,8 @@ type Props = {
   onDropSide: (side: ChainSide, tileId: string) => void;
   /** Hide while a fly-in animation covers this tile. */
   flyingTileId?: string | null;
+  /** Phone / short viewport — ~half face size so the train fits. */
+  compact?: boolean;
 };
 
 /**
@@ -41,6 +43,7 @@ export default function PlayChain({
   dropEnabled,
   onDropSide,
   flyingTileId = null,
+  compact = false,
 }: Props) {
   const { t } = useTranslation();
   const boardRef = useRef<HTMLDivElement | null>(null);
@@ -90,11 +93,12 @@ export default function PlayChain({
   }, []);
 
   const { w: boardW, h: boardH } = boardSize;
-  // Face scales with the shorter side so pips stay readable on phones & widescreens.
-  const face = Math.max(
-    22,
-    Math.min(36, Math.floor(Math.min(boardW, boardH) / 10))
-  );
+  // Face scales with the shorter board edge. Phones use ~half the desktop
+  // size so a long train still fits; never force a 22px floor on tiny baize.
+  const short = Math.min(boardW, boardH);
+  const face = compact
+    ? Math.max(11, Math.min(16, Math.floor(short / 18)))
+    : Math.max(20, Math.min(36, Math.floor(short / 10)));
   const openingIndex = Math.max(
     0,
     openingTileId ? chain.findIndex((t) => t.id === openingTileId) : 0
@@ -246,7 +250,7 @@ export default function PlayChain({
         </>
       )}
 
-      {chain.length > 0 && (
+      {chain.length > 0 && !compact && (
         <Typography
           sx={{
             position: "absolute",

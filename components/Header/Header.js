@@ -21,11 +21,12 @@ import { useEffect, useState } from "react";
 
 const DEFAULT_HEADER_PX = 64;
 const PLAY_SLIM_PX = 44;
+const PLAY_LANDSCAPE_PX = 34;
 
 /**
  * Site chrome. On /play when either viewport edge is at mobile size or less
  * (portrait width or landscape height), use a slim always-open bar with nav
- * + language so the table keeps room.
+ * + language so the table keeps room. Landscape phones go even tighter.
  */
 export default function Header() {
   const theme = useTheme();
@@ -34,11 +35,19 @@ export default function Header() {
   const mobileEdge = theme.breakpoints.values.sm;
   const narrowWidth = useMediaQuery(theme.breakpoints.down("sm"));
   const shortHeight = useMediaQuery(`(max-height:${mobileEdge}px)`);
-  const compactViewport = narrowWidth || shortHeight;
+  const landscapePhone = useMediaQuery(
+    "(orientation: landscape) and (max-height: 500px)"
+  );
+  const compactViewport = narrowWidth || shortHeight || landscapePhone;
   const playSlim = pathname === "/play" && compactViewport;
+  const playLandscape = pathname === "/play" && landscapePhone;
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const headerPx = playSlim ? PLAY_SLIM_PX : DEFAULT_HEADER_PX;
+  const headerPx = playLandscape
+    ? PLAY_LANDSCAPE_PX
+    : playSlim
+      ? PLAY_SLIM_PX
+      : DEFAULT_HEADER_PX;
 
   useEffect(() => {
     // Document scroll is locked; AppShell section owns scroll on mobile.
@@ -142,7 +151,11 @@ export default function Header() {
                       fontFamily: (muiTheme) =>
                         muiTheme.typography.h2.fontFamily,
                       fontWeight: 700,
-                      fontSize: playSlim ? 15 : { xs: 16, sm: 22 },
+                      fontSize: playLandscape
+                        ? 13
+                        : playSlim
+                          ? 15
+                          : { xs: 16, sm: 22 },
                       lineHeight: 1.1,
                       letterSpacing: "-0.01em",
                       color: "primary.dark",
@@ -179,8 +192,8 @@ export default function Header() {
               flexWrap: "nowrap",
             }}
           >
-            <NavMenu />
-            <LanguageSwitch />
+            <NavMenu dense={playSlim} />
+            <LanguageSwitch dense={playSlim} />
           </Stack>
         </Toolbar>
       </Container>

@@ -60,8 +60,9 @@ export default function PlayLog({ logs, open, onToggle }: Props) {
       {open && (
         <Box
           sx={{
-            maxHeight: 220,
+            maxHeight: { xs: 140, sm: 220 },
             overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
             px: 1.5,
             py: 1,
             fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",

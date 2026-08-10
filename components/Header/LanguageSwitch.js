@@ -14,7 +14,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import { useState } from "react";
 
-export default function LanguageSwitch() {
+export default function LanguageSwitch({ dense = false }) {
   const { t, language, setLanguage } = useTranslation();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -31,17 +31,20 @@ export default function LanguageSwitch() {
         aria-expanded={open ? "true" : undefined}
         aria-controls={open ? "language-menu" : undefined}
         onClick={(event) => setAnchorEl(event.currentTarget)}
-        endIcon={<ExpandMore sx={{ fontSize: 18 }} />}
+        endIcon={
+          dense ? undefined : <ExpandMore sx={{ fontSize: 18 }} />
+        }
         sx={{
           minWidth: 0,
+          minHeight: dense ? 28 : undefined,
           flexShrink: 0,
-          px: { xs: 0.75, sm: 1 },
-          py: 0.5,
+          px: dense ? 0.55 : { xs: 0.75, sm: 1 },
+          py: dense ? 0.15 : 0.5,
           color: "text.secondary",
           fontWeight: 600,
           border: "1px solid",
           borderColor: "divider",
-          borderRadius: 1.5,
+          borderRadius: dense ? 1 : 1.5,
           "&:hover": {
             backgroundColor: (theme) =>
               alpha(theme.palette.primary.main, 0.06),
@@ -57,11 +60,18 @@ export default function LanguageSwitch() {
         <Box
           component="span"
           aria-hidden
-          sx={{ fontSize: 16, lineHeight: 1, mr: { xs: 0, sm: 0.75 } }}
+          sx={{
+            fontSize: dense ? 14 : 16,
+            lineHeight: 1,
+            mr: dense ? 0 : { xs: 0, sm: 0.75 },
+          }}
         >
           {current.flag}
         </Box>
-        <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+        <Box
+          component="span"
+          sx={{ display: dense ? "none" : { xs: "none", sm: "inline" } }}
+        >
           {current.short}
         </Box>
       </Button>
