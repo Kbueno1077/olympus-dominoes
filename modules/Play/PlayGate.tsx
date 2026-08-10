@@ -52,16 +52,36 @@ export default function PlayGate({ children }: Props) {
   };
 
   if (!ready) return null;
-  if (unlocked) return children;
+  if (unlocked) {
+    return (
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {children}
+      </Box>
+    );
+  }
 
   return (
     <Box
       sx={{
+        flex: 1,
+        minHeight: 0,
+        width: "100%",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        overscrollBehaviorY: "contain",
         py: { xs: 4, md: 8 },
         px: { xs: 1.5, sm: 2 },
-        width: "100%",
         display: "flex",
         justifyContent: "center",
+        alignItems: "flex-start",
       }}
     >
       <Card

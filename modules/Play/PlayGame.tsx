@@ -318,7 +318,19 @@ export default function PlayGame() {
 
   if (!match || !game) {
     return (
-      <Box sx={{ py: { xs: 2, md: 4 }, px: { xs: 1.5, sm: 2 }, width: "100%" }}>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
+          overscrollBehaviorY: "contain",
+          py: { xs: 2, md: 4 },
+          px: { xs: 1.5, sm: 2 },
+          pb: { xs: 4, md: 6 },
+        }}
+      >
         <PlaySetup
           modeId={modeId}
           setId={setId}
