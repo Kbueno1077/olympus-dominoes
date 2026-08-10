@@ -18,13 +18,14 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
-    version: "unreleased",
-    date: null,
-    summary: "Play and score with a 28-tile (double-six) set.",
+    version: "4.6.0",
+    date: "2026-08-10",
+    summary: "Double-six sets, plus an internal Play vs bots table.",
     highlights: [
       "Added: choose Double nine (55 tiles) or Double six (28 tiles) when you set up a match.",
       "Double six starts at 100 points to win; you can still change the target anytime.",
       "The table picture matches the set you picked (7 tiles dealt for double six).",
+      "Internal testing: Play vs bots (password-gated, not in the public menu) — may come to a release later.",
     ],
   },
   {
