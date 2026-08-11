@@ -8,6 +8,7 @@ import {
   dealNextHand,
   drawOrPass,
   legalMovesForSeat,
+  openEnds,
   playMove,
   seatPositions,
   startNextGame,
@@ -17,6 +18,7 @@ import type {
   ChainSide,
   DominoSetId,
   GameSnapshot,
+  LegalMove,
   MatchSnapshot,
   PlayModeId,
 } from "@/lib/play/types";
@@ -77,6 +79,20 @@ function withGame(match: MatchSnapshot, nextGame: GameSnapshot): MatchSnapshot {
   const next = { ...match, current: nextGame };
   if (nextGame.phase === "finished") return accountFinishedHand(next);
   return next;
+}
+
+/**
+ * Side to play without asking: one legal placement, or both chain ends match
+ * so L vs R is the same play.
+ */
+function autoPlaySide(
+  moves: LegalMove[],
+  ends: { left: number; right: number } | null
+): ChainSide | null {
+  if (moves.length === 0) return null;
+  if (moves.length === 1) return moves[0].side;
+  if (ends && ends.left === ends.right) return moves[0].side;
+  return null;
 }
 
 export default function PlayGame() {
@@ -181,7 +197,7 @@ export default function PlayGame() {
   }, [modeId, setId, maxPoints, dismissPassFlash]);
 
   const handleMaxPoints = useCallback((n: number) => {
-    setMaxPoints(Math.max(1, Math.min(999, Math.round(n))));
+    setMaxPoints(Math.max(1, Math.round(n)));
   }, []);
 
   const humanTurn =
@@ -406,20 +422,33 @@ export default function PlayGame() {
     if (moves.length === 1) commitMove(side, tileId);
   };
 
+  /** Single tap: select only. Double tap: play if side is unambiguous. */
+  const lastSelectRef = useRef<{ id: string; at: number } | null>(null);
   const handleSelectTile = (tileId: string) => {
-    if (!humanTurn || rearrangeMode) return;
+    if (!humanTurn || rearrangeMode || !game) return;
     const moves = legal.filter((m) => m.tileId === tileId);
     if (moves.length === 0) return;
 
-    if (selectedId === tileId && moves.length === 1) {
-      commitMove(moves[0].side, tileId);
-      return;
-    }
+    const now = Date.now();
+    const prev = lastSelectRef.current;
+    const doubleTap =
+      prev?.id === tileId && now - prev.at < 420;
+    lastSelectRef.current = { id: tileId, at: now };
 
     setSelectedId(tileId);
-    if (moves.length === 1 && game && game.chain.length === 0) {
-      commitMove(moves[0].side, tileId);
-    }
+    if (!doubleTap) return;
+
+    const ends = openEnds(game.chain);
+    const side = autoPlaySide(moves, ends);
+    if (side) commitMove(side, tileId);
+  };
+
+  /** Hold-drag arm: select only — drop / L·R chooses the side. */
+  const handleArmTile = (tileId: string) => {
+    if (!humanTurn || rearrangeMode || !game) return;
+    const moves = legal.filter((m) => m.tileId === tileId);
+    if (moves.length === 0) return;
+    setSelectedId(tileId);
   };
 
   const handlePassOrDraw = useCallback(() => {
@@ -1369,6 +1398,7 @@ export default function PlayGame() {
                 selectedId={selectedId}
                 disabled={!humanTurn || rearrangeMode}
                 onSelect={handleSelectTile}
+                onArm={handleArmTile}
                 onDropSide={handleDropSide}
                 compact={compact}
                 rearrange={rearrangeMode}

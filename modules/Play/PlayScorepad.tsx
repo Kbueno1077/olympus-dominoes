@@ -9,13 +9,18 @@ import type {
 import { useTranslation } from "@/i18n/useTranslation";
 import { FONT_HAND } from "@/muiTheme/typography";
 import { TEAM_TINT } from "@/modules/Play/PlayChain";
-import { Box, LinearProgress, Stack, Typography } from "@mui/material";
+import { Box, Chip, LinearProgress, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 
 type Props = {
   match: MatchSnapshot;
   /** Tighter chrome for the play sidebar. */
   compact?: boolean;
+};
+
+type ShutoutMarks = {
+  pollosFor: number;
+  zapatosFor: number;
 };
 
 function handsByTeam(
@@ -31,6 +36,70 @@ function handsByTeam(
   return map;
 }
 
+/** Pollos / zapatos dealt while winning (opponent had 0 / 1 hands). */
+function tallyShutouts(
+  completed: CompletedPlayGame[],
+  teams: number[]
+): Map<number, ShutoutMarks> {
+  const map = new Map(
+    teams.map((team) => [team, { pollosFor: 0, zapatosFor: 0 }])
+  );
+  for (const game of completed) {
+    const byTeam = handsByTeam(game.hands, teams);
+    const marks = map.get(game.winnerTeam);
+    if (!marks) continue;
+    for (const other of teams) {
+      if (other === game.winnerTeam) continue;
+      const handCount = (byTeam[other] ?? []).length;
+      if (handCount === 0) marks.pollosFor += 1;
+      else if (handCount === 1) marks.zapatosFor += 1;
+    }
+  }
+  return map;
+}
+
+function Outcome({
+  isWinner,
+  handCount,
+}: {
+  isWinner: boolean;
+  handCount: number;
+}) {
+  const { t } = useTranslation();
+
+  if (isWinner) {
+    return (
+      <Chip
+        label={t("winner")}
+        size="small"
+        sx={{
+          fontSize: 11,
+          color: "primary.dark",
+          backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.14),
+        }}
+      />
+    );
+  }
+
+  if (handCount === 0 || handCount === 1) {
+    const isPollo = handCount === 0;
+    return (
+      <Chip
+        label={isPollo ? `🐔 ${t("pollo")}` : `👟 ${t("zapato")}`}
+        size="small"
+        sx={{
+          fontSize: 11,
+          color: "secondary.dark",
+          backgroundColor: (theme) =>
+            alpha(theme.palette.secondary.main, 0.14),
+        }}
+      />
+    );
+  }
+
+  return null;
+}
+
 function GamePad({
   title,
   subtitle,
@@ -41,6 +110,7 @@ function GamePad({
   maxPoints,
   compact,
   showProgress,
+  winnerTeam,
 }: {
   title: string;
   subtitle?: string;
@@ -51,9 +121,12 @@ function GamePad({
   maxPoints: number;
   compact: boolean;
   showProgress: boolean;
+  /** Set when the game is decided — enables winner / pollo / zapato chips. */
+  winnerTeam: number | null;
 }) {
   const { t } = useTranslation();
   const byTeam = handsByTeam(hands, teams);
+  const decided = winnerTeam != null;
 
   return (
     <Box
@@ -223,19 +296,21 @@ function GamePad({
                 )}
               </Box>
 
-              <Box sx={{ mt: 1.25 }}>
-                <Typography
+              {decided ? (
+                <Box
                   sx={{
-                    fontWeight: 800,
-                    fontSize: compact ? 13 : 14,
-                    textAlign: "center",
-                    fontVariantNumeric: "tabular-nums",
-                    mb: showProgress ? 0.75 : 0,
+                    mt: 1.25,
+                    display: "flex",
+                    justifyContent: "center",
                   }}
                 >
-                  {total}
-                </Typography>
-                {showProgress && (
+                  <Outcome
+                    isWinner={team === winnerTeam}
+                    handCount={teamHands.length}
+                  />
+                </Box>
+              ) : showProgress ? (
+                <Box sx={{ mt: 1.25 }}>
                   <LinearProgress
                     variant="determinate"
                     value={progress}
@@ -249,8 +324,8 @@ function GamePad({
                       },
                     }}
                   />
-                )}
-              </Box>
+                </Box>
+              ) : null}
             </Box>
           );
         })}
@@ -264,11 +339,13 @@ function Standing({
   teams,
   labels,
   compact,
+  shutouts,
 }: {
   match: MatchSnapshot;
   teams: number[];
   labels: Record<number, string>;
   compact: boolean;
+  shutouts: Map<number, ShutoutMarks>;
 }) {
   const { t } = useTranslation();
   const leader = Math.max(0, ...teams.map((team) => match.gamesWon[team] ?? 0));
@@ -294,6 +371,7 @@ function Standing({
           const wins = match.gamesWon[team] ?? 0;
           const tint = TEAM_TINT[team] ?? TEAM_TINT[1];
           const leading = wins > 0 && wins === leader;
+          const marks = shutouts.get(team);
           return (
             <Box
               key={team}
@@ -319,9 +397,27 @@ function Standing({
               >
                 {wins}
               </Typography>
-              <Typography variant="caption" sx={{ color: "text.secondary" }} noWrap>
+              <Typography
+                variant="caption"
+                sx={{ color: "text.secondary" }}
+                noWrap
+              >
                 {t(labels[team])}
               </Typography>
+              {marks && (marks.pollosFor > 0 || marks.zapatosFor > 0) ? (
+                <Typography
+                  sx={{
+                    mt: 0.25,
+                    fontSize: 10,
+                    lineHeight: 1.3,
+                    color: "text.disabled",
+                  }}
+                >
+                  {marks.pollosFor}
+                  {t("pollo").charAt(0)} · {marks.zapatosFor}
+                  {t("zapato").charAt(0)}
+                </Typography>
+              ) : null}
             </Box>
           );
         })}
@@ -342,6 +438,11 @@ export default function PlayScorepad({ match, compact = false }: Props) {
     .sort((a, b) => a - b);
 
   const completedNewestFirst = [...match.completedGames].reverse();
+  const shutouts = tallyShutouts(match.completedGames, teams);
+  const currentWinner =
+    match.gameOver && match.gameWinnerTeams[0] != null
+      ? match.gameWinnerTeams[0]
+      : null;
 
   return (
     <Stack spacing={compact ? 1.5 : 2}>
@@ -350,13 +451,14 @@ export default function PlayScorepad({ match, compact = false }: Props) {
         teams={teams}
         labels={labels}
         compact={compact}
+        shutouts={shutouts}
       />
 
       <GamePad
         title={t("gameNumber", { n: match.gameIndex })}
         subtitle={
-          match.gameOver && match.gameWinnerTeams[0] != null
-            ? t("tookIt", { team: t(labels[match.gameWinnerTeams[0]]) })
+          currentWinner != null
+            ? t("tookIt", { team: t(labels[currentWinner]) })
             : t("firstToPoints", { n: match.maxPoints })
         }
         hands={match.hands}
@@ -366,6 +468,7 @@ export default function PlayScorepad({ match, compact = false }: Props) {
         maxPoints={match.maxPoints}
         compact={compact}
         showProgress={!match.gameOver}
+        winnerTeam={currentWinner}
       />
 
       {completedNewestFirst.map((game: CompletedPlayGame) => (
@@ -380,6 +483,7 @@ export default function PlayScorepad({ match, compact = false }: Props) {
           maxPoints={match.maxPoints}
           compact={compact}
           showProgress={false}
+          winnerTeam={game.winnerTeam}
         />
       ))}
     </Stack>
