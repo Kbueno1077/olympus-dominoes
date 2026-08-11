@@ -143,6 +143,10 @@ export default function PlayHand({
   const tight = density !== "desktop";
   const landscape = density === "landscape";
   const tileScale = tight ? MOBILE_TILE_SCALE : 1;
+  /** Layout space for CSS-scaled tiles so neighbors don't visually collide. */
+  const scaleBleed =
+    tileScale === 1 ? 0 : Math.ceil((face * (tileScale - 1)) / 2);
+  const tileGap = landscape ? 2 : tight ? 3 : 2;
   const lift = density === "landscape" ? 3 : density === "portrait" ? 5 : 8;
 
   const endPointerDrag = (
@@ -214,7 +218,7 @@ export default function PlayHand({
             alignItems="flex-end"
             justifyContent="center"
             sx={{
-              gap: landscape ? "0px" : tight ? "1px" : "2px",
+              gap: `${tileGap}px`,
               minHeight: face * 2 + 2,
               position: "relative",
               zIndex: 1,
@@ -242,6 +246,8 @@ export default function PlayHand({
                     flexShrink: 0,
                     position: "relative",
                     zIndex: selected || ghosting ? 40 : canPlay ? 2 : 1,
+                    marginLeft: scaleBleed,
+                    marginRight: scaleBleed,
                   }}
                 >
                   <Box
