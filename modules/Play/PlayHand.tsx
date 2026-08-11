@@ -15,8 +15,11 @@ type Props = {
   legal: LegalMove[];
   selectedId: string | null;
   disabled: boolean;
+  /** Single / double tap. Parent decides select vs play. */
   onSelect: (tileId: string) => void;
-  /** Pointer / touch drop onto board L·R / opening zones (`data-drop-side`). */
+  /** Drag start — select only; do not auto-play. */
+  onArm?: (tileId: string) => void;
+  /** Pointer drop onto board L·R / opening zones (`data-drop-side`). */
   onDropSide?: (side: ChainSide, tileId: string) => void;
   /**
    * Phone layout: smaller real tile/stand height (not CSS transform),
@@ -27,6 +30,9 @@ type Props = {
   rearrange?: boolean;
   onReorder?: (fromIndex: number, toIndex: number) => void;
 };
+
+/** Rearrange / play: pixels before a press becomes a drag. */
+const DRAG_THRESHOLD_PX = 12;
 
 type Density = "desktop" | "portrait" | "landscape";
 
@@ -117,7 +123,9 @@ function reorderIndexAtX(
 /**
  * Player rack: tiles stand close on a wooden lip, like a real mesa stand.
  * Width is controlled by the parent (full page on mobile).
- * Desktop uses HTML5 drag; phones use pointer drag onto `data-drop-side` zones.
+ * Play: tap select, double-tap play, press+slide to drag onto zones
+ * (pointer preview — solid opacity, not the browser’s faded HTML5 ghost).
+ * Rearrange: drag to reorder.
  */
 export default function PlayHand({
   hand,
@@ -125,6 +133,7 @@ export default function PlayHand({
   selectedId,
   disabled,
   onSelect,
+  onArm,
   onDropSide,
   compact = false,
   rearrange = false,
@@ -153,6 +162,10 @@ export default function PlayHand({
   const [pointerDrag, setPointerDrag] = useState<PointerDrag | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
 
+  const clearPress = () => {
+    pressRef.current = null;
+  };
+
   useEffect(() => {
     const el = rackRef.current;
     if (!el) return;
@@ -180,7 +193,7 @@ export default function PlayHand({
     tileId: string,
     wasDragging: boolean
   ) => {
-    pressRef.current = null;
+    clearPress();
     setPointerDrag(null);
     setInsertIndex(null);
 
@@ -322,9 +335,7 @@ export default function PlayHand({
                   <Box
                     component="button"
                     type="button"
-                    draggable={
-                      !rearrange && !disabled && canPlay && !tight
-                    }
+                    draggable={false}
                     disabled={rearrange ? false : disabled || !canPlay}
                     onClick={() => {
                       if (rearrange) return;
@@ -333,16 +344,6 @@ export default function PlayHand({
                         return;
                       }
                       onSelect(tile.id);
-                    }}
-                    onDragStart={(event) => {
-                      if (rearrange || disabled || !canPlay || tight) {
-                        event.preventDefault();
-                        return;
-                      }
-                      onSelect(tile.id);
-                      event.dataTransfer.setData(DRAG_TILE_MIME, tile.id);
-                      event.dataTransfer.setData("text/plain", tile.id);
-                      event.dataTransfer.effectAllowed = "move";
                     }}
                     onPointerDown={(event) => {
                       if (rearrange) {
@@ -357,8 +358,6 @@ export default function PlayHand({
                         return;
                       }
                       if (disabled || !canPlay || !onDropSide) return;
-                      // Desktop keeps HTML5 DnD; pointer path is for touch / compact.
-                      if (!tight && event.pointerType === "mouse") return;
                       event.currentTarget.setPointerCapture(event.pointerId);
                       pressRef.current = {
                         tileId: tile.id,
@@ -374,11 +373,11 @@ export default function PlayHand({
                         event.clientX - press.startX,
                         event.clientY - press.startY
                       );
-                      if (!press.dragging && dist < 10) return;
+                      if (!press.dragging && dist < DRAG_THRESHOLD_PX) return;
                       if (!press.dragging) {
                         press.dragging = true;
                         suppressClickRef.current = true;
-                        if (!rearrange) onSelect(tile.id);
+                        if (!rearrange) onArm?.(tile.id);
                       }
                       setPointerDrag({
                         tileId: tile.id,
@@ -417,7 +416,7 @@ export default function PlayHand({
                       }
                     }}
                     onPointerCancel={() => {
-                      pressRef.current = null;
+                      clearPress();
                       setPointerDrag(null);
                       setInsertIndex(null);
                     }}
@@ -533,6 +532,8 @@ export default function PlayHand({
             }`,
             zIndex: 1400,
             pointerEvents: "none",
+            // Solid drag image (pointer path); avoid browser HTML5 ghost fade.
+            opacity: 1,
             filter: `drop-shadow(0 8px 14px ${alpha("#000", 0.45)})`,
           }}
         >

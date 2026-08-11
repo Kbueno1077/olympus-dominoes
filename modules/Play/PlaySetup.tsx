@@ -31,7 +31,6 @@ type Props = {
 const MODE_IDS: PlayModeId[] = ["1v1", "2v2", "ffa4"];
 const TARGETS = [100, 150, 200] as const;
 const FIRST_TO_MIN = 1;
-const FIRST_TO_MAX = 999;
 
 function modeCopy(
   id: PlayModeId
@@ -72,7 +71,7 @@ export default function PlaySetup({
       setFirstToDraft(String(maxPoints));
       return;
     }
-    const next = Math.max(FIRST_TO_MIN, Math.min(FIRST_TO_MAX, parsed));
+    const next = Math.max(FIRST_TO_MIN, parsed);
     onMaxPoints(next);
     setFirstToDraft(String(next));
   };
@@ -249,7 +248,6 @@ export default function PlaySetup({
               value={firstToDraft}
               inputProps={{
                 min: FIRST_TO_MIN,
-                max: FIRST_TO_MAX,
                 inputMode: "numeric",
               }}
               onChange={(event) => setFirstToDraft(event.target.value)}
@@ -262,7 +260,6 @@ export default function PlaySetup({
               }}
               helperText={t("playFirstToCustomHint", {
                 min: FIRST_TO_MIN,
-                max: FIRST_TO_MAX,
               })}
               fullWidth
               sx={{ maxWidth: 280 }}

@@ -408,51 +408,35 @@ function finishIfNeeded(state: GameSnapshot): GameSnapshot {
 
   if (state.passesInRow >= state.seats.length && state.chain.length > 0) {
     const totals = state.seats.map((s) => handPips(s.hand));
-    const cfg = modeConfig(state.modeId);
-    let winners: number[] = [];
-    let winnerTeam = 1;
     const starterSeat = state.seats[state.starter];
     const starterTeam = starterSeat?.team ?? 1;
     let usedStarterTiebreak = false;
 
-    if (cfg.teams) {
-      const teamPips = new Map<number, number>();
-      state.seats.forEach((seat) => {
-        teamPips.set(
-          seat.team,
-          (teamPips.get(seat.team) ?? 0) + totals[seat.index]
-        );
-      });
-      let best = Infinity;
-      teamPips.forEach((pips) => {
-        if (pips < best) best = pips;
-      });
-      const tiedTeams: number[] = [];
-      teamPips.forEach((pips, team) => {
-        if (pips === best) tiedTeams.push(team);
-      });
-      if (tiedTeams.length > 1 && tiedTeams.includes(starterTeam)) {
-        winnerTeam = starterTeam;
-        usedStarterTiebreak = true;
-      } else {
-        winnerTeam = tiedTeams[0] ?? starterTeam;
-      }
-      winners = state.seats
-        .filter((s) => s.team === winnerTeam)
-        .map((s) => s.index);
+    // Blocked: fewest pips is per seat (not partners summed). That seat's
+    // team wins. If individuals from different teams tie for fewest, the
+    // hand-opener's team takes it.
+    const best = Math.min(...totals);
+    const tiedSeats = totals
+      .map((pips, index) => (pips === best ? index : -1))
+      .filter((index) => index >= 0);
+    const tiedTeams = Array.from(
+      new Set(tiedSeats.map((index) => state.seats[index].team))
+    );
+
+    let winnerTeam: number;
+    if (tiedTeams.length === 1) {
+      winnerTeam = tiedTeams[0];
     } else {
-      const best = Math.min(...totals);
-      const tiedSeats = totals
-        .map((p, i) => (p === best ? i : -1))
-        .filter((i) => i >= 0);
-      if (tiedSeats.length > 1 && tiedSeats.includes(state.starter)) {
-        winners = [state.starter];
-        usedStarterTiebreak = true;
-      } else {
-        winners = [tiedSeats[0]];
-      }
-      winnerTeam = state.seats[winners[0]].team;
+      winnerTeam = starterTeam;
+      usedStarterTiebreak = true;
     }
+
+    const winners =
+      tiedTeams.length === 1
+        ? tiedSeats
+        : state.seats
+            .filter((seat) => seat.team === winnerTeam)
+            .map((seat) => seat.index);
 
     const pointsAwarded = pointsForWinners(state, winnerTeam, totals);
     const result: GameResult = {
@@ -469,8 +453,8 @@ function finishIfNeeded(state: GameSnapshot): GameSnapshot {
       `Blocked · team ${winnerTeam} +${pointsAwarded}`,
       `Pips [${totals.join(", ")}]` +
         (usedStarterTiebreak
-          ? ` · tie → opener (seat ${state.starter}) wins`
-          : "")
+          ? ` · individual tie → opener's team (seat ${state.starter}) wins`
+          : ` · fewest pips seat ${tiedSeats.join("/")}`)
     );
     return next;
   }
