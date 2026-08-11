@@ -40,6 +40,7 @@ import {
 import { useTranslation } from "@/i18n/useTranslation";
 import AutoModeOutlined from "@mui/icons-material/AutoModeOutlined";
 import MenuBookOutlined from "@mui/icons-material/MenuBookOutlined";
+import SwapHorizOutlined from "@mui/icons-material/SwapHorizOutlined";
 import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
 import {
   Box,
@@ -114,6 +115,7 @@ export default function PlayGame() {
       return false;
     }
   });
+  const [rearrangeMode, setRearrangeMode] = useState(false);
   const [pendingFlight, setPendingFlight] = useState<PendingFlight | null>(
     null
   );
@@ -174,8 +176,13 @@ export default function PlayGame() {
     setMatch(createMatch(modeId, setId, maxPoints));
     setLogOpen(false);
     setNotesOpen(false);
+    setRearrangeMode(false);
     dismissPassFlash();
   }, [modeId, setId, maxPoints, dismissPassFlash]);
+
+  const handleMaxPoints = useCallback((n: number) => {
+    setMaxPoints(Math.max(1, Math.min(999, Math.round(n))));
+  }, []);
 
   const humanTurn =
     !!game &&
@@ -354,7 +361,7 @@ export default function PlayGame() {
 
   const commitMove = useCallback(
     (side: ChainSide, tileId: string) => {
-      if (!match?.current || !humanTurn) return;
+      if (!match?.current || !humanTurn || rearrangeMode) return;
       const g = match.current;
       const moves = legalMovesForSeat(g, g.turn);
       const move = moves.find((m) => m.tileId === tileId && m.side === side);
@@ -388,11 +395,11 @@ export default function PlayGame() {
         setBusy(false);
       }
     },
-    [match, humanTurn]
+    [match, humanTurn, rearrangeMode]
   );
 
   const handleDropSide = (side: ChainSide, tileId: string) => {
-    if (!humanTurn || !game) return;
+    if (!humanTurn || rearrangeMode || !game) return;
     const moves = legalMovesForSeat(game, game.turn).filter(
       (m) => m.tileId === tileId && m.side === side
     );
@@ -400,7 +407,7 @@ export default function PlayGame() {
   };
 
   const handleSelectTile = (tileId: string) => {
-    if (!humanTurn) return;
+    if (!humanTurn || rearrangeMode) return;
     const moves = legal.filter((m) => m.tileId === tileId);
     if (moves.length === 0) return;
 
@@ -416,6 +423,7 @@ export default function PlayGame() {
   };
 
   const handlePassOrDraw = useCallback(() => {
+    if (rearrangeMode) return;
     setMatch((current) => {
       if (!current?.current) return current;
       const g = current.current;
@@ -425,7 +433,7 @@ export default function PlayGame() {
       if (legalMovesForSeat(g, g.turn).length > 0) return current;
       return withGame(current, drawOrPass(g, g.turn));
     });
-  }, []);
+  }, [rearrangeMode]);
 
   const toggleAutoPass = () => {
     setAutoPass((prev) => {
@@ -439,6 +447,32 @@ export default function PlayGame() {
     });
   };
 
+  const toggleRearrangeMode = () => {
+    setRearrangeMode((prev) => {
+      const next = !prev;
+      if (next) setSelectedId(null);
+      return next;
+    });
+  };
+
+  const handleReorderHand = (fromIndex: number, toIndex: number) => {
+    setMatch((current) => {
+      if (!current?.current) return current;
+      const g = current.current;
+      const seat = g.seats[0];
+      if (fromIndex < 0 || fromIndex >= seat.hand.length) return current;
+      const hand = [...seat.hand];
+      const [tile] = hand.splice(fromIndex, 1);
+      const clampedTo = Math.max(0, Math.min(toIndex, hand.length));
+      hand.splice(clampedTo, 0, tile);
+      if (seat.hand.every((t, i) => t.id === hand[i]?.id)) return current;
+      const seats = g.seats.map((s) =>
+        s.index === 0 ? { ...s, hand } : s
+      );
+      return withGame(current, { ...g, seats });
+    });
+  };
+
   const handleChooseOpener = (seatIndex: number) => {
     setMatch((current) => {
       if (!current?.current) return current;
@@ -448,7 +482,7 @@ export default function PlayGame() {
 
   // Auto-pass/draw when you have nothing playable — no waiting on Pass.
   useEffect(() => {
-    if (!autoPass || !match || !game) return;
+    if (!autoPass || rearrangeMode || !match || !game) return;
     if (game.phase !== "playing" || game.awaitingOpenerChoice) return;
     if (pendingFlight || flight || busy) return;
     const seat = game.seats[game.turn];
@@ -461,6 +495,7 @@ export default function PlayGame() {
     return () => window.clearTimeout(timer);
   }, [
     autoPass,
+    rearrangeMode,
     match,
     game,
     pendingFlight,
@@ -526,7 +561,7 @@ export default function PlayGame() {
           maxPoints={maxPoints}
           onMode={setModeId}
           onSet={setSetId}
-          onMaxPoints={setMaxPoints}
+          onMaxPoints={handleMaxPoints}
           onStart={start}
         />
         <PlayConfigDrawer
@@ -550,8 +585,9 @@ export default function PlayGame() {
 
   const labels = teamLabels(game.modeId);
 
-  const canPass = humanTurn && legal.length === 0;
-  const showSideButtons = !!selectedId && selectedMoves.length >= 1;
+  const canPass = humanTurn && !rearrangeMode && legal.length === 0;
+  const showSideButtons =
+    !rearrangeMode && !!selectedId && selectedMoves.length >= 1;
   const humanTeam = game.seats[0]?.team ?? 1;
   const partnerSeat = game.seats.find(
     (s) => s.team === humanTeam && s.index !== 0
@@ -721,7 +757,7 @@ export default function PlayGame() {
                       chain={game.chain}
                       openingTileId={game.openingTileId}
                       highlightSide={highlightSide}
-                      dropEnabled={humanTurn}
+                      dropEnabled={humanTurn && !rearrangeMode}
                       onDropSide={handleDropSide}
                       onTapSide={(side) => {
                         if (!selectedId) return;
@@ -1154,6 +1190,39 @@ export default function PlayGame() {
                     >
                       <AutoModeOutlined sx={{ fontSize: { xs: 17, sm: 19 } }} />
                     </IconButton>
+                    <IconButton
+                      size="small"
+                      aria-label={
+                        rearrangeMode
+                          ? t("playRearrangeOn")
+                          : t("playRearrangeOff")
+                      }
+                      aria-pressed={rearrangeMode}
+                      onPointerDown={tapFeedback}
+                      onClick={toggleRearrangeMode}
+                      sx={{
+                        ...pressableSx,
+                        ...actionIconSx,
+                        color: rearrangeMode
+                          ? "#1A120C"
+                          : alpha("#FBF5E9", 0.92),
+                        backgroundColor: rearrangeMode
+                          ? "#E8A04A"
+                          : alpha("#FBF5E9", 0.14),
+                        border: `1px solid ${
+                          rearrangeMode
+                            ? "#C8842E"
+                            : alpha("#FBF5E9", 0.42)
+                        }`,
+                        "&:hover": {
+                          backgroundColor: rearrangeMode
+                            ? "#F0B25E"
+                            : alpha("#FBF5E9", 0.22),
+                        },
+                      }}
+                    >
+                      <SwapHorizOutlined sx={{ fontSize: { xs: 17, sm: 19 } }} />
+                    </IconButton>
                     <Button
                       size="small"
                       variant="contained"
@@ -1298,10 +1367,12 @@ export default function PlayGame() {
                 hand={game.seats[0].hand}
                 legal={legal}
                 selectedId={selectedId}
-                disabled={!humanTurn}
+                disabled={!humanTurn || rearrangeMode}
                 onSelect={handleSelectTile}
                 onDropSide={handleDropSide}
                 compact={compact}
+                rearrange={rearrangeMode}
+                onReorder={handleReorderHand}
               />
             </Box>
           )}

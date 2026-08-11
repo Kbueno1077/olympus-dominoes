@@ -23,6 +23,9 @@ type Props = {
    * rack still spans full width.
    */
   compact?: boolean;
+  /** Drag tiles to reorder; play / board drops are disabled. */
+  rearrange?: boolean;
+  onReorder?: (fromIndex: number, toIndex: number) => void;
 };
 
 type Density = "desktop" | "portrait" | "landscape";
@@ -92,6 +95,25 @@ function dropSideAtPoint(x: number, y: number): ChainSide | null {
   return null;
 }
 
+/** Insert index among `handIds` after removing `dragId`, based on pointer x. */
+function reorderIndexAtX(
+  x: number,
+  handIds: string[],
+  dragId: string
+): number {
+  const others = handIds.filter((id) => id !== dragId);
+  if (others.length === 0) return 0;
+  for (let i = 0; i < others.length; i += 1) {
+    const el = document.querySelector(
+      `[data-hand-tile="${others[i]}"]`
+    ) as HTMLElement | null;
+    if (!el) continue;
+    const rect = el.getBoundingClientRect();
+    if (x < rect.left + rect.width / 2) return i;
+  }
+  return others.length;
+}
+
 /**
  * Player rack: tiles stand close on a wooden lip, like a real mesa stand.
  * Width is controlled by the parent (full page on mobile).
@@ -105,6 +127,8 @@ export default function PlayHand({
   onSelect,
   onDropSide,
   compact = false,
+  rearrange = false,
+  onReorder,
 }: Props) {
   const { t } = useTranslation();
   const shortLandscape = useMediaQuery(
@@ -127,6 +151,7 @@ export default function PlayHand({
   } | null>(null);
   const suppressClickRef = useRef(false);
   const [pointerDrag, setPointerDrag] = useState<PointerDrag | null>(null);
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const el = rackRef.current;
@@ -157,7 +182,23 @@ export default function PlayHand({
   ) => {
     pressRef.current = null;
     setPointerDrag(null);
-    if (!wasDragging || !onDropSide) return;
+    setInsertIndex(null);
+
+    if (!wasDragging) return;
+
+    if (rearrange && onReorder) {
+      const from = hand.findIndex((t) => t.id === tileId);
+      if (from < 0) return;
+      const to = reorderIndexAtX(
+        clientX,
+        hand.map((t) => t.id),
+        tileId
+      );
+      onReorder(from, to);
+      return;
+    }
+
+    if (!onDropSide) return;
     const side = dropSideAtPoint(clientX, clientY);
     if (side) onDropSide(side, tileId);
   };
@@ -177,7 +218,9 @@ export default function PlayHand({
         background:
           "linear-gradient(180deg, #9A7350 0%, #7A5638 38%, #5C4028 100%)",
         boxShadow: (theme) =>
-          `0 8px 22px -12px ${alpha(theme.palette.common.black, 0.5)}, inset 0 1px 0 ${alpha("#FBF5E9", 0.22)}`,
+          rearrange
+            ? `0 0 0 2px ${alpha("#E8A04A", 0.85)}, 0 8px 22px -12px ${alpha(theme.palette.common.black, 0.5)}, inset 0 1px 0 ${alpha("#FBF5E9", 0.22)}`
+            : `0 8px 22px -12px ${alpha(theme.palette.common.black, 0.5)}, inset 0 1px 0 ${alpha("#FBF5E9", 0.22)}`,
         px: landscape ? 0.35 : tight ? 0.45 : { xs: 0.6, sm: 1 },
         pt: landscape ? 0.3 : tight ? 0.45 : { xs: 0.75, sm: 0.9 },
         pb: landscape ? 0.2 : tight ? 0.3 : { xs: 0.55, sm: 0.7 },
@@ -225,19 +268,29 @@ export default function PlayHand({
             }}
           >
             {hand.map((tile, index) => {
-              const canPlay = playableIds.has(tile.id);
-              const selected = selectedId === tile.id;
+              const canPlay = !rearrange && playableIds.has(tile.id);
+              const selected = !rearrange && selectedId === tile.id;
               const ghosting = pointerDrag?.tileId === tile.id;
+              const showInsertBefore =
+                rearrange &&
+                insertIndex != null &&
+                pointerDrag != null &&
+                pointerDrag.tileId !== tile.id &&
+                insertIndex ===
+                  hand
+                    .filter((t) => t.id !== pointerDrag.tileId)
+                    .findIndex((t) => t.id === tile.id);
               return (
                 <motion.div
                   key={tile.id}
+                  layout={!pointerDrag}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{
                     opacity: ghosting ? 0.35 : 1,
                     y: selected && !ghosting ? -lift : 0,
                   }}
                   transition={{
-                    delay: index * 0.015,
+                    delay: pointerDrag ? 0 : index * 0.015,
                     type: "spring",
                     stiffness: 400,
                     damping: 28,
@@ -245,17 +298,36 @@ export default function PlayHand({
                   style={{
                     flexShrink: 0,
                     position: "relative",
-                    zIndex: selected || ghosting ? 40 : canPlay ? 2 : 1,
+                    zIndex:
+                      selected || ghosting ? 40 : canPlay || rearrange ? 2 : 1,
                     marginLeft: scaleBleed,
                     marginRight: scaleBleed,
                   }}
                 >
+                  {showInsertBefore && (
+                    <Box
+                      aria-hidden
+                      sx={{
+                        position: "absolute",
+                        left: -Math.max(2, tileGap),
+                        top: 4,
+                        bottom: 4,
+                        width: 3,
+                        borderRadius: 1,
+                        backgroundColor: "#E8A04A",
+                        zIndex: 5,
+                      }}
+                    />
+                  )}
                   <Box
                     component="button"
                     type="button"
-                    draggable={!disabled && canPlay && !tight}
-                    disabled={disabled || !canPlay}
+                    draggable={
+                      !rearrange && !disabled && canPlay && !tight
+                    }
+                    disabled={rearrange ? false : disabled || !canPlay}
                     onClick={() => {
+                      if (rearrange) return;
                       if (suppressClickRef.current) {
                         suppressClickRef.current = false;
                         return;
@@ -263,7 +335,7 @@ export default function PlayHand({
                       onSelect(tile.id);
                     }}
                     onDragStart={(event) => {
-                      if (disabled || !canPlay || tight) {
+                      if (rearrange || disabled || !canPlay || tight) {
                         event.preventDefault();
                         return;
                       }
@@ -273,6 +345,17 @@ export default function PlayHand({
                       event.dataTransfer.effectAllowed = "move";
                     }}
                     onPointerDown={(event) => {
+                      if (rearrange) {
+                        if (!onReorder || hand.length < 2) return;
+                        event.currentTarget.setPointerCapture(event.pointerId);
+                        pressRef.current = {
+                          tileId: tile.id,
+                          startX: event.clientX,
+                          startY: event.clientY,
+                          dragging: false,
+                        };
+                        return;
+                      }
                       if (disabled || !canPlay || !onDropSide) return;
                       // Desktop keeps HTML5 DnD; pointer path is for touch / compact.
                       if (!tight && event.pointerType === "mouse") return;
@@ -295,7 +378,7 @@ export default function PlayHand({
                       if (!press.dragging) {
                         press.dragging = true;
                         suppressClickRef.current = true;
-                        onSelect(tile.id);
+                        if (!rearrange) onSelect(tile.id);
                       }
                       setPointerDrag({
                         tileId: tile.id,
@@ -305,6 +388,15 @@ export default function PlayHand({
                         y: event.clientY,
                         pointerId: event.pointerId,
                       });
+                      if (rearrange) {
+                        setInsertIndex(
+                          reorderIndexAtX(
+                            event.clientX,
+                            hand.map((t) => t.id),
+                            tile.id
+                          )
+                        );
+                      }
                     }}
                     onPointerUp={(event) => {
                       const press = pressRef.current;
@@ -327,32 +419,51 @@ export default function PlayHand({
                     onPointerCancel={() => {
                       pressRef.current = null;
                       setPointerDrag(null);
+                      setInsertIndex(null);
                     }}
-                    aria-label={`${t("playTileAria", { a: tile.a, b: tile.b })}${canPlay ? t("playTilePlayable") : ""}`}
+                    aria-label={`${t("playTileAria", { a: tile.a, b: tile.b })}${
+                      rearrange
+                        ? `, ${t("playRearrangeDrag")}`
+                        : canPlay
+                          ? t("playTilePlayable")
+                          : ""
+                    }`}
                     data-hand-tile={tile.id}
                     sx={{
                       p: 0,
                       m: 0,
                       border: "none",
                       background: "transparent",
-                      cursor: disabled || !canPlay ? "default" : "grab",
-                      opacity: canPlay || disabled ? 1 : 0.4,
+                      cursor: rearrange
+                        ? "grab"
+                        : disabled || !canPlay
+                          ? "default"
+                          : "grab",
+                      opacity: rearrange
+                        ? 1
+                        : canPlay || disabled
+                          ? 1
+                          : 0.4,
                       filter: selected
                         ? `drop-shadow(0 5px 7px ${alpha("#B4542F", 0.45)})`
-                        : canPlay
+                        : rearrange || canPlay
                           ? `drop-shadow(0 2px 3px ${alpha("#000", 0.35)})`
                           : "none",
                       outline: selected
                         ? `2px solid ${alpha("#B4542F", 0.9)}`
-                        : "1.5px solid transparent",
+                        : rearrange
+                          ? `1.5px solid ${alpha("#E8A04A", 0.55)}`
+                          : "1.5px solid transparent",
                       outlineOffset: 1,
                       borderRadius: 1,
                       lineHeight: 0,
-                      touchAction: canPlay ? "none" : "manipulation",
+                      touchAction:
+                        rearrange || canPlay ? "none" : "manipulation",
                       WebkitUserSelect: "none",
                       userSelect: "none",
                       "&:active": {
-                        cursor: canPlay ? "grabbing" : "default",
+                        cursor:
+                          rearrange || canPlay ? "grabbing" : "default",
                       },
                     }}
                   >
@@ -375,6 +486,24 @@ export default function PlayHand({
                 </motion.div>
               );
             })}
+            {rearrange &&
+              insertIndex != null &&
+              pointerDrag &&
+              insertIndex >=
+                hand.filter((t) => t.id !== pointerDrag.tileId).length && (
+                <Box
+                  aria-hidden
+                  sx={{
+                    width: 3,
+                    alignSelf: "stretch",
+                    minHeight: face * 2,
+                    borderRadius: 1,
+                    backgroundColor: "#E8A04A",
+                    flexShrink: 0,
+                    ml: `${scaleBleed}px`,
+                  }}
+                />
+              )}
           </Stack>
         )}
       </Box>
