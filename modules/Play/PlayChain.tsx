@@ -126,6 +126,10 @@ export default function PlayChain({
     }
   }
   const compactChrome = tileScale !== "default";
+  // Mobile L/R targets are oversized for touch; shrink 30% so they don't dominate.
+  const dropAnchorSize = Math.round(
+    face * (tileScale === "default" ? 1.5 : 2.05 * 0.7)
+  );
   const openingIndex = Math.max(
     0,
     openingTileId ? chain.findIndex((t) => t.id === openingTileId) : 0
@@ -272,9 +276,7 @@ export default function PlayChain({
               highlightSide === "left" || activeSides.includes("left")
             }
             enabled={dropEnabled}
-            size={Math.round(
-              face * (tileScale === "default" ? 1.5 : 2.05)
-            )}
+            size={dropAnchorSize}
             onDragOver={(e: DragEvent) => {
               if (!dropEnabled) return;
               e.preventDefault();
@@ -295,9 +297,7 @@ export default function PlayChain({
               highlightSide === "right" || activeSides.includes("right")
             }
             enabled={dropEnabled}
-            size={Math.round(
-              face * (tileScale === "default" ? 1.5 : 2.05)
-            )}
+            size={dropAnchorSize}
             onDragOver={(e: DragEvent) => {
               if (!dropEnabled) return;
               e.preventDefault();

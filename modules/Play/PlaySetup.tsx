@@ -10,11 +10,13 @@ import {
   Card,
   Chip,
   Stack,
+  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { useEffect, useState } from "react";
 
 type Props = {
   modeId: PlayModeId;
@@ -27,7 +29,9 @@ type Props = {
 };
 
 const MODE_IDS: PlayModeId[] = ["1v1", "2v2", "ffa4"];
-const TARGETS = [100, 150, 200];
+const TARGETS = [100, 150, 200] as const;
+const FIRST_TO_MIN = 1;
+const FIRST_TO_MAX = 999;
 
 function modeCopy(
   id: PlayModeId
@@ -56,6 +60,22 @@ export default function PlaySetup({
   onStart,
 }: Props) {
   const { t } = useTranslation();
+  const [firstToDraft, setFirstToDraft] = useState(String(maxPoints));
+
+  useEffect(() => {
+    setFirstToDraft(String(maxPoints));
+  }, [maxPoints]);
+
+  const commitFirstTo = (raw: string) => {
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) {
+      setFirstToDraft(String(maxPoints));
+      return;
+    }
+    const next = Math.max(FIRST_TO_MIN, Math.min(FIRST_TO_MAX, parsed));
+    onMaxPoints(next);
+    setFirstToDraft(String(next));
+  };
 
   return (
     <Card
@@ -207,17 +227,46 @@ export default function PlaySetup({
           >
             {t("playFirstToLabel")}
           </Typography>
-          <Stack direction="row" spacing={1}>
-            {TARGETS.map((preset) => (
-              <Chip
-                key={preset}
-                label={preset}
-                clickable
-                variant={maxPoints === preset ? "filled" : "outlined"}
-                color={maxPoints === preset ? "primary" : "default"}
-                onClick={() => onMaxPoints(preset)}
-              />
-            ))}
+          <Stack spacing={1.25}>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {TARGETS.map((preset) => (
+                <Chip
+                  key={preset}
+                  label={preset}
+                  clickable
+                  onPointerDown={tapFeedback}
+                  variant={maxPoints === preset ? "filled" : "outlined"}
+                  color={maxPoints === preset ? "primary" : "default"}
+                  onClick={() => onMaxPoints(preset)}
+                  sx={pressableSx}
+                />
+              ))}
+            </Stack>
+            <TextField
+              size="small"
+              type="number"
+              label={t("playFirstToCustom")}
+              value={firstToDraft}
+              inputProps={{
+                min: FIRST_TO_MIN,
+                max: FIRST_TO_MAX,
+                inputMode: "numeric",
+              }}
+              onChange={(event) => setFirstToDraft(event.target.value)}
+              onBlur={() => commitFirstTo(firstToDraft)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  commitFirstTo(firstToDraft);
+                  (event.target as HTMLInputElement).blur();
+                }
+              }}
+              helperText={t("playFirstToCustomHint", {
+                min: FIRST_TO_MIN,
+                max: FIRST_TO_MAX,
+              })}
+              fullWidth
+              sx={{ maxWidth: 280 }}
+            />
           </Stack>
         </Box>
 
