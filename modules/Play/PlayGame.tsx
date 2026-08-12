@@ -2,6 +2,11 @@
 
 import { chooseBotMove } from "@/lib/play/bot";
 import {
+  readBotBrain,
+  writeBotBrain,
+  type BotBrainId,
+} from "@/lib/play/botBrain";
+import {
   accountFinishedHand,
   chooseHandOpener,
   createMatch,
@@ -40,8 +45,10 @@ import {
   PACE_LEVEL_NORMAL,
 } from "@/modules/Play/paceLevels";
 import { useTranslation } from "@/i18n/useTranslation";
+import { organizeHand } from "@/lib/play/tiles";
 import AutoModeOutlined from "@mui/icons-material/AutoModeOutlined";
 import MenuBookOutlined from "@mui/icons-material/MenuBookOutlined";
+import SortOutlined from "@mui/icons-material/SortOutlined";
 import SwapHorizOutlined from "@mui/icons-material/SwapHorizOutlined";
 import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
 import {
@@ -112,7 +119,7 @@ export default function PlayGame() {
         ? "portrait"
         : "default";
   const [modeId, setModeId] = useState<PlayModeId>("2v2");
-  const [setId, setSetId] = useState<DominoSetId>("double_six");
+  const [setId, setSetId] = useState<DominoSetId>("double_nine");
   const [maxPoints, setMaxPoints] = useState(150);
   const [match, setMatch] = useState<MatchSnapshot | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -123,7 +130,10 @@ export default function PlayGame() {
   const [botDelayMs, setBotDelayMs] = useState(() =>
     botMsFromLevel(PACE_LEVEL_NORMAL)
   );
+  const [botBrain, setBotBrain] = useState<BotBrainId>(() => readBotBrain());
   const [animMs, setAnimMs] = useState(() => animMsFromLevel(PACE_LEVEL_NORMAL));
+  const botBrainRef = useRef(botBrain);
+  botBrainRef.current = botBrain;
   const [autoPass, setAutoPass] = useState(() => {
     try {
       return sessionStorage.getItem(AUTO_PASS_KEY) === "1";
@@ -198,6 +208,11 @@ export default function PlayGame() {
 
   const handleMaxPoints = useCallback((n: number) => {
     setMaxPoints(Math.max(1, Math.round(n)));
+  }, []);
+
+  const handleBotBrain = useCallback((id: BotBrainId) => {
+    setBotBrain(id);
+    writeBotBrain(id);
   }, []);
 
   const humanTurn =
@@ -333,7 +348,7 @@ export default function PlayGame() {
         return;
       }
 
-      const decision = chooseBotMove(g, g.turn);
+      const decision = chooseBotMove(g, g.turn, botBrainRef.current);
       if (decision.type === "drawOrPass") {
         setMatch(withGame(current, drawOrPass(g, g.turn)));
         setBusy(false);
@@ -502,6 +517,46 @@ export default function PlayGame() {
     });
   };
 
+  const handleOrganizeHand = () => {
+    setMatch((current) => {
+      if (!current?.current) return current;
+      const g = current.current;
+      const seat = g.seats[0];
+      if (seat.hand.length < 2) return current;
+      const hand = organizeHand(seat.hand);
+      if (
+        seat.hand.every(
+          (t, i) =>
+            t.id === hand[i]?.id && !!t.rackFlip === !!hand[i]?.rackFlip
+        )
+      ) {
+        return current;
+      }
+      const seats = g.seats.map((s) =>
+        s.index === 0 ? { ...s, hand } : s
+      );
+      return withGame(current, { ...g, seats });
+    });
+    setSelectedId(null);
+  };
+
+  const handleFlipHandTile = (tileId: string) => {
+    setMatch((current) => {
+      if (!current?.current) return current;
+      const g = current.current;
+      const seat = g.seats[0];
+      const tile = seat.hand.find((t) => t.id === tileId);
+      if (!tile || tile.a === tile.b) return current;
+      const hand = seat.hand.map((t) =>
+        t.id === tileId ? { ...t, rackFlip: !t.rackFlip } : t
+      );
+      const seats = g.seats.map((s) =>
+        s.index === 0 ? { ...s, hand } : s
+      );
+      return withGame(current, { ...g, seats });
+    });
+  };
+
   const handleChooseOpener = (seatIndex: number) => {
     setMatch((current) => {
       if (!current?.current) return current;
@@ -588,9 +643,11 @@ export default function PlayGame() {
           modeId={modeId}
           setId={setId}
           maxPoints={maxPoints}
+          botBrain={botBrain}
           onMode={setModeId}
           onSet={setSetId}
           onMaxPoints={handleMaxPoints}
+          onBotBrain={handleBotBrain}
           onStart={start}
         />
         <PlayConfigDrawer
@@ -615,8 +672,6 @@ export default function PlayGame() {
   const labels = teamLabels(game.modeId);
 
   const canPass = humanTurn && !rearrangeMode && legal.length === 0;
-  const showSideButtons =
-    !rearrangeMode && !!selectedId && selectedMoves.length >= 1;
   const humanTeam = game.seats[0]?.team ?? 1;
   const partnerSeat = game.seats.find(
     (s) => s.team === humanTeam && s.index !== 0
@@ -636,12 +691,6 @@ export default function PlayGame() {
     fontWeight: 800,
     borderRadius: 1,
     lineHeight: 1,
-  };
-  const actionSideBtnSx = {
-    ...actionBtnSx,
-    width: actionWidth,
-    minWidth: actionWidth,
-    px: 0,
   };
   const actionIconSx = {
     width: actionWidth,
@@ -1155,7 +1204,7 @@ export default function PlayGame() {
                     </AnimatePresence>
                   </Box>
 
-                  {/* Center: L — Auto-pass — Pass — R */}
+                  {/* Center: Auto-pass — Organize — Rearrange — Pass/Draw */}
                   <Stack
                     direction="row"
                     spacing={0.45}
@@ -1163,35 +1212,6 @@ export default function PlayGame() {
                     justifyContent="center"
                     sx={{ flexShrink: 0 }}
                   >
-                    <Button
-                      size="small"
-                      variant="contained"
-                      disabled={
-                        !showSideButtons ||
-                        !selectedMoves.some((m) => m.side === "left")
-                      }
-                      onPointerDown={tapFeedback}
-                      onClick={() =>
-                        selectedId && commitMove("left", selectedId)
-                      }
-                      sx={{
-                        ...pressableSx,
-                        ...actionSideBtnSx,
-                        color: "#1A120C",
-                        backgroundColor: "#E8A04A",
-                        boxShadow: "none",
-                        "&:hover": {
-                          backgroundColor: "#F0B25E",
-                          boxShadow: "none",
-                        },
-                        "&.Mui-disabled": {
-                          color: alpha("#FBF5E9", 0.45),
-                          backgroundColor: alpha("#FBF5E9", 0.12),
-                        },
-                      }}
-                    >
-                      L
-                    </Button>
                     <IconButton
                       size="small"
                       aria-label={
@@ -1218,6 +1238,30 @@ export default function PlayGame() {
                       }}
                     >
                       <AutoModeOutlined sx={{ fontSize: { xs: 17, sm: 19 } }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      aria-label={t("playOrganizeHand")}
+                      disabled={game.seats[0].hand.length < 2}
+                      onPointerDown={tapFeedback}
+                      onClick={handleOrganizeHand}
+                      sx={{
+                        ...pressableSx,
+                        ...actionIconSx,
+                        color: alpha("#FBF5E9", 0.92),
+                        backgroundColor: alpha("#FBF5E9", 0.14),
+                        border: `1px solid ${alpha("#FBF5E9", 0.42)}`,
+                        "&:hover": {
+                          backgroundColor: alpha("#FBF5E9", 0.22),
+                        },
+                        "&.Mui-disabled": {
+                          color: alpha("#FBF5E9", 0.35),
+                          backgroundColor: alpha("#FBF5E9", 0.08),
+                          borderColor: alpha("#FBF5E9", 0.2),
+                        },
+                      }}
+                    >
+                      <SortOutlined sx={{ fontSize: { xs: 17, sm: 19 } }} />
                     </IconButton>
                     <IconButton
                       size="small"
@@ -1278,35 +1322,6 @@ export default function PlayGame() {
                       {game.allowDraw && game.boneyard.length > 0
                         ? t("playDraw")
                         : t("playPass")}
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      disabled={
-                        !showSideButtons ||
-                        !selectedMoves.some((m) => m.side === "right")
-                      }
-                      onPointerDown={tapFeedback}
-                      onClick={() =>
-                        selectedId && commitMove("right", selectedId)
-                      }
-                      sx={{
-                        ...pressableSx,
-                        ...actionSideBtnSx,
-                        color: "#1A120C",
-                        backgroundColor: "#E8A04A",
-                        boxShadow: "none",
-                        "&:hover": {
-                          backgroundColor: "#F0B25E",
-                          boxShadow: "none",
-                        },
-                        "&.Mui-disabled": {
-                          color: alpha("#FBF5E9", 0.45),
-                          backgroundColor: alpha("#FBF5E9", 0.12),
-                        },
-                      }}
-                    >
-                      R
                     </Button>
                   </Stack>
 
@@ -1403,6 +1418,7 @@ export default function PlayGame() {
                 compact={compact}
                 rearrange={rearrangeMode}
                 onReorder={handleReorderHand}
+                onFlip={handleFlipHandTile}
               />
             </Box>
           )}
@@ -1469,6 +1485,11 @@ export default function PlayGame() {
           onBotDelay: setBotDelayMs,
           animMs,
           onAnimMs: setAnimMs,
+        }}
+        botBrain={{
+          id: botBrain,
+          onChange: handleBotBrain,
+          locked: true,
         }}
         debugLog={{
           logs: game.logs,

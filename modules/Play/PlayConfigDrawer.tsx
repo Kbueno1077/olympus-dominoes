@@ -3,6 +3,7 @@
 import { LANGUAGES } from "@/i18n/translations";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useHasMounted } from "@/hooks/useHasMounted";
+import type { BotBrainId } from "@/lib/play/botBrain";
 import type { GameLogEntry } from "@/lib/play/types";
 import PlayLog from "@/modules/Play/PlayLog";
 import {
@@ -18,16 +19,22 @@ import { pressableRowSx, pressableSx, tapFeedback } from "@/modules/Play/pressFe
 import { isGameStartedRecoil } from "@/recoil/recoilState";
 import BarChartOutlined from "@mui/icons-material/BarChartOutlined";
 import CallMergeOutlined from "@mui/icons-material/CallMergeOutlined";
+import CheckOutlined from "@mui/icons-material/CheckOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import CompareArrowsOutlined from "@mui/icons-material/CompareArrowsOutlined";
 import DirectionsCarOutlined from "@mui/icons-material/DirectionsCarOutlined";
 import EmojiEventsOutlined from "@mui/icons-material/EmojiEventsOutlined";
+import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
 import LeaderboardOutlined from "@mui/icons-material/LeaderboardOutlined";
 import PersonOutlined from "@mui/icons-material/PersonOutlined";
-import SportsEsportsOutlined from "@mui/icons-material/SportsEsportsOutlined";
+import SmartToyOutlined from "@mui/icons-material/SmartToyOutlined";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Drawer,
   IconButton,
@@ -42,7 +49,13 @@ import {
 import { alpha, type Theme } from "@mui/material/styles";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+  type SyntheticEvent,
+} from "react";
 import { useRecoilValue } from "recoil";
 
 export type PlayPaceControls = {
@@ -50,6 +63,13 @@ export type PlayPaceControls = {
   onBotDelay: (ms: number) => void;
   animMs: number;
   onAnimMs: (ms: number) => void;
+};
+
+export type PlayBotBrainControls = {
+  id: BotBrainId;
+  onChange: (id: BotBrainId) => void;
+  /** True once a match has started — brain locked until setup again. */
+  locked?: boolean;
 };
 
 export type PlayDebugLogControls = {
@@ -61,11 +81,15 @@ export type PlayDebugLogControls = {
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** Bot think + animation — omitted on the password gate. */
+  /** Bot think + animation. */
   pace?: PlayPaceControls | null;
+  /** Bot difficulty — locked once a match is underway. */
+  botBrain?: PlayBotBrainControls | null;
   /** Hand event log — only while a match is in progress. */
   debugLog?: PlayDebugLogControls | null;
 };
+
+type ConfigSection = "pace" | "difficulty" | "debug" | "nav" | "language";
 
 type PaceAccent = "primary" | "secondary";
 
@@ -133,16 +157,12 @@ function TurtleIcon({ fontSize = 18 }: { fontSize?: number }) {
         fill: "currentColor",
       }}
     >
-      {/* Shell */}
       <ellipse cx="12" cy="12.5" rx="7.5" ry="5.2" />
-      {/* Head */}
       <circle cx="19.2" cy="11.2" r="2.1" />
-      {/* Legs */}
       <circle cx="7.2" cy="16.6" r="1.55" />
       <circle cx="16.8" cy="16.6" r="1.55" />
       <circle cx="7.2" cy="8.6" r="1.55" />
       <circle cx="16.2" cy="8.2" r="1.45" />
-      {/* Tail */}
       <circle cx="4.6" cy="12.5" r="1.2" />
     </Box>
   );
@@ -239,13 +259,41 @@ function PaceSliderCard({
   );
 }
 
+const accordionSx = {
+  before: {
+    boxShadow: "none",
+    border: "1px solid",
+    borderColor: "divider",
+    borderRadius: "12px !important",
+    overflow: "hidden",
+    bgcolor: "background.paper",
+    "&:before": { display: "none" },
+    "&.Mui-expanded": { margin: 0 },
+  },
+  summary: {
+    minHeight: 48,
+    px: 1.5,
+    "&.Mui-expanded": { minHeight: 48 },
+    "& .MuiAccordionSummary-content": {
+      my: 1,
+      "&.Mui-expanded": { my: 1 },
+    },
+  },
+  details: {
+    px: 1.5,
+    pt: 0,
+    pb: 1.75,
+  },
+} as const;
+
 /**
- * Play table settings: pace, site nav, and language (replaces the site header).
+ * Play table settings: pace, difficulty, site nav, and language.
  */
 export default function PlayConfigDrawer({
   open,
   onClose,
   pace = null,
+  botBrain = null,
   debugLog = null,
 }: Props) {
   const { t, language, setLanguage } = useTranslation() as {
@@ -257,6 +305,18 @@ export default function PlayConfigDrawer({
   const hasMounted = useHasMounted();
   const isGameStarted = useRecoilValue(isGameStartedRecoil);
   const matchInProgress = hasMounted && isGameStarted;
+
+  const defaultSection: ConfigSection = pace
+    ? "pace"
+    : botBrain
+      ? "difficulty"
+      : "nav";
+  const [expanded, setExpanded] = useState<ConfigSection | false>(defaultSection);
+
+  useEffect(() => {
+    if (!open) return;
+    setExpanded(defaultSection);
+  }, [open, defaultSection]);
 
   const paceMarks = useMemo(
     () => [
@@ -288,6 +348,32 @@ export default function PlayConfigDrawer({
     [t]
   );
 
+  const difficultyOptions = useMemo(
+    () =>
+      [
+        {
+          id: "classic" as const,
+          label: t("playBotBrainClassic"),
+          blurb: t("playBotBrainClassicBlurb"),
+        },
+        {
+          id: "table_sense" as const,
+          label: t("playBotBrainTableSense"),
+          blurb: t("playBotBrainTableSenseBlurb"),
+        },
+        {
+          id: "pimc" as const,
+          label: t("playBotBrainPimc"),
+          blurb: t("playBotBrainPimcBlurb"),
+        },
+      ] satisfies { id: BotBrainId; label: string; blurb: string }[],
+    [t]
+  );
+
+  const selectedDifficulty = difficultyOptions.find(
+    (option) => option.id === botBrain?.id
+  );
+
   const navItems = useMemo(
     () => [
       {
@@ -297,11 +383,17 @@ export default function PlayConfigDrawer({
         Icon: HomeOutlined,
       },
       {
+        href: "/play",
+        label: t("navPlay"),
+        match: (p: string) => p.startsWith("/play"),
+        Icon: SmartToyOutlined,
+      },
+      {
         href: "/match",
         label: t("navMatch"),
         match: (p: string) => p.startsWith("/match"),
         inProgress: matchInProgress,
-        Icon: SportsEsportsOutlined,
+        Icon: EditNoteOutlined,
       },
       {
         href: "/history",
@@ -346,6 +438,15 @@ export default function PlayConfigDrawer({
     ],
     [t, matchInProgress]
   );
+
+  const handleSection =
+    (section: ConfigSection) =>
+    (_event: SyntheticEvent, isExpanded: boolean) => {
+      setExpanded(isExpanded ? section : false);
+    };
+
+  const languageName =
+    LANGUAGES.find((entry) => entry.code === language)?.name ?? language;
 
   return (
     <Drawer
@@ -406,205 +507,351 @@ export default function PlayConfigDrawer({
           flex: "1 1 auto",
           minHeight: 0,
           overflowX: "hidden",
-          overflowY: "scroll",
+          overflowY: "auto",
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
           touchAction: "pan-y",
           px: { xs: 2, sm: 2.5 },
-          py: 2,
+          py: 1.75,
           pb: { xs: "max(24px, env(safe-area-inset-bottom))", sm: 2.5 },
           display: "flex",
           flexDirection: "column",
-          gap: 2.5,
+          gap: 1.25,
         }}
       >
         {pace && (
-          <Box>
-            <Typography
-              variant="overline"
-              sx={{
-                color: "text.secondary",
-                letterSpacing: "0.1em",
-                mb: 1.25,
-                display: "block",
-              }}
+          <Accordion
+            disableGutters
+            expanded={expanded === "pace"}
+            onChange={handleSection("pace")}
+            sx={accordionSx.before}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={accordionSx.summary}
             >
-              {t("playConfigPace")}
-            </Typography>
-            <Stack spacing={1.75}>
-              <PaceSliderCard
-                label={t("playBotSpeed")}
-                valueLabel={String(botLevelFromMs(pace.botDelayMs))}
-                accent="primary"
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  {t("playConfigPace")}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  {t("playBotSpeed")} · {botLevelFromMs(pace.botDelayMs)}
+                  {" · "}
+                  {t("playAnimSpeed")} · {animLevelFromMs(pace.animMs)}
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={accordionSx.details}>
+              <Stack spacing={1.5}>
+                <PaceSliderCard
+                  label={t("playBotSpeed")}
+                  valueLabel={String(botLevelFromMs(pace.botDelayMs))}
+                  accent="primary"
+                >
+                  <Slider
+                    value={botLevelFromMs(pace.botDelayMs)}
+                    min={PACE_LEVEL_MIN}
+                    max={PACE_LEVEL_MAX}
+                    step={1}
+                    marks={paceMarks}
+                    valueLabelDisplay="off"
+                    aria-label={t("playBotSpeed")}
+                    onChange={(_e, value) =>
+                      pace.onBotDelay(botMsFromLevel(value as number))
+                    }
+                    sx={paceSliderSx("primary")}
+                  />
+                </PaceSliderCard>
+                <PaceSliderCard
+                  label={t("playAnimSpeed")}
+                  valueLabel={String(animLevelFromMs(pace.animMs))}
+                  accent="secondary"
+                >
+                  <Slider
+                    value={animLevelFromMs(pace.animMs)}
+                    min={PACE_LEVEL_MIN}
+                    max={PACE_LEVEL_MAX}
+                    step={1}
+                    marks={paceMarks}
+                    valueLabelDisplay="off"
+                    aria-label={t("playAnimSpeed")}
+                    onChange={(_e, value) =>
+                      pace.onAnimMs(animMsFromLevel(value as number))
+                    }
+                    sx={paceSliderSx("secondary")}
+                  />
+                </PaceSliderCard>
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+        )}
+
+        {botBrain && (
+          <Accordion
+            disableGutters
+            expanded={expanded === "difficulty"}
+            onChange={handleSection("difficulty")}
+            sx={accordionSx.before}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={accordionSx.summary}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  {t("playConfigBotBrain")}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  {selectedDifficulty?.label ?? t("playBotBrainClassic")}
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={accordionSx.details}>
+              <Typography
+                variant="body2"
+                sx={{ color: "text.secondary", mb: 1.25 }}
               >
-                <Slider
-                  value={botLevelFromMs(pace.botDelayMs)}
-                  min={PACE_LEVEL_MIN}
-                  max={PACE_LEVEL_MAX}
-                  step={1}
-                  marks={paceMarks}
-                  valueLabelDisplay="off"
-                  aria-label={t("playBotSpeed")}
-                  onChange={(_e, value) =>
-                    pace.onBotDelay(botMsFromLevel(value as number))
-                  }
-                  sx={paceSliderSx("primary")}
-                />
-              </PaceSliderCard>
-              <PaceSliderCard
-                label={t("playAnimSpeed")}
-                valueLabel={String(animLevelFromMs(pace.animMs))}
-                accent="secondary"
-              >
-                <Slider
-                  value={animLevelFromMs(pace.animMs)}
-                  min={PACE_LEVEL_MIN}
-                  max={PACE_LEVEL_MAX}
-                  step={1}
-                  marks={paceMarks}
-                  valueLabelDisplay="off"
-                  aria-label={t("playAnimSpeed")}
-                  onChange={(_e, value) =>
-                    pace.onAnimMs(animMsFromLevel(value as number))
-                  }
-                  sx={paceSliderSx("secondary")}
-                />
-              </PaceSliderCard>
-            </Stack>
-          </Box>
+                {t("playConfigBotBrainBody")}
+              </Typography>
+              <Stack spacing={1}>
+                {difficultyOptions.map((option) => {
+                  const selected = botBrain.id === option.id;
+                  const locked = !!botBrain.locked;
+                  return (
+                    <Box
+                      key={option.id}
+                      component="button"
+                      type="button"
+                      disabled={locked}
+                      onPointerDown={locked ? undefined : tapFeedback}
+                      onClick={() => {
+                        if (locked) return;
+                        botBrain.onChange(option.id);
+                      }}
+                      sx={{
+                        ...pressableSx,
+                        appearance: "none",
+                        WebkitAppearance: "none",
+                        font: "inherit",
+                        textAlign: "left",
+                        color: "inherit",
+                        m: 0,
+                        boxSizing: "border-box",
+                        display: "block",
+                        width: "100%",
+                        cursor: locked ? "default" : "pointer",
+                        opacity: locked && !selected ? 0.55 : 1,
+                        px: 1.25,
+                        py: 1.1,
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: selected
+                          ? "primary.main"
+                          : (theme) => alpha(theme.palette.grey[600], 0.2),
+                        backgroundColor: selected
+                          ? (theme) => alpha(theme.palette.primary.main, 0.08)
+                          : "transparent",
+                        "&:disabled": { cursor: "default" },
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        spacing={1}
+                      >
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: selected ? 700 : 600,
+                              color: "text.primary",
+                            }}
+                          >
+                            {option.label}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "text.secondary", display: "block" }}
+                          >
+                            {option.blurb}
+                          </Typography>
+                        </Box>
+                        {selected ? (
+                          <CheckOutlined
+                            sx={{
+                              fontSize: 20,
+                              color: "primary.main",
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : null}
+                      </Stack>
+                    </Box>
+                  );
+                })}
+              </Stack>
+
+              {botBrain.locked ? (
+                <Typography
+                  variant="body2"
+                  sx={{ color: "text.secondary", mt: 1.25 }}
+                >
+                  {t("playBotBrainLocked")}
+                </Typography>
+              ) : null}
+            </AccordionDetails>
+          </Accordion>
         )}
 
         {debugLog && (
-          <Box>
-            <Typography
-              variant="overline"
-              sx={{
-                color: "text.secondary",
-                letterSpacing: "0.1em",
-                mb: 1.25,
-                display: "block",
-              }}
+          <Accordion
+            disableGutters
+            expanded={expanded === "debug"}
+            onChange={handleSection("debug")}
+            sx={accordionSx.before}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={accordionSx.summary}
             >
-              {t("playConfigDebug")}
-            </Typography>
-            <PlayLog
-              logs={debugLog.logs}
-              open={debugLog.open}
-              onToggle={debugLog.onToggle}
-            />
-          </Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                {t("playConfigDebug")}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={accordionSx.details}>
+              <PlayLog
+                logs={debugLog.logs}
+                open={debugLog.open}
+                onToggle={debugLog.onToggle}
+              />
+            </AccordionDetails>
+          </Accordion>
         )}
 
-        <Box>
-          <Typography
-            variant="overline"
-            sx={{
-              color: "text.secondary",
-              letterSpacing: "0.1em",
-              mb: 0.5,
-              display: "block",
-            }}
+        <Accordion
+          disableGutters
+          expanded={expanded === "nav"}
+          onChange={handleSection("nav")}
+          sx={accordionSx.before}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            sx={accordionSx.summary}
           >
-            {t("playConfigNav")}
-          </Typography>
-          <List disablePadding dense sx={{ mx: -1 }}>
-            {navItems.map((item) => {
-              const active = item.match(pathname);
-              const Icon = item.Icon;
-              return (
-                <ListItemButton
-                  key={item.href}
-                  component={Link}
-                  href={item.href}
-                  onPointerDown={tapFeedback}
-                  onClick={onClose}
-                  sx={{
-                    ...pressableRowSx,
-                    borderRadius: 1,
-                    py: 1,
-                    borderLeft: "3px solid",
-                    borderColor: active
-                      ? "primary.main"
-                      : item.inProgress
-                        ? (theme) => alpha(theme.palette.secondary.main, 0.55)
-                        : "transparent",
-                    backgroundColor: active
-                      ? (theme) => alpha(theme.palette.primary.main, 0.07)
-                      : "transparent",
-                  }}
-                >
-                  <ListItemIcon
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              {t("playConfigNav")}
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ ...accordionSx.details, px: 0.75 }}>
+            <List disablePadding dense>
+              {navItems.map((item) => {
+                const active = item.match(pathname);
+                const Icon = item.Icon;
+                return (
+                  <ListItemButton
+                    key={item.href}
+                    component={Link}
+                    href={item.href}
+                    onPointerDown={tapFeedback}
+                    onClick={onClose}
                     sx={{
-                      minWidth: 36,
-                      color: active ? "primary.main" : "text.secondary",
+                      ...pressableRowSx,
+                      borderRadius: 1,
+                      py: 1,
+                      borderLeft: "3px solid",
+                      borderColor: active
+                        ? "primary.main"
+                        : item.inProgress
+                          ? (theme) => alpha(theme.palette.secondary.main, 0.55)
+                          : "transparent",
+                      backgroundColor: active
+                        ? (theme) => alpha(theme.palette.primary.main, 0.07)
+                        : "transparent",
                     }}
                   >
-                    <Icon sx={{ fontSize: 20 }} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.label}
-                    secondary={
-                      item.inProgress && !active
-                        ? t("navMatchInProgress")
-                        : null
-                    }
-                    primaryTypographyProps={{
-                      fontWeight: active ? 700 : 500,
-                      fontSize: 14,
-                    }}
-                    secondaryTypographyProps={{
-                      fontSize: 11,
-                      color: "text.secondary",
-                    }}
-                  />
-                </ListItemButton>
-              );
-            })}
-          </List>
-        </Box>
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 36,
+                        color: active ? "primary.main" : "text.secondary",
+                      }}
+                    >
+                      <Icon sx={{ fontSize: 20 }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.label}
+                      secondary={
+                        item.inProgress && !active
+                          ? t("navMatchInProgress")
+                          : null
+                      }
+                      primaryTypographyProps={{
+                        fontWeight: active ? 700 : 500,
+                        fontSize: 14,
+                      }}
+                      secondaryTypographyProps={{
+                        fontSize: 11,
+                        color: "text.secondary",
+                      }}
+                    />
+                  </ListItemButton>
+                );
+              })}
+            </List>
+          </AccordionDetails>
+        </Accordion>
 
-        <Box>
-          <Typography
-            variant="overline"
-            sx={{
-              color: "text.secondary",
-              letterSpacing: "0.1em",
-              mb: 0.5,
-              display: "block",
-            }}
+        <Accordion
+          disableGutters
+          expanded={expanded === "language"}
+          onChange={handleSection("language")}
+          sx={accordionSx.before}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            sx={accordionSx.summary}
           >
-            {t("language")}
-          </Typography>
-          <List disablePadding dense sx={{ mx: -1 }}>
-            {LANGUAGES.map((entry) => {
-              const selected = entry.code === language;
-              return (
-                <ListItemButton
-                  key={entry.code}
-                  selected={selected}
-                  onPointerDown={tapFeedback}
-                  onClick={() => setLanguage(entry.code)}
-                  sx={{ ...pressableRowSx, borderRadius: 1, py: 1 }}
-                >
-                  <ListItemIcon sx={{ minWidth: 36, fontSize: 18 }}>
-                    <Box component="span" aria-hidden>
-                      {entry.flag}
-                    </Box>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={entry.name}
-                    secondary={entry.region}
-                    primaryTypographyProps={{
-                      fontWeight: selected ? 700 : 500,
-                      fontSize: 14,
-                    }}
-                    secondaryTypographyProps={{ fontSize: 11 }}
-                  />
-                </ListItemButton>
-              );
-            })}
-          </List>
-        </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                {t("language")}
+              </Typography>
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                {languageName}
+              </Typography>
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails sx={{ ...accordionSx.details, px: 0.75 }}>
+            <List disablePadding dense>
+              {LANGUAGES.map((entry) => {
+                const selected = entry.code === language;
+                return (
+                  <ListItemButton
+                    key={entry.code}
+                    selected={selected}
+                    onPointerDown={tapFeedback}
+                    onClick={() => setLanguage(entry.code)}
+                    sx={{ ...pressableRowSx, borderRadius: 1, py: 1 }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36, fontSize: 18 }}>
+                      <Box component="span" aria-hidden>
+                        {entry.flag}
+                      </Box>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={entry.name}
+                      secondary={entry.region}
+                      primaryTypographyProps={{
+                        fontWeight: selected ? 700 : 500,
+                        fontSize: 14,
+                      }}
+                      secondaryTypographyProps={{ fontSize: 11 }}
+                    />
+                  </ListItemButton>
+                );
+              })}
+            </List>
+          </AccordionDetails>
+        </Accordion>
       </Box>
     </Drawer>
   );

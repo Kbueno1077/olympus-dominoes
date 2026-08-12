@@ -1,6 +1,5 @@
 "use client";
 
-import DominoTile from "@/components/DominoTile";
 import LanguageSwitch from "@/components/Header/LanguageSwitch";
 import NavMenu from "@/components/Header/NavMenu";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -18,6 +17,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const HEADER_PX = 64;
+const APP_ICON_SRC = "/app-icon.png";
 
 /**
  * Site chrome for non-play routes. /play hides this bar — see AppShell.
@@ -114,18 +114,21 @@ export default function Header() {
                 }}
               >
                 <Box
+                  component="img"
+                  src={APP_ICON_SRC}
+                  alt=""
+                  aria-hidden
                   sx={{
-                    display: { xs: "none", sm: "block" },
+                    width: { xs: 32, sm: 36 },
+                    height: { xs: 32, sm: 36 },
+                    borderRadius: 1.25,
                     flexShrink: 0,
+                    display: "block",
+                    objectFit: "cover",
+                    boxShadow: (muiTheme) =>
+                      `0 0 0 1px ${alpha(muiTheme.palette.grey[600], 0.14)}`,
                   }}
-                >
-                  <DominoTile
-                    top={9}
-                    bottom={9}
-                    size={17}
-                    orientation="horizontal"
-                  />
-                </Box>
+                />
                 <Box sx={{ minWidth: 0 }}>
                   <Typography
                     component="p"

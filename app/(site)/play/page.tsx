@@ -1,7 +1,6 @@
 "use client";
 
 import PlayGame from "@/modules/Play/PlayGame";
-import PlayGate from "@/modules/Play/PlayGate";
 import { Box } from "@mui/material";
 
 export default function PlayPage() {
@@ -15,9 +14,7 @@ export default function PlayPage() {
         flexDirection: "column",
       }}
     >
-      <PlayGate>
-        <PlayGame />
-      </PlayGate>
+      <PlayGame />
     </Box>
   );
 }

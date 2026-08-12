@@ -58,14 +58,23 @@ const en = {
   featurePlayers: "2 to 4 players",
   featureModes: "Partners or free for all",
   featureLocal: "Active match kept in this browser",
-  readyTitle: "Ready to play?",
+  readyTitle: "What do you want to do?",
   readyBody:
-    "Name the players, pick a mode and a target score. Takes about twenty seconds.",
-  continueReadyTitle: "Match in progress",
+    "Play a full table against bots, or keep score for a live mesa with the notepad.",
+  continueReadyTitle: "Scorepad in progress",
   continueReadyBody:
     "Pick up where you left off. Scores and the table stay until you end the match.",
-  startMatch: "Start a new match",
-  continueMatch: "Continue match",
+  startMatch: "Open score notepad",
+  continueMatch: "Continue scorepad",
+  playWithBots: "Play with Bots",
+  playWithBotsBody:
+    "Deal real tiles and play Cuban dominoes against bots on this device.",
+  playWithBotsCta: "Play with Bots",
+  scoreNotepad: "Score notepad",
+  scoreNotepadBody:
+    "Keep score for a live table — names, hands, and a running total. No bots.",
+  scoreNotepadCta: "Open score notepad",
+  continueScoreNotepad: "Continue scorepad",
   madeForTheTable: "Made for the table",
   privacyLink: "Privacy Policy",
   changelogLink: "Changelog",
@@ -221,15 +230,8 @@ const en = {
   navMatchInProgress: "In progress",
   compareNeedImport:
     "Upload a mobile app export in Stats first, then come back to compare players.",
-  navMatch: "Match",
-  navPlay: "Play",
-  playGateOverline: "Internal",
-  playGateTitle: "Play (testing)",
-  playGateBody:
-    "This table is for internal demos only. Enter the demo password to continue.",
-  playGatePassword: "Password",
-  playGateUnlock: "Unlock",
-  playGateWrong: "Wrong password.",
+  navMatch: "Score notepad",
+  navPlay: "Play with Bots",
   historyNav: "History",
   historyTitle: "History",
   historyEmpty: "Finished matches will show up here.",
@@ -659,6 +661,8 @@ const en = {
   playRearrangeOn: "Rearrange hand on",
   playRearrangeOff: "Rearrange hand off",
   playRearrangeDrag: "drag to reorder",
+  playOrganizeHand: "Organize hand by suits and pips",
+  playFlipTileHint: "tap to flip",
   playEmptyHand: "Empty",
   playSeatYou: "You",
   playSeatPartner: "Partner",
@@ -679,9 +683,55 @@ const en = {
   playNotesTitle: "Scorepad",
   playNotesSubtitle: "Match standings and hand results.",
   playConfigTitle: "Settings",
-  playConfigSubtitle: "Pace, debug log, navigation, and language.",
+  playConfigSubtitle: "Tap a section to open it.",
   playConfigPace: "Pace",
-  playConfigDebug: "Debug",
+  playConfigBotBrain: "Bot difficulty",
+  playConfigBotBrainBody:
+    "How hard the bots play. Harder levels only use what everyone can see — passes and open ends — never hidden hands.",
+  playBotBrainClassic: "Easy",
+  playBotBrainTableSense: "Standard",
+  playBotBrainPimc: "Expert",
+  playBotBrainClassicBlurb: "Plays the obvious bones from its hand.",
+  playBotBrainTableSenseBlurb: "Watches passes, partners, and open ends.",
+  playBotBrainPimcBlurb: "Thinks ahead through many possible deals.",
+  playBotBrainClassicHint:
+    "Hand heuristics only: doubles, pip dump, suit thickness. Blind to who passed what.",
+  playBotBrainRulesTitle: "How Standard plays",
+  playBotBrainRulesMore: "How this level plays",
+  playBotPimcRulesTitle: "How Expert plays",
+  playBotPimcRuleSearch:
+    "Tries each legal move across many random “what if” deals of the unseen tiles, then picks the best average result",
+  playBotPimcRuleVoids:
+    "Those deals respect pass voids — nobody is given a suit they already showed they lack",
+  playBotPimcRuleTeam:
+    "Scores wins for your team (1v1, 2v2 partners, or FFA) using this hand’s points — not seat ego",
+  playBotPimcRuleModes:
+    "Uses your real rules: draw on double-six, block-only on double-nine, partner scoring on 2v2",
+  playBotPimcRuleNoCheat:
+    "Never looks at true hidden hands — only reshuffles unknowns consistent with the public table",
+  playBotRulePasses:
+    "Remembers suits each seat passed on (voids) for the rest of the hand",
+  playBotRuleNext:
+    "Pays special attention to the next player — leave voids for rivals, feed partner when it makes sense",
+  playBotRulePartner:
+    "Helps partner, but not blindly — softens help when a rival is racing short",
+  playBotRuleOpenerFavored:
+    "Opening tile’s faces start as “good pips for us,” then update when people pass or play",
+  playBotRuleTeamEnds:
+    "Avoids killing ends that still look good for our team when another play exists",
+  playBotRuleSelfLine:
+    "Stays consistent with suits they already played — builds a line instead of jumping around",
+  playBotRuleCloseTable:
+    "May try to close the table (force a block) only when shorter than rivals — gambles with ~5 pips per hidden tile, tilted by how heavy others have already played",
+  playBotRuleRace:
+    "Tracks played pressure and prefers dumping hot suits rivals still like",
+  playBotRuleHandReset:
+    "Pass voids and favored suits reset at the start of every hand",
+  playBotRuleNoCheat:
+    "Never peeks at hidden hands or the boneyard — only what everyone at the mesa can see",
+  playBotBrainLocked:
+    "Difficulty is locked for this match. Return to setup to change Easy / Standard / Expert.",
+  playConfigDebug: "Hand log",
   playConfigNav: "Go to",
   playConfigAria: "Open settings",
   playCloseConfig: "Close settings",
@@ -736,14 +786,23 @@ const es = {
   featurePlayers: "De 2 a 4 jugadores",
   featureModes: "En parejas o todos contra todos",
   featureLocal: "La partida activa se guarda en este navegador",
-  readyTitle: "¿Listos para jugar?",
+  readyTitle: "¿Qué quieres hacer?",
   readyBody:
-    "Pon los nombres, elige el modo y los puntos. Toma unos veinte segundos.",
-  continueReadyTitle: "Partida en curso",
+    "Juega una mesa completa contra bots, o anota una mesa en vivo con la libreta.",
+  continueReadyTitle: "Libreta en curso",
   continueReadyBody:
     "Sigue donde la dejaste. Los puntos y la mesa se quedan hasta que termines la partida.",
-  startMatch: "Empezar una partida",
-  continueMatch: "Continuar partida",
+  startMatch: "Abrir libreta",
+  continueMatch: "Continuar libreta",
+  playWithBots: "Jugar vs bots",
+  playWithBotsBody:
+    "Reparte fichas de verdad y juega dominó cubano contra bots en este dispositivo.",
+  playWithBotsCta: "Jugar vs bots",
+  scoreNotepad: "Libreta de puntos",
+  scoreNotepadBody:
+    "Anota una mesa en vivo — nombres, manos y total. Sin bots.",
+  scoreNotepadCta: "Abrir libreta",
+  continueScoreNotepad: "Continuar libreta",
   madeForTheTable: "Hecho para la mesa",
   privacyLink: "Política de privacidad",
   changelogLink: "Novedades",
@@ -899,15 +958,8 @@ const es = {
   navMatchInProgress: "En curso",
   compareNeedImport:
     "Sube un export de la app en Estadísticas primero, luego vuelve a comparar jugadores.",
-  navMatch: "Partida",
-  navPlay: "Jugar",
-  playGateOverline: "Interno",
-  playGateTitle: "Jugar (pruebas)",
-  playGateBody:
-    "Esta mesa es solo para demos internas. Introduce la contraseña de demo para continuar.",
-  playGatePassword: "Contraseña",
-  playGateUnlock: "Desbloquear",
-  playGateWrong: "Contraseña incorrecta.",
+  navMatch: "Libreta",
+  navPlay: "Jugar vs bots",
   historyNav: "Historial",
   historyTitle: "Historial",
   historyEmpty: "Aquí aparecerán las partidas terminadas.",
@@ -1343,6 +1395,8 @@ const es = {
   playRearrangeOn: "Reordenar mano activado",
   playRearrangeOff: "Reordenar mano desactivado",
   playRearrangeDrag: "arrastra para reordenar",
+  playOrganizeHand: "Organizar mano por palos y pips",
+  playFlipTileHint: "toca para girar",
   playEmptyHand: "Vacía",
   playSeatYou: "Tú",
   playSeatPartner: "Pareja",
@@ -1363,9 +1417,55 @@ const es = {
   playNotesTitle: "Libreta",
   playNotesSubtitle: "Marcador y resultados de manos.",
   playConfigTitle: "Ajustes",
-  playConfigSubtitle: "Ritmo, registro, navegación e idioma.",
+  playConfigSubtitle: "Toca una sección para abrirla.",
   playConfigPace: "Ritmo",
-  playConfigDebug: "Depuración",
+  playConfigBotBrain: "Dificultad del bot",
+  playConfigBotBrainBody:
+    "Qué tan duros juegan los bots. Los niveles más altos solo usan lo que todos ven — pases y puntas — nunca manos ocultas.",
+  playBotBrainClassic: "Fácil",
+  playBotBrainTableSense: "Normal",
+  playBotBrainPimc: "Experto",
+  playBotBrainClassicBlurb: "Juega las fichas obvias de su mano.",
+  playBotBrainTableSenseBlurb: "Mira pases, pareja y puntas abiertas.",
+  playBotBrainPimcBlurb: "Piensa adelante en muchos repartos posibles.",
+  playBotBrainClassicHint:
+    "Solo heurísticas de mano: dobles, pips, grosor de palo. Ciego a quién pasó qué.",
+  playBotBrainRulesTitle: "Cómo juega Normal",
+  playBotBrainRulesMore: "Cómo juega este nivel",
+  playBotPimcRulesTitle: "Cómo juega Experto",
+  playBotPimcRuleSearch:
+    "Prueba cada jugada legal en muchos repartos aleatorios de las fichas ocultas y elige el mejor promedio",
+  playBotPimcRuleVoids:
+    "Esos repartos respetan vacíos por pase — nadie recibe un palo que ya demostró no tener",
+  playBotPimcRuleTeam:
+    "Cuenta victorias de tu equipo (1v1, 2v2 o FFA) con los puntos de la mano — no ego de asiento",
+  playBotPimcRuleModes:
+    "Usa tus reglas reales: robar en doble seis, solo bloqueo en doble nueve, puntaje de pareja en 2v2",
+  playBotPimcRuleNoCheat:
+    "Nunca mira las manos ocultas reales — solo remezcla lo desconocido según la mesa pública",
+  playBotRulePasses:
+    "Recuerda los palos en los que cada asiento pasó (vacíos) el resto de la mano",
+  playBotRuleNext:
+    "Atiende al siguiente — deja vacíos a rivales, alimenta al compañero cuando conviene",
+  playBotRulePartner:
+    "Ayuda al compañero, pero no a ciegas — suaviza la ayuda si un rival va corto",
+  playBotRuleOpenerFavored:
+    "Las caras de la ficha de apertura empiezan como “buenos palos para nosotros” y se actualizan con pases y jugadas",
+  playBotRuleTeamEnds:
+    "Evita matar puntas que aún le sirven al equipo si hay otra jugada",
+  playBotRuleSelfLine:
+    "Se mantiene en los palos que ya jugó — construye línea en vez de saltar",
+  playBotRuleCloseTable:
+    "Puede intentar cerrar la mesa (bloquear) solo si va más corto que los rivales — apuesta ~5 pips por ficha oculta, ajustado por lo pesado que ya jugaron otros",
+  playBotRuleRace:
+    "Sigue la presión jugada y prefiere botar palos calientes que el rival aún quiere",
+  playBotRuleHandReset:
+    "Los vacíos por pase y los palos favorecidos se reinician al empezar cada mano",
+  playBotRuleNoCheat:
+    "Nunca mira manos ocultas ni el pozo — solo lo que todos en la mesa ven",
+  playBotBrainLocked:
+    "La dificultad está bloqueada en esta partida. Vuelve a la configuración para cambiar Fácil / Normal / Experto.",
+  playConfigDebug: "Registro de mano",
   playConfigNav: "Ir a",
   playConfigAria: "Abrir ajustes",
   playCloseConfig: "Cerrar ajustes",

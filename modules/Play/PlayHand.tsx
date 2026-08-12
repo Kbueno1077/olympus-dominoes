@@ -2,6 +2,7 @@
 
 import DominoTile from "@/components/DominoTile";
 import type { ChainSide, LegalMove, Tile } from "@/lib/play/types";
+import { rackDisplayFaces } from "@/lib/play/tiles";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Box, Stack, Typography, useMediaQuery } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -29,6 +30,8 @@ type Props = {
   /** Drag tiles to reorder; play / board drops are disabled. */
   rearrange?: boolean;
   onReorder?: (fromIndex: number, toIndex: number) => void;
+  /** Flip a tile 180° on the rack (e.g. tap while rearranging). */
+  onFlip?: (tileId: string) => void;
 };
 
 /** Rearrange / play: pixels before a press becomes a drag. */
@@ -38,8 +41,8 @@ type Density = "desktop" | "portrait" | "landscape";
 
 type PointerDrag = {
   tileId: string;
-  a: number;
-  b: number;
+  top: number;
+  bottom: number;
   x: number;
   y: number;
   pointerId: number;
@@ -138,6 +141,7 @@ export default function PlayHand({
   compact = false,
   rearrange = false,
   onReorder,
+  onFlip,
 }: Props) {
   const { t } = useTranslation();
   const shortLandscape = useMediaQuery(
@@ -284,6 +288,7 @@ export default function PlayHand({
               const canPlay = !rearrange && playableIds.has(tile.id);
               const selected = !rearrange && selectedId === tile.id;
               const ghosting = pointerDrag?.tileId === tile.id;
+              const faces = rackDisplayFaces(tile);
               const showInsertBefore =
                 rearrange &&
                 insertIndex != null &&
@@ -381,8 +386,8 @@ export default function PlayHand({
                       }
                       setPointerDrag({
                         tileId: tile.id,
-                        a: tile.a,
-                        b: tile.b,
+                        top: faces.top,
+                        bottom: faces.bottom,
                         x: event.clientX,
                         y: event.clientY,
                         pointerId: event.pointerId,
@@ -407,6 +412,9 @@ export default function PlayHand({
                         tile.id,
                         wasDragging
                       );
+                      if (rearrange && !wasDragging) {
+                        onFlip?.(tile.id);
+                      }
                       try {
                         event.currentTarget.releasePointerCapture(
                           event.pointerId
@@ -422,7 +430,7 @@ export default function PlayHand({
                     }}
                     aria-label={`${t("playTileAria", { a: tile.a, b: tile.b })}${
                       rearrange
-                        ? `, ${t("playRearrangeDrag")}`
+                        ? `, ${t("playRearrangeDrag")}, ${t("playFlipTileHint")}`
                         : canPlay
                           ? t("playTilePlayable")
                           : ""
@@ -472,11 +480,12 @@ export default function PlayHand({
                         transform:
                           tileScale === 1 ? undefined : `scale(${tileScale})`,
                         transformOrigin: "center bottom",
+                        transition: "transform 160ms ease",
                       }}
                     >
                       <DominoTile
-                        top={tile.a}
-                        bottom={tile.b}
+                        top={faces.top}
+                        bottom={faces.bottom}
                         size={face}
                         highContrast
                       />
@@ -538,8 +547,8 @@ export default function PlayHand({
           }}
         >
           <DominoTile
-            top={pointerDrag.a}
-            bottom={pointerDrag.b}
+            top={pointerDrag.top}
+            bottom={pointerDrag.bottom}
             size={face}
             highContrast
           />
