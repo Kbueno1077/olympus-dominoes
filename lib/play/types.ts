@@ -10,6 +10,11 @@ export type Tile = {
   a: number;
   /** Higher face (canonical). */
   b: number;
+  /**
+   * Rack display only: when true, show `b` on top and `a` on bottom (180°).
+   * Does not affect rules — a/b stay canonical.
+   */
+  rackFlip?: boolean;
 };
 
 /** One tile as it sits on the chain, left→right. */
@@ -84,6 +89,19 @@ export type GameSnapshot = {
   openingTileId: string | null;
   /** Seat that last passed; cleared on the next play or pass. */
   lastPasserIndex: number | null;
+  /**
+   * Public table memory: suits each seat has shown they cannot play
+   * (open ends when they passed). Fair for everyone — not hidden-hand peeking.
+   * Cleared for a seat when they draw (pickup is unknown).
+   * Reset every hand.
+   */
+  suitVoids: number[][];
+  /**
+   * Suits each team currently treats as “probably good for us” (open-end control).
+   * Seeded from the opening tile’s faces; updated as passes/plays revise the picture.
+   * Reset every hand — no carry across hands.
+   */
+  favoredSuitsByTeam: Record<number, number[]>;
   turn: number;
   passesInRow: number;
   result: GameResult | null;

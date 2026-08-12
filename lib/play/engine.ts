@@ -54,6 +54,48 @@ function appendLog(
   };
 }
 
+function uniqueSuits(suits: number[]): number[] {
+  return Array.from(new Set(suits)).sort((a, b) => a - b);
+}
+
+function favoredForTeam(
+  map: Record<number, number[]>,
+  team: number
+): number[] {
+  return map[team] ?? [];
+}
+
+function withFavoredTeam(
+  map: Record<number, number[]>,
+  team: number,
+  suits: number[]
+): Record<number, number[]> {
+  return { ...map, [team]: uniqueSuits(suits) };
+}
+
+/** Add suits to a team's “probably good” list. */
+function addFavoredSuits(
+  map: Record<number, number[]>,
+  team: number,
+  suits: number[]
+): Record<number, number[]> {
+  return withFavoredTeam(map, team, [...favoredForTeam(map, team), ...suits]);
+}
+
+/** Drop suits from a team's favored list. */
+function removeFavoredSuits(
+  map: Record<number, number[]>,
+  team: number,
+  suits: number[]
+): Record<number, number[]> {
+  const drop = new Set(suits);
+  return withFavoredTeam(
+    map,
+    team,
+    favoredForTeam(map, team).filter((s) => !drop.has(s))
+  );
+}
+
 export function openEnds(chain: PlacedTile[]): { left: number; right: number } | null {
   if (chain.length === 0) return null;
   return { left: chain[0].left, right: chain[chain.length - 1].right };
@@ -279,6 +321,8 @@ export function createGame(
     chain: [],
     openingTileId: null,
     lastPasserIndex: null,
+    suitVoids: seats.map(() => []),
+    favoredSuitsByTeam: {},
     turn: starter,
     passesInRow: 0,
     result: null,
@@ -295,7 +339,8 @@ export function createGame(
     `${mode.players} players, ${set.tilesPerHand} each` +
       (canDraw
         ? `, boneyard ${boneyard.length}`
-        : `, ${remainder.length} sleeping (no draw)`)
+        : `, ${remainder.length} sleeping (no draw)`) +
+      ` · table memory reset`
   );
 
   seats.forEach((seat) => {
@@ -513,6 +558,8 @@ export function playMove(
     s.index === seatIndex ? { ...s, hand: removeFromHand(s.hand, tile.id) } : s
   );
 
+  const wasOpening = state.chain.length === 0;
+
   let next: GameSnapshot = {
     ...state,
     seats,
@@ -523,12 +570,30 @@ export function playMove(
     turn: nextTurn(state),
   };
 
+  // Hand memory: opener seeds “good for us”; later plays revise it.
+  let favored = { ...(state.favoredSuitsByTeam ?? {}) };
+  if (wasOpening) {
+    favored = addFavoredSuits(favored, seat.team, [tile.a, tile.b]);
+  } else {
+    const leaving = move.side === "right" ? move.right : move.left;
+    // Reinforce the face we leave if we’re already treating it as ours,
+    // or if it was one of the faces we just spent from our line.
+    const prior = new Set(favoredForTeam(favored, seat.team));
+    if (prior.has(leaving) || prior.has(tile.a) || prior.has(tile.b)) {
+      favored = addFavoredSuits(favored, seat.team, [leaving]);
+    }
+  }
+  next = { ...next, favoredSuitsByTeam: favored };
+
   next = appendLog(
     next,
     seat.kind === "bot" ? "bot" : "play",
     `${seat.name} plays ${formatTile(tile)} on ${move.side}`,
     reason ??
-      `Ends → ${openEnds(chain)?.left} … ${openEnds(chain)?.right} · hand left ${seats[seatIndex].hand.length}`
+      `Ends → ${openEnds(chain)?.left} … ${openEnds(chain)?.right} · hand left ${seats[seatIndex].hand.length}` +
+        (wasOpening
+          ? ` · team ${seat.team} favors ${[tile.a, tile.b].join("/")}`
+          : "")
   );
 
   return finishIfNeeded(next);
@@ -554,10 +619,16 @@ export function drawOrPass(state: GameSnapshot, seatIndex: number): GameSnapshot
     const seats = state.seats.map((s) =>
       s.index === seatIndex ? { ...s, hand: [...s.hand, drawn] } : s
     );
+    const priorVoids = state.suitVoids ?? state.seats.map(() => []);
+    // Draw invalidates pass-voids for this seat — pickup is unknown to the table.
+    const suitVoids = priorVoids.map((voids, i) =>
+      i === seatIndex ? [] : [...voids]
+    );
     let next: GameSnapshot = {
       ...state,
       seats,
       boneyard: rest,
+      suitVoids,
       passesInRow: 0,
     };
     next = appendLog(
@@ -592,17 +663,45 @@ export function drawOrPass(state: GameSnapshot, seatIndex: number): GameSnapshot
     );
   }
 
+  const ends = openEnds(state.chain);
+  const priorVoids = state.suitVoids ?? state.seats.map(() => []);
+  const suitVoids = priorVoids.map((voids, i) => {
+    if (i !== seatIndex || !ends) return [...voids];
+    const nextVoids = new Set(voids);
+    nextVoids.add(ends.left);
+    nextVoids.add(ends.right);
+    return Array.from(nextVoids).sort((a, b) => a - b);
+  });
+
+  // Revise favored suits from the pass: passer’s team loses those suits;
+  // every other team gains them (rivals can’t answer — good control for us).
+  let favored = { ...(state.favoredSuitsByTeam ?? {}) };
+  if (ends) {
+    const passed = [ends.left, ends.right];
+    favored = removeFavoredSuits(favored, seat.team, passed);
+    const otherTeams = Array.from(
+      new Set(state.seats.map((s) => s.team).filter((t) => t !== seat.team))
+    );
+    for (const team of otherTeams) {
+      favored = addFavoredSuits(favored, team, passed);
+    }
+  }
+
   let next: GameSnapshot = {
     ...state,
     passesInRow: state.passesInRow + 1,
     lastPasserIndex: seatIndex,
+    suitVoids,
+    favoredSuitsByTeam: favored,
     turn: nextTurn(state),
   };
   next = appendLog(
     next,
     seat.kind === "bot" ? "bot" : "info",
     `${seat.name} passes`,
-    `Passes in a row: ${next.passesInRow}`
+    ends
+      ? `Void ${ends.left}${ends.left === ends.right ? "" : `/${ends.right}`} · passes in a row: ${next.passesInRow}`
+      : `Passes in a row: ${next.passesInRow}`
   );
   return finishIfNeeded(next);
 }

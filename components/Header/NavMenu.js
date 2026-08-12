@@ -11,7 +11,8 @@ import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
 import LeaderboardOutlined from "@mui/icons-material/LeaderboardOutlined";
 import CallMergeOutlined from "@mui/icons-material/CallMergeOutlined";
-import SportsEsportsOutlined from "@mui/icons-material/SportsEsportsOutlined";
+import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
+import SmartToyOutlined from "@mui/icons-material/SmartToyOutlined";
 import {
   Box,
   Button,
@@ -48,11 +49,17 @@ export default function NavMenu({ dense = false }) {
         Icon: HomeOutlined,
       },
       {
+        href: "/play",
+        label: t("navPlay"),
+        match: (p) => p.startsWith("/play"),
+        Icon: SmartToyOutlined,
+      },
+      {
         href: "/match",
         label: t("navMatch"),
         match: (p) => p.startsWith("/match"),
         inProgress: matchInProgress,
-        Icon: SportsEsportsOutlined,
+        Icon: EditNoteOutlined,
       },
       {
         href: "/history",

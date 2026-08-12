@@ -8,7 +8,8 @@ export default function HomePage() {
 
   return (
     <Dashboard
-      onStartNewGame={() => router.push("/match")}
+      onPlayWithBots={() => router.push("/play")}
+      onStartScorepad={() => router.push("/match")}
       onOpenAnalytics={() => router.push("/stats")}
     />
   );

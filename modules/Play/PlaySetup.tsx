@@ -1,8 +1,10 @@
 "use client";
 
+import type { BotBrainId } from "@/lib/play/botBrain";
 import type { DominoSetId, PlayModeId } from "@/lib/play/types";
 import { useTranslation } from "@/i18n/useTranslation";
 import { pressableSx, tapFeedback } from "@/modules/Play/pressFeedback";
+import CheckOutlined from "@mui/icons-material/CheckOutlined";
 import TouchAppOutlined from "@mui/icons-material/TouchAppOutlined";
 import {
   Box,
@@ -16,15 +18,17 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Props = {
   modeId: PlayModeId;
   setId: DominoSetId;
   maxPoints: number;
+  botBrain: BotBrainId;
   onMode: (mode: PlayModeId) => void;
   onSet: (set: DominoSetId) => void;
   onMaxPoints: (n: number) => void;
+  onBotBrain: (id: BotBrainId) => void;
   onStart: () => void;
 };
 
@@ -53,9 +57,11 @@ export default function PlaySetup({
   modeId,
   setId,
   maxPoints,
+  botBrain,
   onMode,
   onSet,
   onMaxPoints,
+  onBotBrain,
   onStart,
 }: Props) {
   const { t } = useTranslation();
@@ -64,6 +70,28 @@ export default function PlaySetup({
   useEffect(() => {
     setFirstToDraft(String(maxPoints));
   }, [maxPoints]);
+
+  const difficultyOptions = useMemo(
+    () =>
+      [
+        {
+          id: "classic" as const,
+          label: t("playBotBrainClassic"),
+          blurb: t("playBotBrainClassicBlurb"),
+        },
+        {
+          id: "table_sense" as const,
+          label: t("playBotBrainTableSense"),
+          blurb: t("playBotBrainTableSenseBlurb"),
+        },
+        {
+          id: "pimc" as const,
+          label: t("playBotBrainPimc"),
+          blurb: t("playBotBrainPimcBlurb"),
+        },
+      ] satisfies { id: BotBrainId; label: string; blurb: string }[],
+    [t]
+  );
 
   const commitFirstTo = (raw: string) => {
     const parsed = Number.parseInt(raw, 10);
@@ -264,6 +292,77 @@ export default function PlaySetup({
               fullWidth
               sx={{ maxWidth: 280 }}
             />
+          </Stack>
+        </Box>
+
+        <Box>
+          <Typography
+            variant="overline"
+            sx={{ color: "text.secondary", mb: 1, display: "block" }}
+          >
+            {t("playConfigBotBrain")}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{ color: "text.secondary", mb: 1.25, maxWidth: 52 * 8 }}
+          >
+            {t("playConfigBotBrainBody")}
+          </Typography>
+          <Stack spacing={1.25}>
+            {difficultyOptions.map((option) => {
+              const active = botBrain === option.id;
+              return (
+                <Box
+                  key={option.id}
+                  component="button"
+                  type="button"
+                  onPointerDown={tapFeedback}
+                  onClick={() => onBotBrain(option.id)}
+                  sx={{
+                    ...pressableSx,
+                    textAlign: "left",
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: "1.5px solid",
+                    borderColor: active
+                      ? "primary.main"
+                      : alpha("#241D14", 0.12),
+                    backgroundColor: active
+                      ? alpha("#1F6B58", 0.1)
+                      : alpha("#fff", 0.4),
+                    cursor: "pointer",
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    spacing={1}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, color: "text.primary" }}>
+                        {option.label}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary" }}
+                      >
+                        {option.blurb}
+                      </Typography>
+                    </Box>
+                    {active ? (
+                      <CheckOutlined
+                        sx={{
+                          fontSize: 20,
+                          color: "primary.main",
+                          flexShrink: 0,
+                        }}
+                      />
+                    ) : null}
+                  </Stack>
+                </Box>
+              );
+            })}
           </Stack>
         </Box>
 

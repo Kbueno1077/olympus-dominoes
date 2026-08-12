@@ -5,7 +5,8 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
 import ExpandMore from "@mui/icons-material/ExpandMore";
-import { PlayArrow } from "@mui/icons-material";
+import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
+import SmartToyOutlined from "@mui/icons-material/SmartToyOutlined";
 import {
   Box,
   Button,
@@ -245,7 +246,11 @@ function AppVsWebDetails({ t }) {
   );
 }
 
-export default function Dashboard({ onStartNewGame, onOpenAnalytics }) {
+export default function Dashboard({
+  onPlayWithBots,
+  onStartScorepad,
+  onOpenAnalytics,
+}) {
   const { t } = useTranslation();
   const hasMounted = useHasMounted();
   const isGameStarted = useRecoilValue(isGameStartedRecoil);
@@ -319,37 +324,126 @@ export default function Dashboard({ onStartNewGame, onOpenAnalytics }) {
                 p: { xs: 3, sm: 4 },
                 backgroundColor: "background.paper",
                 borderColor: (theme) =>
-                  alpha(
-                    theme.palette[matchInProgress ? "secondary" : "primary"]
-                      .main,
-                    0.24
-                  ),
+                  alpha(theme.palette.primary.main, 0.24),
               }}
             >
-              <Stack spacing={2.5} alignItems="center">
-                <Typography variant="h5" sx={{ color: "text.primary" }}>
-                  {t(matchInProgress ? "continueReadyTitle" : "readyTitle")}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "text.secondary",
-                    maxWidth: 340,
-                    textAlign: "center",
-                  }}
-                >
-                  {t(matchInProgress ? "continueReadyBody" : "readyBody")}
-                </Typography>
-                <Button
-                  onClick={onStartNewGame}
-                  variant="contained"
-                  size="large"
-                  fullWidth
-                  startIcon={<PlayArrow />}
-                  sx={{ maxWidth: 280, fontSize: 15 }}
-                >
-                  {t(matchInProgress ? "continueMatch" : "startMatch")}
-                </Button>
+              <Stack spacing={2.5}>
+                <Stack spacing={1} alignItems="center">
+                  <Typography
+                    variant="h5"
+                    sx={{ color: "text.primary", textAlign: "center" }}
+                  >
+                    {t("readyTitle")}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      maxWidth: 340,
+                      textAlign: "center",
+                    }}
+                  >
+                    {t("readyBody")}
+                  </Typography>
+                </Stack>
+
+                <Stack spacing={1.5}>
+                  <Box
+                    sx={{
+                      p: 1.75,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: (theme) =>
+                        alpha(theme.palette.primary.main, 0.28),
+                      backgroundColor: (theme) =>
+                        alpha(theme.palette.primary.main, 0.06),
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 700, color: "text.primary", mb: 0.35 }}
+                    >
+                      {t("playWithBots")}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        display: "block",
+                        mb: 1.25,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {t("playWithBotsBody")}
+                    </Typography>
+                    <Button
+                      onClick={onPlayWithBots}
+                      variant="contained"
+                      size="large"
+                      fullWidth
+                      startIcon={<SmartToyOutlined />}
+                      sx={{ fontSize: 15 }}
+                    >
+                      {t("playWithBotsCta")}
+                    </Button>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      p: 1.75,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: (theme) =>
+                        alpha(
+                          theme.palette[
+                            matchInProgress ? "secondary" : "grey"
+                          ][matchInProgress ? "main" : 600],
+                          matchInProgress ? 0.35 : 0.2
+                        ),
+                      backgroundColor: (theme) =>
+                        matchInProgress
+                          ? alpha(theme.palette.secondary.main, 0.08)
+                          : alpha(theme.palette.grey[500], 0.04),
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 700, color: "text.primary", mb: 0.35 }}
+                    >
+                      {t("scoreNotepad")}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        display: "block",
+                        mb: 1.25,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {t(
+                        matchInProgress
+                          ? "continueReadyBody"
+                          : "scoreNotepadBody"
+                      )}
+                    </Typography>
+                    <Button
+                      onClick={onStartScorepad}
+                      variant={matchInProgress ? "contained" : "outlined"}
+                      color={matchInProgress ? "secondary" : "primary"}
+                      size="large"
+                      fullWidth
+                      startIcon={<EditNoteOutlined />}
+                      sx={{ fontSize: 15 }}
+                    >
+                      {t(
+                        matchInProgress
+                          ? "continueScoreNotepad"
+                          : "scoreNotepadCta"
+                      )}
+                    </Button>
+                  </Box>
+                </Stack>
               </Stack>
             </Card>
           </Box>
