@@ -50,7 +50,7 @@ type PointerDrag = {
 
 function rackFaceSize(count: number, width: number, density: Density) {
   /** Shared bump for tile + stand height (lockstep — no CSS scale). */
-  const bump = (face: number) => Math.round(face * 1.05);
+  const bump = (face: number) => Math.round(face * 1.1);
 
   if (count <= 0) {
     switch (density) {
