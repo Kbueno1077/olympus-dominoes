@@ -86,6 +86,12 @@ export const isGameStartedRecoil = atom({
     default: false,
     effects_UNSTABLE: [persistAtom],
 });
+
+/** Play vs bots: true while a dealt match is on screen (hides site header). */
+export const playTableActiveRecoil = atom({
+    key: "playTableActive",
+    default: false,
+});
 export const whoWonRecoil = atom({
     key: "whoWon",
     default: "",

@@ -46,6 +46,7 @@ import {
 } from "@/modules/Play/paceLevels";
 import { useTranslation } from "@/i18n/useTranslation";
 import { organizeHand, setConfig } from "@/lib/play/tiles";
+import { playTableActiveRecoil } from "@/recoil/recoilState";
 import AutoModeOutlined from "@mui/icons-material/AutoModeOutlined";
 import MenuBookOutlined from "@mui/icons-material/MenuBookOutlined";
 import SortOutlined from "@mui/icons-material/SortOutlined";
@@ -69,6 +70,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useSetRecoilState } from "recoil";
 
 type SeatPos = "top" | "left" | "right" | "bottom";
 
@@ -123,6 +125,7 @@ export default function PlayGame() {
   const [setId, setSetId] = useState<DominoSetId>("double_nine");
   const [maxPoints, setMaxPoints] = useState(150);
   const [match, setMatch] = useState<MatchSnapshot | null>(null);
+  const setPlayTableActive = useSetRecoilState(playTableActiveRecoil);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [logOpen, setLogOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -158,6 +161,12 @@ export default function PlayGame() {
   const passFlashSignalRef = useRef<string | null>(null);
   const matchRef = useRef(match);
   matchRef.current = match;
+
+  useEffect(() => {
+    setPlayTableActive(!!match);
+    return () => setPlayTableActive(false);
+  }, [match, setPlayTableActive]);
+
   const seatAnchorRefs = useRef<Partial<Record<SeatPos, HTMLElement | null>>>(
     {}
   );

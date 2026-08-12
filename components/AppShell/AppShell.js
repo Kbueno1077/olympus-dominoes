@@ -1,9 +1,11 @@
 "use client";
 
 import Header from "@/components/Header/Header";
+import { playTableActiveRecoil } from "@/recoil/recoilState";
 import { Box } from "@mui/material";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { useRecoilValue } from "recoil";
 
 const FULL_BLEED_PATHS = new Set([
   "/stats",
@@ -26,21 +28,24 @@ const VIEWPORT_HEIGHT = {
  * so mobile does not stack html/body scroll under this section (overscroll past
  * content). Full-bleed dashboards still use inner pane scroll on md+.
  *
- * /play hides the site header — table chrome owns nav via the config drawer.
+ * /play keeps the site header on setup; once a match is dealt, the table owns
+ * chrome via the config drawer and the header hides.
  */
 export default function AppShell({ children }) {
   const pathname = usePathname();
+  const playTableActive = useRecoilValue(playTableActiveRecoil);
   const fullBleed =
     FULL_BLEED_PATHS.has(pathname) || pathname.startsWith("/history/");
-  const playTable = pathname === "/play";
+  const playPath = pathname === "/play";
+  const playInMatch = playPath && playTableActive;
 
   useEffect(() => {
-    if (!playTable) return;
+    if (!playInMatch) return;
     document.documentElement.style.setProperty("--app-header-height", "0px");
     return () => {
       document.documentElement.style.removeProperty("--app-header-height");
     };
-  }, [playTable]);
+  }, [playInMatch]);
 
   return (
     <Box
@@ -54,7 +59,7 @@ export default function AppShell({ children }) {
         overflow: "hidden",
       }}
     >
-      {!playTable && <Header />}
+      {!playInMatch && <Header />}
       <Box
         id="app-shell-scroll"
         component="section"
@@ -62,17 +67,17 @@ export default function AppShell({ children }) {
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          pt: playTable ? 0 : 8,
+          pt: playInMatch ? 0 : 8,
           minHeight: 0,
           width: "100%",
           maxWidth: "100%",
-          pb: playTable
+          pb: playInMatch
             ? 0
             : fullBleed
               ? { xs: 2, md: 0 }
               : { xs: 10, sm: 8 },
           overflowX: "clip",
-          overflowY: playTable
+          overflowY: playInMatch
             ? "hidden"
             : fullBleed
               ? { xs: "auto", md: "hidden" }

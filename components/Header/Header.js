@@ -20,7 +20,8 @@ const HEADER_PX = 64;
 const APP_ICON_SRC = "/app-icon.png";
 
 /**
- * Site chrome for non-play routes. /play hides this bar — see AppShell.
+ * Site chrome for most routes. /play hides this bar only while a match is
+ * dealt — setup keeps the navbar; see AppShell + playTableActiveRecoil.
  */
 export default function Header() {
   const theme = useTheme();
