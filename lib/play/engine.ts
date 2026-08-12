@@ -803,10 +803,18 @@ export function accountFinishedHand(match: MatchSnapshot): MatchSnapshot {
     game.seats[game.starter]?.team ?? reached[0];
   const winnerTeam = reached.includes(starterTeam) ? starterTeam : reached[0];
 
+  // Credit match standing as soon as the game is taken — not when the next
+  // game is dealt — so the scorepad updates on the “took it” screen.
+  const gamesWon = { ...match.gamesWon };
+  if (!match.gameOver) {
+    gamesWon[winnerTeam] = (gamesWon[winnerTeam] ?? 0) + 1;
+  }
+
   return {
     ...match,
     teamScores,
     hands,
+    gamesWon,
     current: game,
     gameOver: true,
     gameWinnerTeams: [winnerTeam],
@@ -855,12 +863,10 @@ export function startNextGame(match: MatchSnapshot): MatchSnapshot {
     teamScores[Number(key)] = 0;
   });
 
-  const gamesWon = { ...accounted.gamesWon };
-  gamesWon[winnerTeam] = (gamesWon[winnerTeam] ?? 0) + 1;
+  // gamesWon was already credited when the game was taken (accountFinishedHand).
 
   return {
     ...accounted,
-    gamesWon,
     completedGames: [...accounted.completedGames, completed],
     gameIndex: accounted.gameIndex + 1,
     teamScores,
