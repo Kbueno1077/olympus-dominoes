@@ -49,14 +49,17 @@ type PointerDrag = {
 };
 
 function rackFaceSize(count: number, width: number, density: Density) {
+  /** Shared bump for tile + stand height (lockstep — no CSS scale). */
+  const bump = (face: number) => Math.round(face * 1.05);
+
   if (count <= 0) {
     switch (density) {
       case "landscape":
-        return 18;
+        return bump(18);
       case "portrait":
-        return 25;
+        return bump(25);
       case "desktop":
-        return 36;
+        return bump(36);
       default: {
         const _exhaustive: never = density;
         return _exhaustive;
@@ -87,7 +90,7 @@ function rackFaceSize(count: number, width: number, density: Density) {
       return _exhaustive;
     }
   }
-  return Math.max(min, Math.min(max, raw));
+  return bump(Math.max(min, Math.min(max, raw)));
 }
 
 function dropSideAtPoint(x: number, y: number): ChainSide | null {
