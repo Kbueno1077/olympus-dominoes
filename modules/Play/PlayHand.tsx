@@ -66,7 +66,7 @@ function rackFaceSize(count: number, width: number, density: Density) {
   const pad = density === "desktop" ? 28 : density === "landscape" ? 14 : 18;
   const usable = Math.max(100, width - pad);
   const raw = Math.floor(usable / count) - (density === "desktop" ? 2 : 1);
-  // Face drives stand height / spacing. Mobile tiles scale visually separately.
+  // Face drives both tile and stand height — keep them in lockstep (no CSS scale).
   let max: number;
   let min: number;
   switch (density) {
@@ -89,9 +89,6 @@ function rackFaceSize(count: number, width: number, density: Density) {
   }
   return Math.max(min, Math.min(max, raw));
 }
-
-/** Mobile-only visual bump; stand height stays on layout `face`. */
-const MOBILE_TILE_SCALE = 1.15 * 1.1;
 
 function dropSideAtPoint(x: number, y: number): ChainSide | null {
   const stack = document.elementsFromPoint(x, y);
@@ -184,10 +181,6 @@ export default function PlayHand({
   const face = rackFaceSize(hand.length, rackWidth, density);
   const tight = density !== "desktop";
   const landscape = density === "landscape";
-  const tileScale = tight ? MOBILE_TILE_SCALE : 1;
-  /** Layout space for CSS-scaled tiles so neighbors don't visually collide. */
-  const scaleBleed =
-    tileScale === 1 ? 0 : Math.ceil((face * (tileScale - 1)) / 2);
   const tileGap = landscape ? 2 : tight ? 3 : 2;
   const lift = density === "landscape" ? 3 : density === "portrait" ? 5 : 8;
 
@@ -318,8 +311,6 @@ export default function PlayHand({
                     position: "relative",
                     zIndex:
                       selected || ghosting ? 40 : canPlay || rearrange ? 2 : 1,
-                    marginLeft: scaleBleed,
-                    marginRight: scaleBleed,
                   }}
                 >
                   {showInsertBefore && (
@@ -474,22 +465,12 @@ export default function PlayHand({
                       },
                     }}
                   >
-                    <Box
-                      sx={{
-                        lineHeight: 0,
-                        transform:
-                          tileScale === 1 ? undefined : `scale(${tileScale})`,
-                        transformOrigin: "center bottom",
-                        transition: "transform 160ms ease",
-                      }}
-                    >
-                      <DominoTile
-                        top={faces.top}
-                        bottom={faces.bottom}
-                        size={face}
-                        highContrast
-                      />
-                    </Box>
+                    <DominoTile
+                      top={faces.top}
+                      bottom={faces.bottom}
+                      size={face}
+                      highContrast
+                    />
                   </Box>
                 </motion.div>
               );
@@ -508,7 +489,6 @@ export default function PlayHand({
                     borderRadius: 1,
                     backgroundColor: "#E8A04A",
                     flexShrink: 0,
-                    ml: `${scaleBleed}px`,
                   }}
                 />
               )}
@@ -536,9 +516,7 @@ export default function PlayHand({
             position: "fixed",
             left: pointerDrag.x,
             top: pointerDrag.y,
-            transform: `translate(-50%, -60%)${
-              tileScale === 1 ? "" : ` scale(${tileScale})`
-            }`,
+            transform: "translate(-50%, -60%)",
             zIndex: 1400,
             pointerEvents: "none",
             // Solid drag image (pointer path); avoid browser HTML5 ghost fade.
