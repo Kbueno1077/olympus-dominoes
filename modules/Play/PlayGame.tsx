@@ -45,7 +45,7 @@ import {
   PACE_LEVEL_NORMAL,
 } from "@/modules/Play/paceLevels";
 import { useTranslation } from "@/i18n/useTranslation";
-import { organizeHand } from "@/lib/play/tiles";
+import { organizeHand, setConfig } from "@/lib/play/tiles";
 import AutoModeOutlined from "@mui/icons-material/AutoModeOutlined";
 import MenuBookOutlined from "@mui/icons-material/MenuBookOutlined";
 import SortOutlined from "@mui/icons-material/SortOutlined";
@@ -59,7 +59,7 @@ import {
   Typography,
   useMediaQuery,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   useCallback,
@@ -102,14 +102,15 @@ function autoPlaySide(
   return null;
 }
 
+/** Below this width (px), Play uses the phone layout (chips, compact rack). */
+const PLAY_MOBILE_MAX_PX = 768;
+
 export default function PlayGame() {
   const { t } = useTranslation();
-  const theme = useTheme();
-  const mobileEdge = theme.breakpoints.values.sm;
-  const narrowWidth = useMediaQuery(theme.breakpoints.down("sm"));
-  const shortHeight = useMediaQuery(`(max-height:${mobileEdge}px)`);
+  const narrowWidth = useMediaQuery(`(max-width:${PLAY_MOBILE_MAX_PX - 1}px)`);
+  const shortHeight = useMediaQuery(`(max-height:${PLAY_MOBILE_MAX_PX - 1}px)`);
   const landscapePhone = useMediaQuery(
-    `(max-height: 500px) and (min-width: ${mobileEdge}px)`
+    `(max-height: 500px) and (min-width: ${PLAY_MOBILE_MAX_PX}px)`
   );
   const compact = narrowWidth || shortHeight || landscapePhone;
   const tileScale =
@@ -679,7 +680,7 @@ export default function PlayGame() {
   const turnActive = game.phase === "playing" && !game.awaitingOpenerChoice;
   /** Same height for every control in the table action bar. */
   /** Action bar: taller tap targets on phones; width stays compact. */
-  const actionHeight = { xs: 40, sm: 36 } as const;
+  const actionHeight = { xs: 39, sm: 36 } as const;
   const actionWidth = { xs: 34, sm: 36 } as const;
   const actionBtnSx = {
     height: actionHeight,
@@ -1403,6 +1404,8 @@ export default function PlayGame() {
               sx={{
                 flexShrink: 0,
                 width: "100%",
+                display: "flex",
+                justifyContent: "center",
                 position: "relative",
                 zIndex: selectedId ? 25 : 2,
               }}
@@ -1419,6 +1422,7 @@ export default function PlayGame() {
                 rearrange={rearrangeMode}
                 onReorder={handleReorderHand}
                 onFlip={handleFlipHandTile}
+                handSlots={setConfig(game.setId).tilesPerHand}
               />
             </Box>
           )}

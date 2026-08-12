@@ -113,9 +113,49 @@ function SeatLabel({
 
 /**
  * Seat stand facing the table — no CSS spin. Side seats are built vertical;
- * top/bottom stay horizontal. Chip variant is a corner pill for phones so the
+ * top/bottom stay horizontal. Chip variant is a corner tab for phones so the
  * baize keeps full width/height.
  */
+function chipBorderRadius(position: SeatPosition): string {
+  // Mild corners toward the baize; square the outer edge (away from the player).
+  const r = 5;
+  switch (position) {
+    case "top":
+      // Flat top (outer); rounded bottom toward the player / baize.
+      return `0 0 ${r}px ${r}px`;
+    case "bottom":
+      // Flat bottom (outer); rounded top toward the baize.
+      return `${r}px ${r}px 0 0`;
+    case "left":
+    case "right":
+      // Sides are rotated ±90°; local bottom is the outer edge after transform.
+      return `${r}px ${r}px 0 0`;
+    default: {
+      const _exhaustive: never = position;
+      return _exhaustive;
+    }
+  }
+}
+
+/** Compact label for idle chips — "Bot 1" → "B1", "You" → "Y". */
+function chipInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) {
+    const word = parts[0];
+    const letter = word.match(/[A-Za-zÀ-ÿ]/);
+    const digit = word.match(/\d+/);
+    if (letter && digit) return `${letter[0]}${digit[0]}`.toUpperCase();
+    if (letter) return letter[0].toUpperCase();
+    return word.slice(0, 2).toUpperCase();
+  }
+  return parts
+    .map((part) => (/^\d+$/.test(part) ? part : part.charAt(0)))
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+}
+
 export default function PlaySeat({
   seat,
   isTurn,
@@ -128,6 +168,7 @@ export default function PlaySeat({
   const tint = TEAM_TINT[seat.team] ?? TEAM_TINT[1];
   const tiles = seat.hand.length;
   const displayName = t(seat.name);
+  const chipLabel = isTurn ? displayName : chipInitials(displayName);
 
   if (variant === "chip") {
     return (
@@ -135,71 +176,57 @@ export default function PlaySeat({
         ref={anchorRef}
         direction="row"
         alignItems="center"
-        spacing={0.5}
+        spacing={isTurn ? 0.5 : 0.35}
         role="status"
         aria-label={`${displayName}, ${t("playTilesRemaining", { n: tiles })}${isTurn ? ", turn" : ""}`}
         sx={{
           boxSizing: "border-box",
-          width: 102,
-          height: 26,
-          px: 0.75,
+          width: isTurn ? 96 : "auto",
+          minWidth: isTurn ? undefined : 48,
+          maxWidth: isTurn ? 102 : 64,
+          height: isTurn ? 26 : 22,
+          px: isTurn ? 0.75 : 0.5,
           py: 0,
-          borderRadius: 999,
+          borderRadius: chipBorderRadius(position),
           justifyContent: "flex-start",
-          backgroundColor: alpha("#FBF5E9", isTurn ? 1 : 0.92),
-          border: `1.5px solid ${alpha(tint, isTurn ? 0.95 : 0.28)}`,
+          backgroundColor: alpha("#FBF5E9", isTurn ? 0.98 : 0.72),
+          border: `${isTurn ? 1.5 : 1}px solid ${alpha(
+            tint,
+            isTurn ? 0.95 : 0.22
+          )}`,
           boxShadow: isTurn
             ? `0 0 0 2px ${alpha(tint, 0.45)}, 0 2px 8px ${alpha("#000", 0.22)}`
-            : `0 0 0 2px transparent, 0 2px 6px ${alpha("#000", 0.18)}`,
-          opacity: isTurn ? 1 : 0.7,
+            : "none",
+          opacity: isTurn ? 1 : 0.5,
           transition:
-            "box-shadow 160ms ease, border-color 160ms ease, opacity 160ms ease, background-color 160ms ease",
+            "width 160ms ease, max-width 160ms ease, height 160ms ease, box-shadow 160ms ease, border-color 160ms ease, opacity 160ms ease, background-color 160ms ease, padding 160ms ease",
         }}
       >
-        <Box
-          aria-hidden
-          sx={{
-            width: 7,
-            height: 7,
-            borderRadius: "50%",
-            backgroundColor: tint,
-            flexShrink: 0,
-            boxShadow: isTurn
-              ? `0 0 0 2px ${alpha(tint, 0.9)}, 0 0 8px ${alpha(tint, 0.55)}`
-              : `0 0 0 2px transparent`,
-            animation: isTurn
-              ? "seatTurnPulse 1.4s ease-in-out infinite"
-              : "none",
-            "@keyframes seatTurnPulse": {
-              "0%, 100%": { opacity: 1 },
-              "50%": { opacity: 0.5 },
-            },
-          }}
-        />
         <Typography
           sx={{
             fontWeight: 800,
-            fontSize: 11,
-            color: alpha("#241D14", 0.95),
+            fontSize: isTurn ? 11 : 10,
+            letterSpacing: isTurn ? 0 : "0.02em",
+            color: alpha("#241D14", isTurn ? 0.95 : 0.8),
             lineHeight: 1,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            flex: 1,
+            flex: isTurn ? 1 : "0 1 auto",
             minWidth: 0,
           }}
         >
-          {displayName}
+          {chipLabel}
         </Typography>
         <Typography
           sx={{
             fontWeight: 800,
-            fontSize: 11,
+            fontSize: isTurn ? 11 : 9,
             fontVariantNumeric: "tabular-nums",
-            color: alpha("#241D14", 0.55),
+            color: alpha("#241D14", isTurn ? 0.55 : 0.45),
             lineHeight: 1,
             flexShrink: 0,
-            minWidth: 14,
+            minWidth: isTurn ? 14 : 10,
             textAlign: "right",
           }}
         >

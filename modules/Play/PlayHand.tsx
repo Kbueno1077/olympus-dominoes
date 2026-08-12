@@ -32,6 +32,11 @@ type Props = {
   onReorder?: (fromIndex: number, toIndex: number) => void;
   /** Flip a tile 180° on the rack (e.g. tap while rearranging). */
   onFlip?: (tileId: string) => void;
+  /**
+   * Opening-hand slot count (e.g. 10 for double nine). Desktop stand width
+   * hugs this many tiles; mobile stays full-bleed.
+   */
+  handSlots?: number;
 };
 
 /** Rearrange / play: pixels before a press becomes a drag. */
@@ -50,7 +55,12 @@ type PointerDrag = {
 
 function rackFaceSize(count: number, width: number, density: Density) {
   /** Shared bump for tile + stand height (lockstep — no CSS scale). */
-  const bump = (face: number) => Math.round(face * 1.1);
+  const bump = (face: number) => Math.round(face * 1.21);
+
+  // Desktop stand hugs the opening hand — preferred face, not full-bleed shrink.
+  if (density === "desktop") {
+    return bump(count <= 0 ? 36 : 38);
+  }
 
   if (count <= 0) {
     switch (density) {
@@ -58,17 +68,15 @@ function rackFaceSize(count: number, width: number, density: Density) {
         return bump(18);
       case "portrait":
         return bump(25);
-      case "desktop":
-        return bump(36);
       default: {
         const _exhaustive: never = density;
         return _exhaustive;
       }
     }
   }
-  const pad = density === "desktop" ? 28 : density === "landscape" ? 14 : 18;
+  const pad = density === "landscape" ? 14 : 18;
   const usable = Math.max(100, width - pad);
-  const raw = Math.floor(usable / count) - (density === "desktop" ? 2 : 1);
+  const raw = Math.floor(usable / count) - 1;
   // Face drives both tile and stand height — keep them in lockstep (no CSS scale).
   let max: number;
   let min: number;
@@ -80,10 +88,6 @@ function rackFaceSize(count: number, width: number, density: Density) {
     case "portrait":
       max = 26;
       min = 17;
-      break;
-    case "desktop":
-      max = 38;
-      min = 24;
       break;
     default: {
       const _exhaustive: never = density;
@@ -125,7 +129,7 @@ function reorderIndexAtX(
 
 /**
  * Player rack: tiles stand close on a wooden lip, like a real mesa stand.
- * Width is controlled by the parent (full page on mobile).
+ * Mobile: full-bleed width. Desktop: width hugs the opening hand (handSlots).
  * Play: tap select, double-tap play, press+slide to drag onto zones
  * (pointer preview — solid opacity, not the browser’s faded HTML5 ghost).
  * Rearrange: drag to reorder.
@@ -142,6 +146,7 @@ export default function PlayHand({
   rearrange = false,
   onReorder,
   onFlip,
+  handSlots = 10,
 }: Props) {
   const { t } = useTranslation();
   const shortLandscape = useMediaQuery(
@@ -186,6 +191,9 @@ export default function PlayHand({
   const landscape = density === "landscape";
   const tileGap = landscape ? 2 : tight ? 3 : 2;
   const lift = density === "landscape" ? 3 : density === "portrait" ? 5 : 8;
+  const desktopSlots = Math.max(handSlots, hand.length, 1);
+  const desktopRowWidth =
+    desktopSlots * face + Math.max(0, desktopSlots - 1) * tileGap + 20;
 
   const endPointerDrag = (
     clientX: number,
@@ -222,7 +230,9 @@ export default function PlayHand({
       sx={{
         position: "relative",
         zIndex: selectedId || pointerDrag ? 30 : 1,
-        width: "100%",
+        width: density === "desktop" ? "fit-content" : "100%",
+        maxWidth: "100%",
+        mx: density === "desktop" ? "auto" : 0,
         borderRadius: landscape
           ? "6px 6px 4px 4px"
           : tight
@@ -249,6 +259,7 @@ export default function PlayHand({
           pt: (landscape ? 0.2 : tight ? 0.3 : 0.55) + lift / 8,
           pb: landscape ? 0.15 : tight ? 0.25 : 0.45,
           minHeight: face * 2 + lift + (landscape ? 3 : tight ? 5 : 10),
+          ...(density === "desktop" ? { width: desktopRowWidth } : null),
           display: "flex",
           alignItems: "flex-end",
           justifyContent: "center",
