@@ -1495,11 +1495,15 @@ export default function PlayGame() {
           onChange: handleBotBrain,
           locked: true,
         }}
-        debugLog={{
-          logs: game.logs,
-          open: logOpen,
-          onToggle: () => setLogOpen((v) => !v),
-        }}
+        debugLog={
+          process.env.NODE_ENV === "development"
+            ? {
+                logs: game.logs,
+                open: logOpen,
+                onToggle: () => setLogOpen((v) => !v),
+              }
+            : null
+        }
       />
     </>
   );
