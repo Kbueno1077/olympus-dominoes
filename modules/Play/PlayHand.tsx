@@ -193,7 +193,7 @@ export default function PlayHand({
   const lift = density === "landscape" ? 3 : density === "portrait" ? 5 : 8;
   const desktopSlots = Math.max(handSlots, hand.length, 1);
   const desktopRowWidth =
-    desktopSlots * face + Math.max(0, desktopSlots - 1) * tileGap + 20;
+    desktopSlots * face + Math.max(0, desktopSlots - 1) * tileGap + 35;
 
   const endPointerDrag = (
     clientX: number,
