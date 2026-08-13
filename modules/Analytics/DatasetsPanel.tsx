@@ -100,6 +100,10 @@ export default function DatasetsPanel({
         setLocalError(t("analyticsErrorSqlUnsupported"));
       else if (code === "unknown_format")
         setLocalError(t("analyticsErrorFormat"));
+      else if (code === "schema_too_new")
+        setLocalError(t("analyticsErrorSchemaTooNew"));
+      else if (code === "schema_too_old")
+        setLocalError(t("analyticsErrorSchemaTooOld"));
       else setLocalError(t("analyticsErrorGeneric"));
     } finally {
       setBusy(false);

@@ -29,6 +29,7 @@ export type PlayerRow = {
 export type PlayerStatsRow = {
   player_id: number;
   mode_label: string;
+  tile_set: "55" | "28";
   games_played: number;
   games_won: number;
   games_lost: number;
@@ -53,6 +54,7 @@ export type PlayerH2HRow = {
   player_id: number;
   opponent_id: number;
   mode_label: string;
+  tile_set: "55" | "28";
   wins: number;
   losses: number;
 };
@@ -61,7 +63,7 @@ export type OlympusExportData = {
   source: "csv";
   fileName: string;
   importedAt: string;
-  /** Exactly one row describing this league / dataset file (schema v17). */
+  /** Exactly one row describing this league / dataset file (schema v18). */
   db_meta?: DbMetaRow;
   players: PlayerRow[];
   player_stats: PlayerStatsRow[];

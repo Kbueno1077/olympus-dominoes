@@ -31,6 +31,7 @@ import {
   type DatasetRegistry,
 } from "./datasets";
 import { parseOlympusExport } from "./parseExport";
+import { normalizeImportedTileSet } from "./schemaVersion";
 import {
   withDbMetaLabel,
   withEnsuredDbMeta,
@@ -85,6 +86,38 @@ type AnalyticsContextValue = {
 
 const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
 
+function withEnsuredTileSets(data: OlympusExportData): OlympusExportData {
+  const patchRows = (
+    rows: Record<string, unknown>[] | undefined
+  ): Record<string, unknown>[] | undefined =>
+    rows?.map((row) => ({
+      ...row,
+      tile_set: normalizeImportedTileSet(row.tile_set),
+    }));
+
+  return {
+    ...data,
+    player_stats: data.player_stats.map((row) => ({
+      ...row,
+      tile_set: normalizeImportedTileSet(row.tile_set),
+    })),
+    player_h2h: data.player_h2h.map((row) => ({
+      ...row,
+      tile_set: normalizeImportedTileSet(row.tile_set),
+    })),
+    matches: data.matches.map((row) => ({
+      ...row,
+      tile_set: normalizeImportedTileSet(row.tile_set),
+    })),
+    tables: {
+      ...data.tables,
+      matches: patchRows(data.tables.matches),
+      player_stats: patchRows(data.tables.player_stats),
+      player_h2h: patchRows(data.tables.player_h2h),
+    },
+  };
+}
+
 /** Load + backfill public_id / db_meta / empty stats for legacy blobs. */
 function hydrateDatasetData(
   id: string,
@@ -94,7 +127,8 @@ function hydrateDatasetData(
   if (!data) return null;
   const withPlayers = withEnsuredPlayerPublicIds(data);
   const withMatches = withEnsuredMatchPublicIds(withPlayers);
-  const withStats = withStatsFilledFromMatches(withMatches);
+  const withTiles = withEnsuredTileSets(withMatches);
+  const withStats = withStatsFilledFromMatches(withTiles);
   const ensured = withEnsuredDbMeta(withStats, {
     origin: "web",
     label: label ?? withStats.db_meta?.label,
@@ -111,7 +145,8 @@ function prepareImportedData(
 ): OlympusExportData {
   const withPlayers = withEnsuredPlayerPublicIds(parsed);
   const withMatches = withEnsuredMatchPublicIds(withPlayers);
-  const withStats = withStatsFilledFromMatches(withMatches);
+  const withTiles = withEnsuredTileSets(withMatches);
+  const withStats = withStatsFilledFromMatches(withTiles);
   const withMeta = withEnsuredDbMeta(withStats, {
     origin: "imported",
     label: label || withStats.db_meta?.label || "",

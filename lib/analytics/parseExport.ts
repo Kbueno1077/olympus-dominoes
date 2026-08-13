@@ -10,6 +10,11 @@ import { withResolvedImportDbMeta } from "./dbMetaState";
 import { withEnsuredMatchPublicIds } from "./matchIdentity";
 import { withEnsuredPlayerPublicIds } from "./playerIdentity";
 import { resolveImportedPublicId } from "./playerPublicId";
+import {
+  assertImportSchemaVersion,
+  normalizeImportedTileSet,
+  parseSchemaVersion,
+} from "./schemaVersion";
 
 function parseCsvLine(line: string): string[] {
   const cells: string[] = [];
@@ -159,6 +164,7 @@ function normalizeStats(rows: Record<string, unknown>[]): PlayerStatsRow[] {
     return {
       player_id: asNumber(row.player_id),
       mode_label: asString(row.mode_label),
+      tile_set: normalizeImportedTileSet(row.tile_set),
       games_played: asNumber(row.games_played),
       games_won: asNumber(row.games_won),
       games_lost: asNumber(row.games_lost),
@@ -183,6 +189,7 @@ function normalizeH2H(rows: Record<string, unknown>[]): PlayerH2HRow[] {
     player_id: asNumber(row.player_id),
     opponent_id: asNumber(row.opponent_id),
     mode_label: asString(row.mode_label),
+    tile_set: normalizeImportedTileSet(row.tile_set),
     wins: asNumber(row.wins),
     losses: asNumber(row.losses),
   }));
@@ -210,10 +217,25 @@ export function parseOlympusExport(
   const normalized = contents.replace(/^\uFEFF/, "");
   assertCsvExport(fileName, normalized);
   const tables = parseCsv(normalized);
+  const fileVersion = parseSchemaVersion(
+    tables.db_meta?.[0]?.schema_version
+  );
+  assertImportSchemaVersion(fileVersion);
 
-  const players = normalizePlayers(tables.players ?? []);
-  const player_stats = normalizeStats(tables.player_stats ?? []);
-  const player_h2h = normalizeH2H(tables.player_h2h ?? []);
+  const withTileSet = (row: Record<string, unknown>) => ({
+    ...row,
+    tile_set: normalizeImportedTileSet(row.tile_set),
+  });
+  const upgraded = {
+    ...tables,
+    matches: (tables.matches ?? []).map(withTileSet),
+    player_stats: (tables.player_stats ?? []).map(withTileSet),
+    player_h2h: (tables.player_h2h ?? []).map(withTileSet),
+  };
+
+  const players = normalizePlayers(upgraded.players ?? []);
+  const player_stats = normalizeStats(upgraded.player_stats ?? []);
+  const player_h2h = normalizeH2H(upgraded.player_h2h ?? []);
 
   if (players.length === 0 && player_stats.length === 0) {
     throw new Error("empty_export");
@@ -222,8 +244,8 @@ export function parseOlympusExport(
   // Mirror public_id onto raw rows, then resolve exactly one db_meta row.
   // Keep at most one db_meta data row from CSV (never 2+).
   const tablesOnce = {
-    ...tables,
-    db_meta: (tables.db_meta ?? []).slice(0, 1),
+    ...upgraded,
+    db_meta: (upgraded.db_meta ?? []).slice(0, 1),
   };
   return withResolvedImportDbMeta(
     withEnsuredMatchPublicIds(
