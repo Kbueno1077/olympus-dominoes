@@ -143,8 +143,8 @@ function paceSliderSx(accent: PaceAccent) {
   };
 }
 
-/** Compact turtle mark — MUI has no turtle icon. */
-function TurtleIcon({ fontSize = 18 }: { fontSize?: number }) {
+/** Compact chess pawn — slow end of the pace slider. */
+function ChessPawnIcon({ fontSize = 18 }: { fontSize?: number }) {
   return (
     <Box
       component="svg"
@@ -157,13 +157,14 @@ function TurtleIcon({ fontSize = 18 }: { fontSize?: number }) {
         fill: "currentColor",
       }}
     >
-      <ellipse cx="12" cy="12.5" rx="7.5" ry="5.2" />
-      <circle cx="19.2" cy="11.2" r="2.1" />
-      <circle cx="7.2" cy="16.6" r="1.55" />
-      <circle cx="16.8" cy="16.6" r="1.55" />
-      <circle cx="7.2" cy="8.6" r="1.55" />
-      <circle cx="16.2" cy="8.2" r="1.45" />
-      <circle cx="4.6" cy="12.5" r="1.2" />
+      {/* Head */}
+      <circle cx="12" cy="5.2" r="2.6" />
+      {/* Collar */}
+      <path d="M8.2 9.2c0-.7.6-1.2 1.3-1.2h5c.7 0 1.3.5 1.3 1.2v.9H8.2v-.9z" />
+      {/* Body */}
+      <path d="M9.1 11.1h5.8l1.7 8.2H7.4l1.7-8.2z" />
+      {/* Base */}
+      <path d="M6.2 20.4h11.6c.5 0 .9.4.9.9v.5H5.3v-.5c0-.5.4-.9.9-.9z" />
     </Box>
   );
 }
@@ -324,7 +325,7 @@ export default function PlayConfigDrawer({
         value: PACE_LEVEL_MIN,
         label: (
           <PaceMarkIcon title={t("playSpeedSlow")}>
-            <TurtleIcon />
+            <ChessPawnIcon />
           </PaceMarkIcon>
         ),
       },
