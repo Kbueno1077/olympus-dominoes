@@ -24,6 +24,7 @@ function deltasToRows(delta: StatsDelta): {
     player_stats: delta.playerStats.map((row) => ({
       player_id: row.playerId,
       mode_label: row.modeLabel,
+      tile_set: "55",
       games_played: row.gamesPlayed,
       games_won: row.gamesWon,
       games_lost: row.gamesLost,
@@ -44,6 +45,7 @@ function deltasToRows(delta: StatsDelta): {
       player_id: row.playerId,
       opponent_id: row.opponentId,
       mode_label: row.modeLabel,
+      tile_set: "55",
       wins: row.wins,
       losses: row.losses,
     })),

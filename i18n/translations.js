@@ -115,6 +115,9 @@ const en = {
   analyticsErrorFormat: "Use a CSV export from the mobile app.",
   analyticsErrorSqlUnsupported:
     "SQL exports are no longer supported. Use a CSV export from the mobile app.",
+  analyticsErrorSchemaTooNew:
+    "That file needs a newer Olympus. Update the web app, then import again.",
+  analyticsErrorSchemaTooOld: "That file is too old for this web app to import.",
   analyticsErrorUnknownTable: "That file has an unexpected table section.",
   analyticsNav: "Analytics",
   statsNav: "Stats",
@@ -843,6 +846,10 @@ const es = {
   analyticsErrorFormat: "Usa un export CSV de la app móvil.",
   analyticsErrorSqlUnsupported:
     "Los exports SQL ya no se admiten. Usa un export CSV de la app móvil.",
+  analyticsErrorSchemaTooNew:
+    "Ese archivo necesita una Olympus más nueva. Actualiza la web e importa de nuevo.",
+  analyticsErrorSchemaTooOld:
+    "Ese archivo es demasiado antiguo para importarlo en esta web.",
   analyticsErrorUnknownTable: "Ese archivo tiene una sección de tabla inesperada.",
   analyticsNav: "Analítica",
   statsNav: "Estadísticas",

@@ -203,6 +203,8 @@ export default function Analytics() {
     if (code === "empty_export") return t("analyticsErrorEmpty");
     if (code === "unknown_format") return t("analyticsErrorFormat");
     if (code === "sql_unsupported") return t("analyticsErrorSqlUnsupported");
+    if (code === "schema_too_new") return t("analyticsErrorSchemaTooNew");
+    if (code === "schema_too_old") return t("analyticsErrorSchemaTooOld");
     return t("analyticsErrorGeneric");
   })();
 
