@@ -866,7 +866,7 @@ export default function PlayGame() {
                         <Box
                           sx={{
                             position: "absolute",
-                            top: 2,
+                            top: 0,
                             left: "50%",
                             transform: "translateX(-50%)",
                             zIndex: 3,
@@ -880,7 +880,7 @@ export default function PlayGame() {
                         <Box
                           sx={{
                             position: "absolute",
-                            left: 2,
+                            left: 0,
                             top: 0,
                             bottom: 0,
                             width: 26,
@@ -905,7 +905,7 @@ export default function PlayGame() {
                         <Box
                           sx={{
                             position: "absolute",
-                            right: 2,
+                            right: 0,
                             top: 0,
                             bottom: 0,
                             width: 26,
@@ -931,7 +931,7 @@ export default function PlayGame() {
                           <Box
                             sx={{
                               position: "absolute",
-                              bottom: 2,
+                              bottom: 0,
                               left: "50%",
                               transform: "translateX(-50%)",
                               zIndex: 3,
