@@ -3,6 +3,7 @@ import {
     isSupportedLanguage,
     LANGUAGE_COOKIE,
 } from "@/i18n/translations";
+import { Analytics } from "@vercel/analytics/next";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
 import { Caveat } from "next/font/google";
@@ -68,6 +69,7 @@ export default async function RootLayout({
                 <main className="h-full max-w-full overflow-hidden flex flex-col">
                     <Providers initialLanguage={language}>{children}</Providers>
                 </main>
+                <Analytics />
             </body>
         </html>
     );
