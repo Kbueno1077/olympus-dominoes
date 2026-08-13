@@ -23,7 +23,6 @@ export const CHANGELOG: ChangelogRelease[] = [
     summary: "Double-six sets, plus an internal Play vs bots table.",
     highlights: [
       "Added: choose Double nine (55 tiles) or Double six (28 tiles) when you set up a match.",
-      "Double six starts at 100 points to win; you can still change the target anytime.",
       "The table picture matches the set you picked (7 tiles dealt for double six).",
       "Play vs bots is available from the home screen and the nav menu.",
     ],
