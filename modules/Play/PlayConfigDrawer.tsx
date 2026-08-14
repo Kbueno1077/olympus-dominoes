@@ -355,19 +355,16 @@ export default function PlayConfigDrawer({
         {
           id: "classic" as const,
           label: t("playBotBrainClassic"),
-          blurb: t("playBotBrainClassicBlurb"),
         },
         {
           id: "table_sense" as const,
           label: t("playBotBrainTableSense"),
-          blurb: t("playBotBrainTableSenseBlurb"),
         },
         {
           id: "pimc" as const,
           label: t("playBotBrainPimc"),
-          blurb: t("playBotBrainPimcBlurb"),
         },
-      ] satisfies { id: BotBrainId; label: string; blurb: string }[],
+      ] satisfies { id: BotBrainId; label: string }[],
     [t]
   );
 
@@ -608,12 +605,6 @@ export default function PlayConfigDrawer({
               </Box>
             </AccordionSummary>
             <AccordionDetails sx={accordionSx.details}>
-              <Typography
-                variant="body2"
-                sx={{ color: "text.secondary", mb: 1.25 }}
-              >
-                {t("playConfigBotBrainBody")}
-              </Typography>
               <Stack spacing={1}>
                 {difficultyOptions.map((option) => {
                   const selected = botBrain.id === option.id;
@@ -661,23 +652,15 @@ export default function PlayConfigDrawer({
                         justifyContent="space-between"
                         spacing={1}
                       >
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: selected ? 700 : 600,
-                              color: "text.primary",
-                            }}
-                          >
-                            {option.label}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "text.secondary", display: "block" }}
-                          >
-                            {option.blurb}
-                          </Typography>
-                        </Box>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: selected ? 700 : 600,
+                            color: "text.primary",
+                          }}
+                        >
+                          {option.label}
+                        </Typography>
                         {selected ? (
                           <CheckOutlined
                             sx={{

@@ -626,8 +626,11 @@ export default function PlayGame() {
           WebkitOverflowScrolling: "touch",
           overscrollBehaviorY: "contain",
           py: { xs: 2, md: 4 },
-          px: { xs: 1.5, sm: 2 },
+          px: { xs: 1.5, sm: 2, md: 3, lg: 4 },
           pb: { xs: 4, md: 6 },
+          maxWidth: 1120,
+          mx: "auto",
+          width: "100%",
         }}
       >
         <IconButton

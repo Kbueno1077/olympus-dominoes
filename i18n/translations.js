@@ -92,11 +92,17 @@ const en = {
   webHistoryCta: "Open analytics",
   homeSplitToggleTitle: "App vs this site",
   homeAppTitle: "Phone",
-  homeAppBody:
-    "Score at the table. Keep several matches open — sit-outs, waiting tables, any roster mix. History stays on the device. Multi-match lives here, not on the web. Export a CSV when you want it on this site.",
+  homeAppBulletScore: "Keep score while you play at the table",
+  homeAppBulletConcurrent: "Leave a few matches open — sit-outs, waiting tables, whatever’s next",
+  homeAppBulletHistory: "Your history lives on the phone",
+  homeAppBulletExport: "Share a CSV here whenever you want the full picture",
   homeWebTitle: "Web",
-  homeWebBody:
-    "Import a save and read History, Stats, Compare, and Podium. The casual pad here is throwaway and never joins the league. This site does not replace the app as the source of truth.",
+  homeWebBulletAnalytics:
+    "Bring in a save to browse History, Stats, Compare, and Podium",
+  homeWebBulletSingleGame: "One notepad game at a time — no juggling open matches",
+  homeWebBulletThrowaway:
+    "The notepad here is just for fun and doesn’t touch your league",
+  homeWebBulletSourceOfTruth: "The phone app is still where your real record lives",
 
   // Analytics
   analyticsTitle: "Analytics",
@@ -605,12 +611,11 @@ const en = {
   // Play vs bots
   playSetupOverline: "Table session",
   playSetupTitle: "Play the bots",
-  playSetupBody:
-    "Square baize, partners facing, score to a target like the real annotator — with a debug log of every move.",
+  playSetupBody: "A quick table against bots — pick your tiles and go.",
   playTrainTitle: "Train controls",
   playTrainBody:
-    "Tap a played tile to rotate that arm of the train 90°. Tap the opening tile in the middle to change the overall layout.",
-  playMode: "Mode",
+    "On the table: tap a played tile to rotate that arm, or tap the opening tile to change the layout.",
+  playMode: "Who's playing",
   playMode1v1Title: "1 vs 1",
   playMode1v1Body:
     "You face the bot across the table. Double-six can draw; double-nine is block-only.",
@@ -618,15 +623,16 @@ const en = {
   playMode2v2Body:
     "You + partner vs two rivals. Partners sit opposite each other.",
   playModeFfaTitle: "4 player FFA",
+  playModeFfaShort: "FFA",
   playModeFfaBody: "Four seats around the square — every seat scores alone.",
-  playSet: "Set",
+  playSet: "Tiles",
   playSetDoubleSix: "Double six · 28 · draws",
   playSetDoubleNine: "Double nine · 55 · no draw",
-  playSetDoubleSixShort: "Double six · draws",
-  playSetDoubleNineShort: "Double nine · no draw",
-  playRulesTitle: "How this set plays",
-  playRulesSummarySix: "Double six · draw from the boneyard",
-  playRulesSummaryNine: "Double nine · block only, no draws",
+  playSetDoubleSixShort: "Double six",
+  playSetDoubleNineShort: "Double nine",
+  playRulesTitle: "A bit more about this set",
+  playRulesSummarySix: "draw from the boneyard",
+  playRulesSummaryNine: "block only — no draws",
   playRulesSixDeal: "28 tiles in the set; each seat is dealt 7.",
   playRulesSixDraw:
     "If you cannot play, draw from the boneyard until you can, or until it is empty — then pass.",
@@ -641,25 +647,24 @@ const en = {
   playRulesBlocked:
     "If the table blocks with tiles still in hand, the lightest remaining hand (or team) takes the points.",
   playRulesDrawTie:
-    "If seats from different teams tie for fewest pips, the Draw rule you pick decides who scores and who opens next.",
+    "If seats from different teams tie for fewest pips, the option under “When both sides lock” decides who scores and who opens next.",
   playRulesMatch:
     "Games race to your First-to target. Match standing counts games won.",
-  playFirstToLabel: "First to",
-  playFirstToCustom: "Custom",
+  playFirstToLabel: "Race to",
+  playFirstToCustom: "Other",
   playFirstToCustomHint: "Points to win a game (min {min})",
-  playDrawRule: "Draw (blocked pip-tie)",
+  playDrawRule: "When both sides lock even",
   playDrawRuleClassicTitle: "Classic",
-  playDrawRuleClassicBody:
-    "The team that opened the hand wins. Normal points.",
+  playDrawRuleClassicBody: "Whoever opened the hand takes it, for normal points.",
   playDrawRuleWashTitle: "Wash",
   playDrawRuleWashBody:
-    "No points this hand. The other team opens next.",
+    "Nobody scores. The other side opens the next hand.",
   playDrawRuleGamblerTitle: "Gambler",
   playDrawRuleGamblerBody:
-    "Opener’s team wins, points count double. The other team opens next.",
+    "Like Wash for who opens next, but this hand pays double.",
   playDrawRuleReversedTitle: "Reversed",
   playDrawRuleReversedBody:
-    "The team that did not open wins. Normal points.",
+    "The side that didn’t open takes it, for normal points.",
   playDealMatch: "Start Game",
   playMatchOver: "Match over",
   playHandOver: "Hand over",
@@ -723,7 +728,7 @@ const en = {
   playConfigTitle: "Settings",
   playConfigSubtitle: "Tap a section to open it.",
   playConfigPace: "Pace",
-  playConfigBotBrain: "Bot difficulty",
+  playConfigBotBrain: "Bots",
   playConfigBotBrainBody:
     "How hard the bots play. Harder levels only use what everyone can see — passes and open ends — never hidden hands.",
   playBotBrainClassic: "Easy",
@@ -858,11 +863,20 @@ const es = {
   webHistoryCta: "Abrir analítica",
   homeSplitToggleTitle: "App vs este sitio",
   homeAppTitle: "Teléfono",
-  homeAppBody:
-    "Anota en la mesa. Deja varias partidas abiertas — esperas, mesas en pausa, cualquier mezcla de jugadores. El historial se queda en el dispositivo. El multi-partida vive aquí, no en la web. Exporta un CSV cuando lo quieras ver en este sitio.",
+  homeAppBulletScore: "Anota mientras juegas en la mesa",
+  homeAppBulletConcurrent:
+    "Deja varias partidas abiertas — esperas, mesas en pausa, lo que venga",
+  homeAppBulletHistory: "Tu historial vive en el teléfono",
+  homeAppBulletExport: "Comparte un CSV aquí cuando quieras ver el panorama",
   homeWebTitle: "Web",
-  homeWebBody:
-    "Importa un respaldo y lee Historial, Stats, Comparar y Podio. La libreta casual de aquí es descartable y no entra a la liga. Este sitio no reemplaza a la app como fuente de verdad.",
+  homeWebBulletAnalytics:
+    "Trae un respaldo para mirar Historial, Stats, Comparar y Podio",
+  homeWebBulletSingleGame:
+    "Una partida de libreta a la vez — sin malabarismos de partidas abiertas",
+  homeWebBulletThrowaway:
+    "La libreta de aquí es solo por diversión y no toca tu liga",
+  homeWebBulletSourceOfTruth:
+    "La app del teléfono sigue siendo donde vive tu marca real",
 
   // Analytics
   analyticsTitle: "Analítica",
@@ -1378,12 +1392,11 @@ const es = {
   // Play vs bots
   playSetupOverline: "Sesión de mesa",
   playSetupTitle: "Juega contra bots",
-  playSetupBody:
-    "Paño cuadrado, parejas frente a frente, anota hasta una meta como en la libreta — con registro de cada jugada.",
+  playSetupBody: "Una mesa rápida contra bots — elige fichas y listo.",
   playTrainTitle: "Controles del tren",
   playTrainBody:
-    "Toca una ficha jugada para girar ese brazo del tren 90°. Toca la ficha de apertura en el centro para cambiar el layout.",
-  playMode: "Modo",
+    "En la mesa: toca una ficha jugada para girar ese brazo, o la de apertura para cambiar el layout.",
+  playMode: "Quién juega",
   playMode1v1Title: "1 vs 1",
   playMode1v1Body:
     "Te enfrentas al bot al otro lado de la mesa. Doble seis permite robar; doble nueve es solo bloqueo.",
@@ -1391,15 +1404,16 @@ const es = {
   playMode2v2Body:
     "Tú + pareja vs dos rivales. Las parejas se sientan una frente a la otra.",
   playModeFfaTitle: "4 jugadores FFA",
+  playModeFfaShort: "FFA",
   playModeFfaBody: "Cuatro asientos alrededor — cada quien anota por su cuenta.",
   playSet: "Fichas",
   playSetDoubleSix: "Doble seis · 28 · roba",
   playSetDoubleNine: "Doble nueve · 55 · sin robar",
-  playSetDoubleSixShort: "Doble seis · roba",
-  playSetDoubleNineShort: "Doble nueve · sin robar",
-  playRulesTitle: "Cómo se juega este set",
-  playRulesSummarySix: "Doble seis · se roba del pozo",
-  playRulesSummaryNine: "Doble nueve · solo bloqueo, sin robar",
+  playSetDoubleSixShort: "Doble seis",
+  playSetDoubleNineShort: "Doble nueve",
+  playRulesTitle: "Un poco más de este set",
+  playRulesSummarySix: "se roba del pozo",
+  playRulesSummaryNine: "solo bloqueo — sin robar",
   playRulesSixDeal: "28 fichas en el set; cada asiento recibe 7.",
   playRulesSixDraw:
     "Si no puedes jugar, robas del pozo hasta poder, o hasta que se acabe — entonces pasas.",
@@ -1414,25 +1428,25 @@ const es = {
   playRulesBlocked:
     "Si la mesa se tranca con fichas en mano, gana la mano (o pareja) más liviana y se lleva los puntos.",
   playRulesDrawTie:
-    "Si asientos de equipos distintos empatan en menos pips, la regla de Empate que elijas decide quién anota y quién abre después.",
+    "Si asientos de equipos distintos empatan en menos pips, la opción en “Cuando ambos se trancan parejos” decide quién anota y quién abre después.",
   playRulesMatch:
     "Los juegos van a tu meta de Primero a. El marcador de partida cuenta juegos ganados.",
-  playFirstToLabel: "Primero a",
-  playFirstToCustom: "Personalizado",
+  playFirstToLabel: "Hasta",
+  playFirstToCustom: "Otro",
   playFirstToCustomHint: "Puntos para ganar un juego (mín. {min})",
-  playDrawRule: "Empate (trancado con mismos pips)",
+  playDrawRule: "Cuando ambos se trancan parejos",
   playDrawRuleClassicTitle: "Clásico",
   playDrawRuleClassicBody:
-    "Gana el equipo que abrió la mano. Puntos normales.",
+    "Quien abrió la mano se la lleva, con puntos normales.",
   playDrawRuleWashTitle: "Lavada",
   playDrawRuleWashBody:
-    "Esta mano no suma puntos. Abre el otro equipo la siguiente.",
+    "Nadie anota. Abre el otro bando la siguiente mano.",
   playDrawRuleGamblerTitle: "Apostador",
   playDrawRuleGamblerBody:
-    "Gana quien abrió, puntos al doble. Abre el otro equipo la siguiente.",
+    "Como Lavada para quién abre después, pero esta mano paga doble.",
   playDrawRuleReversedTitle: "Invertido",
   playDrawRuleReversedBody:
-    "Gana el equipo que no abrió. Puntos normales.",
+    "Se la lleva quien no abrió, con puntos normales.",
   playDealMatch: "Comenzar juego",
   playMatchOver: "Partida terminada",
   playHandOver: "Mano terminada",
@@ -1496,7 +1510,7 @@ const es = {
   playConfigTitle: "Ajustes",
   playConfigSubtitle: "Toca una sección para abrirla.",
   playConfigPace: "Ritmo",
-  playConfigBotBrain: "Dificultad del bot",
+  playConfigBotBrain: "Bots",
   playConfigBotBrainBody:
     "Qué tan duros juegan los bots. Los niveles más altos solo usan lo que todos ven — pases y puntas — nunca manos ocultas.",
   playBotBrainClassic: "Fácil",
