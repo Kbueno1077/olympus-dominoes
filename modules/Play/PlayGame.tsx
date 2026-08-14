@@ -630,52 +630,24 @@ export default function PlayGame() {
           pb: { xs: 4, md: 6 },
           maxWidth: 1120,
           mx: "auto",
-          width: "100%",
         }}
       >
-        <IconButton
-          aria-label={t("playConfigAria")}
-          onPointerDown={tapFeedback}
-          onClick={() => setConfigOpen(true)}
-          sx={{
-            ...pressableSx,
-            position: "absolute",
-            top: { xs: 8, sm: 12 },
-            right: { xs: 8, sm: 12 },
-            zIndex: 2,
-            color: "primary.dark",
-            backgroundColor: (theme) => alpha(theme.palette.grey[100], 0.9),
-            border: "1px solid",
-            borderColor: "divider",
-            "&:hover": {
-              backgroundColor: (theme) => alpha(theme.palette.grey[100], 1),
-            },
-          }}
-        >
-          <SettingsOutlined />
-        </IconButton>
         <PlaySetup
           modeId={modeId}
           setId={setId}
           maxPoints={maxPoints}
           drawRule={drawRule}
           botBrain={botBrain}
+          botDelayMs={botDelayMs}
+          animMs={animMs}
           onMode={setModeId}
           onSet={setSetId}
           onMaxPoints={handleMaxPoints}
           onDrawRule={setDrawRule}
           onBotBrain={handleBotBrain}
+          onBotDelay={setBotDelayMs}
+          onAnimMs={setAnimMs}
           onStart={start}
-        />
-        <PlayConfigDrawer
-          open={configOpen}
-          onClose={() => setConfigOpen(false)}
-          pace={{
-            botDelayMs,
-            onBotDelay: setBotDelayMs,
-            animMs,
-            onAnimMs: setAnimMs,
-          }}
         />
       </Box>
     );

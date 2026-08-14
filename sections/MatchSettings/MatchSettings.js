@@ -448,6 +448,24 @@ export default function MatchSettings() {
               },
             }}
           >
+            <FieldGroup label={t("dominoSet")}>
+              <ToggleButtonGroup
+                exclusive
+                fullWidth
+                size="small"
+                disabled={isGameStarted}
+                value={dominoSet}
+                onChange={handleDominoSetChange}
+                aria-label={t("setAria")}
+              >
+                {DOMINO_SETS.map((set) => (
+                  <ToggleButton key={set.id} value={set.id}>
+                    {setName(set.id)}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </FieldGroup>
+
             <FieldGroup label={t("playersAtTable")}>
               <ToggleButtonGroup
                 exclusive
@@ -470,7 +488,7 @@ export default function MatchSettings() {
               </ToggleButtonGroup>
             </FieldGroup>
 
-            <FieldGroup label={t("format")}>
+            <FieldGroup label={t("playMode")}>
               <ToggleButtonGroup
                 exclusive
                 fullWidth
@@ -478,29 +496,11 @@ export default function MatchSettings() {
                 disabled={isGameStarted}
                 value={gameMode?.label ?? null}
                 onChange={handleModeChange}
-                aria-label={t("format")}
+                aria-label={t("playMode")}
               >
                 {renderGameModes.map((mode) => (
                   <ToggleButton key={mode.label} value={mode.label}>
                     {modeName(mode.label)}
-                  </ToggleButton>
-                ))}
-              </ToggleButtonGroup>
-            </FieldGroup>
-
-            <FieldGroup label={t("dominoSet")}>
-              <ToggleButtonGroup
-                exclusive
-                fullWidth
-                size="small"
-                disabled={isGameStarted}
-                value={dominoSet}
-                onChange={handleDominoSetChange}
-                aria-label={t("setAria")}
-              >
-                {DOMINO_SETS.map((set) => (
-                  <ToggleButton key={set.id} value={set.id}>
-                    {setName(set.id)}
                   </ToggleButton>
                 ))}
               </ToggleButtonGroup>

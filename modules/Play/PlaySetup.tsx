@@ -3,6 +3,7 @@
 import type { BotBrainId } from "@/lib/play/botBrain";
 import type { DominoSetId, DrawRuleId, PlayModeId } from "@/lib/play/types";
 import { useTranslation } from "@/i18n/useTranslation";
+import PlayPaceSliders from "@/modules/Play/PlayPaceSliders";
 import { pressableSx, tapFeedback } from "@/modules/Play/pressFeedback";
 import CheckOutlined from "@mui/icons-material/CheckOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -29,11 +30,15 @@ type Props = {
   maxPoints: number;
   drawRule: DrawRuleId;
   botBrain: BotBrainId;
+  botDelayMs: number;
+  animMs: number;
   onMode: (mode: PlayModeId) => void;
   onSet: (set: DominoSetId) => void;
   onMaxPoints: (n: number) => void;
   onDrawRule: (id: DrawRuleId) => void;
   onBotBrain: (id: BotBrainId) => void;
+  onBotDelay: (ms: number) => void;
+  onAnimMs: (ms: number) => void;
   onStart: () => void;
 };
 
@@ -148,11 +153,15 @@ export default function PlaySetup({
   maxPoints,
   drawRule,
   botBrain,
+  botDelayMs,
+  animMs,
   onMode,
   onSet,
   onMaxPoints,
   onDrawRule,
   onBotBrain,
+  onBotDelay,
+  onAnimMs,
   onStart,
 }: Props) {
   const { t } = useTranslation();
@@ -463,6 +472,16 @@ export default function PlaySetup({
             </Typography>
           </AccordionDetails>
         </Accordion>
+
+        <Box>
+          <SectionLabel>{t("playConfigPace")}</SectionLabel>
+          <PlayPaceSliders
+            botDelayMs={botDelayMs}
+            onBotDelay={onBotDelay}
+            animMs={animMs}
+            onAnimMs={onAnimMs}
+          />
+        </Box>
 
         <Button
           variant="contained"

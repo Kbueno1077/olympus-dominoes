@@ -491,6 +491,7 @@ const en = {
   statsComparePlayers: "Players",
   statsCompareHint: "Pick up to 10 players to compare every stat side by side.",
   statsComparePick: "Choose players",
+  statsMatchupPickMax: "Matchup · up to 4 players",
   statsCompareEmpty: "Choose at least one player to compare.",
   statsCompareStat: "Stat",
   statsCompareRemove: "Remove {name}",
@@ -501,10 +502,9 @@ const en = {
   statsMatchupToggle: "This matchup",
   statsMatchupHint:
     "Only games where these players sat in the teams you assign. Order within a team does not matter.",
-  statsMatchupAssignHint: "Tap blue or red beside each name for a side.",
+  statsMatchupAssignHint: "Assign each player to A or B — up to 4.",
   statsMatchupTeamA: "Team A",
   statsMatchupTeamB: "Team B",
-  statsMatchupNeedPlayers: "Pick at least two players for a matchup.",
   statsMatchupNeedBothSides: "Put at least one player on each team.",
   statsMatchupLoadingTitle: "Calculating matchup…",
   statsMatchupLoadingBody:
@@ -542,9 +542,9 @@ const en = {
   setupSubtitle: "Lock this in before the first hand.",
   playersAtTable: "Players at the table",
   format: "Format",
-  dominoSet: "Set",
-  pointsToWin: "Points to win",
-  target: "Target",
+  dominoSet: "Tiles",
+  pointsToWin: "Race to",
+  target: "Race to",
   freeForAllNote: "In Free For All every player keeps their own score.",
   playersCount: "{n} players",
   firstTo: "First to {n}",
@@ -1270,6 +1270,7 @@ const es = {
   statsCompareHint:
     "Elige hasta 10 jugadores para comparar todas las estadísticas.",
   statsComparePick: "Elegir jugadores",
+  statsMatchupPickMax: "Enfrentamiento · hasta 4 jugadores",
   statsCompareEmpty: "Elige al menos un jugador para comparar.",
   statsCompareStat: "Estad.",
   statsCompareRemove: "Quitar a {name}",
@@ -1280,10 +1281,9 @@ const es = {
   statsMatchupToggle: "Este enfrentamiento",
   statsMatchupHint:
     "Solo partidas donde estos jugadores se sentaron en los equipos que asignes. El orden dentro del equipo no importa.",
-  statsMatchupAssignHint: "Toca azul o rojo junto al nombre para el lado.",
+  statsMatchupAssignHint: "Asigna cada jugador a A o B — hasta 4.",
   statsMatchupTeamA: "Equipo A",
   statsMatchupTeamB: "Equipo B",
-  statsMatchupNeedPlayers: "Elige al menos dos jugadores para el enfrentamiento.",
   statsMatchupNeedBothSides: "Pon al menos un jugador en cada equipo.",
   statsMatchupLoadingTitle: "Calculando enfrentamiento…",
   statsMatchupLoadingBody:
@@ -1323,8 +1323,8 @@ const es = {
   playersAtTable: "Jugadores en la mesa",
   format: "Modo de juego",
   dominoSet: "Fichas",
-  pointsToWin: "Puntos para ganar",
-  target: "Meta",
+  pointsToWin: "Hasta",
+  target: "Hasta",
   freeForAllNote:
     "En Todos contra todos cada jugador lleva su propia anotación.",
   playersCount: "{n} jugadores",
