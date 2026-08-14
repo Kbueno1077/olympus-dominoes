@@ -624,9 +624,42 @@ const en = {
   playSetDoubleNine: "Double nine · 55 · no draw",
   playSetDoubleSixShort: "Double six · draws",
   playSetDoubleNineShort: "Double nine · no draw",
+  playRulesTitle: "How this set plays",
+  playRulesSummarySix: "Double six · draw from the boneyard",
+  playRulesSummaryNine: "Double nine · block only, no draws",
+  playRulesSixDeal: "28 tiles in the set; each seat is dealt 7.",
+  playRulesSixDraw:
+    "If you cannot play, draw from the boneyard until you can, or until it is empty — then pass.",
+  playRulesNineDeal: "55 tiles in the set; each seat is dealt 10.",
+  playRulesNineBlock:
+    "No draws. Leftover tiles stay out of play. If you cannot play, you pass.",
+  playRulesPlayEnds:
+    "Play a tile that matches an open end of the train. Doubles can open a new arm.",
+  playRulesPass: "When nobody can play, or you go out, the hand ends.",
+  playRulesOut:
+    "Going out scores the leftover pips in the other seats’ hands (partners share a score in 2v2).",
+  playRulesBlocked:
+    "If the table blocks with tiles still in hand, the lightest remaining hand (or team) takes the points.",
+  playRulesDrawTie:
+    "If seats from different teams tie for fewest pips, the Draw rule you pick decides who scores and who opens next.",
+  playRulesMatch:
+    "Games race to your First-to target. Match standing counts games won.",
   playFirstToLabel: "First to",
   playFirstToCustom: "Custom",
   playFirstToCustomHint: "Points to win a game (min {min})",
+  playDrawRule: "Draw (blocked pip-tie)",
+  playDrawRuleClassicTitle: "Classic",
+  playDrawRuleClassicBody:
+    "The team that opened the hand wins. Normal points.",
+  playDrawRuleWashTitle: "Wash",
+  playDrawRuleWashBody:
+    "No points this hand. The other team opens next.",
+  playDrawRuleGamblerTitle: "Gambler",
+  playDrawRuleGamblerBody:
+    "Opener’s team wins, points count double. The other team opens next.",
+  playDrawRuleReversedTitle: "Reversed",
+  playDrawRuleReversedBody:
+    "The team that did not open wins. Normal points.",
   playDealMatch: "Start Game",
   playMatchOver: "Match over",
   playHandOver: "Hand over",
@@ -645,6 +678,8 @@ const en = {
   playHandBlocked: "Blocked — fewest pips",
   playHandAward: "{team} +{points}",
   playHandAwardBlocked: "{team} +{points} (blocked)",
+  playHandWash: "Wash — no points",
+  playHandWashNext: "Next open: {team}",
   playScorepad: "Scorepad",
   playNewMatch: "New match",
   playEndGame: "End Game",
@@ -1362,9 +1397,42 @@ const es = {
   playSetDoubleNine: "Doble nueve · 55 · sin robar",
   playSetDoubleSixShort: "Doble seis · roba",
   playSetDoubleNineShort: "Doble nueve · sin robar",
+  playRulesTitle: "Cómo se juega este set",
+  playRulesSummarySix: "Doble seis · se roba del pozo",
+  playRulesSummaryNine: "Doble nueve · solo bloqueo, sin robar",
+  playRulesSixDeal: "28 fichas en el set; cada asiento recibe 7.",
+  playRulesSixDraw:
+    "Si no puedes jugar, robas del pozo hasta poder, o hasta que se acabe — entonces pasas.",
+  playRulesNineDeal: "55 fichas en el set; cada asiento recibe 10.",
+  playRulesNineBlock:
+    "No se roba. Las fichas que sobran quedan fuera. Si no puedes jugar, pasas.",
+  playRulesPlayEnds:
+    "Juega una ficha que coincida con una punta abierta del tren. Los dobles pueden abrir un brazo nuevo.",
+  playRulesPass: "Cuando nadie puede jugar, o te quedas sin fichas, termina la mano.",
+  playRulesOut:
+    "Al irte, sumas los pips que quedan en las otras manos (en 2v2 la pareja comparte el puntaje).",
+  playRulesBlocked:
+    "Si la mesa se tranca con fichas en mano, gana la mano (o pareja) más liviana y se lleva los puntos.",
+  playRulesDrawTie:
+    "Si asientos de equipos distintos empatan en menos pips, la regla de Empate que elijas decide quién anota y quién abre después.",
+  playRulesMatch:
+    "Los juegos van a tu meta de Primero a. El marcador de partida cuenta juegos ganados.",
   playFirstToLabel: "Primero a",
   playFirstToCustom: "Personalizado",
   playFirstToCustomHint: "Puntos para ganar un juego (mín. {min})",
+  playDrawRule: "Empate (trancado con mismos pips)",
+  playDrawRuleClassicTitle: "Clásico",
+  playDrawRuleClassicBody:
+    "Gana el equipo que abrió la mano. Puntos normales.",
+  playDrawRuleWashTitle: "Lavada",
+  playDrawRuleWashBody:
+    "Esta mano no suma puntos. Abre el otro equipo la siguiente.",
+  playDrawRuleGamblerTitle: "Apostador",
+  playDrawRuleGamblerBody:
+    "Gana quien abrió, puntos al doble. Abre el otro equipo la siguiente.",
+  playDrawRuleReversedTitle: "Invertido",
+  playDrawRuleReversedBody:
+    "Gana el equipo que no abrió. Puntos normales.",
   playDealMatch: "Comenzar juego",
   playMatchOver: "Partida terminada",
   playHandOver: "Mano terminada",
@@ -1383,6 +1451,8 @@ const es = {
   playHandBlocked: "Trancado — menos puntos",
   playHandAward: "{team} +{points}",
   playHandAwardBlocked: "{team} +{points} (trancado)",
+  playHandWash: "Lavada — sin puntos",
+  playHandWashNext: "Abre después: {team}",
   playScorepad: "Libreta",
   playNewMatch: "Nueva partida",
   playEndGame: "Terminar juego",

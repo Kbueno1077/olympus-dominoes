@@ -4,6 +4,12 @@ export type DominoSetId = "double_six" | "double_nine";
 
 export type PlayModeId = "1v1" | "2v2" | "ffa4";
 
+/**
+ * How to resolve a blocked hand when seats from different teams tie for
+ * fewest remaining pips.
+ */
+export type DrawRuleId = "classic" | "wash" | "gambler" | "reversed";
+
 export type Tile = {
   id: string;
   /** Lower face (canonical). */
@@ -63,6 +69,11 @@ export type GameResult = {
   pointsAwarded: number;
   /** Pip totals remaining per seat. */
   pipTotals: number[];
+  /**
+   * When set, the next hand is opened by this team instead of winnerTeam
+   * (wash / gambler flip the lead after a tied block).
+   */
+  nextOpenerTeam?: number;
 };
 
 export type LogLevel = "info" | "play" | "bot" | "warn" | "win";
@@ -79,6 +90,8 @@ export type GameSnapshot = {
   phase: GamePhase;
   setId: DominoSetId;
   modeId: PlayModeId;
+  /** Blocked-hand pip-tie rule for this match. */
+  drawRule: DrawRuleId;
   maxPip: number;
   /** When false (double-nine), stuck players pass — no boneyard draws. */
   allowDraw: boolean;
@@ -145,6 +158,8 @@ export type MatchSnapshot = {
   modeId: PlayModeId;
   setId: DominoSetId;
   maxPoints: number;
+  /** Blocked-hand pip-tie rule for the whole match. */
+  drawRule: DrawRuleId;
   /** Games won by team (match standing). */
   gamesWon: Record<number, number>;
   /** Finished games, oldest → newest. */

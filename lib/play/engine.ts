@@ -12,6 +12,7 @@ import type {
   ChainSide,
   CompletedPlayGame,
   DominoSetId,
+  DrawRuleId,
   GameLogEntry,
   GameResult,
   GameSnapshot,
@@ -270,8 +271,9 @@ export function createGame(
   setId: DominoSetId = "double_six",
   handIndex = 1,
   seed?: number,
-  /** Team that won the previous hand — they open this one. Omit on hand 1. */
-  previousWinnerTeam?: number
+  /** Team that opens this hand. Omit on hand 1 (highest double). */
+  previousOpenerTeam?: number,
+  drawRule: DrawRuleId = "classic"
 ): GameSnapshot {
   const set = setConfig(setId);
   const mode = modeConfig(modeId);
@@ -298,12 +300,12 @@ export function createGame(
   const remainder = deck.slice(cursor);
   const boneyard = canDraw ? remainder : [];
 
-  // Hand 1: highest double/tile. Later hands: winners of the previous hand.
+  // Hand 1: highest double/tile. Later hands: designated opener team.
   const byHandWin =
-    previousWinnerTeam != null &&
-    seats.some((s) => s.team === previousWinnerTeam);
+    previousOpenerTeam != null &&
+    seats.some((s) => s.team === previousOpenerTeam);
   const starter = byHandWin
-    ? pickStarterOnTeam(seats, previousWinnerTeam!)
+    ? pickStarterOnTeam(seats, previousOpenerTeam!)
     : pickStarter(seats.map((s) => s.hand));
   const starterTile = bestOpeningTile(seats[starter].hand)!;
   const openingTeam = seats[starter].team;
@@ -314,6 +316,7 @@ export function createGame(
     phase: "playing",
     setId,
     modeId,
+    drawRule,
     maxPip: set.maxPip,
     allowDraw: canDraw,
     seats,
@@ -426,6 +429,12 @@ function pointsForWinners(
   }, 0);
 }
 
+/** Other team in the match (2-team modes); first non-matching team in FFA. */
+function opposingTeam(state: GameSnapshot, team: number): number {
+  const teams = Array.from(new Set(state.seats.map((seat) => seat.team)));
+  return teams.find((t) => t !== team) ?? team;
+}
+
 function finishIfNeeded(state: GameSnapshot): GameSnapshot {
   const empty = state.seats.find((s) => s.hand.length === 0);
   if (empty) {
@@ -455,11 +464,9 @@ function finishIfNeeded(state: GameSnapshot): GameSnapshot {
     const totals = state.seats.map((s) => handPips(s.hand));
     const starterSeat = state.seats[state.starter];
     const starterTeam = starterSeat?.team ?? 1;
-    let usedStarterTiebreak = false;
 
     // Blocked: fewest pips is per seat (not partners summed). That seat's
-    // team wins. If individuals from different teams tie for fewest, the
-    // hand-opener's team takes it.
+    // team wins. Multi-team pip ties use the match drawRule.
     const best = Math.min(...totals);
     const tiedSeats = totals
       .map((pips, index) => (pips === best ? index : -1))
@@ -469,11 +476,49 @@ function finishIfNeeded(state: GameSnapshot): GameSnapshot {
     );
 
     let winnerTeam: number;
+    let pointsAwarded: number;
+    let nextOpenerTeam: number | undefined;
+    let tieDetail: string;
+
     if (tiedTeams.length === 1) {
       winnerTeam = tiedTeams[0];
+      pointsAwarded = pointsForWinners(state, winnerTeam, totals);
+      tieDetail = ` · fewest pips seat ${tiedSeats.join("/")}`;
     } else {
-      winnerTeam = starterTeam;
-      usedStarterTiebreak = true;
+      const basePoints = (team: number) =>
+        pointsForWinners(state, team, totals);
+      const other = opposingTeam(state, starterTeam);
+      const reversedTeam =
+        tiedTeams.find((team) => team !== starterTeam) ?? other;
+
+      switch (state.drawRule) {
+        case "classic":
+          winnerTeam = starterTeam;
+          pointsAwarded = basePoints(winnerTeam);
+          tieDetail = ` · pip tie · classic → opener's team (seat ${state.starter})`;
+          break;
+        case "wash":
+          winnerTeam = starterTeam;
+          pointsAwarded = 0;
+          nextOpenerTeam = other;
+          tieDetail = ` · pip tie · wash → 0 pts · next open team ${other}`;
+          break;
+        case "gambler":
+          winnerTeam = starterTeam;
+          pointsAwarded = basePoints(winnerTeam) * 2;
+          nextOpenerTeam = other;
+          tieDetail = ` · pip tie · gambler → opener ×2 (+${pointsAwarded}) · next open team ${other}`;
+          break;
+        case "reversed":
+          winnerTeam = reversedTeam;
+          pointsAwarded = basePoints(winnerTeam);
+          tieDetail = ` · pip tie · reversed → non-opener team ${winnerTeam}`;
+          break;
+        default: {
+          const _exhaustive: never = state.drawRule;
+          return _exhaustive;
+        }
+      }
     }
 
     const winners =
@@ -483,23 +528,20 @@ function finishIfNeeded(state: GameSnapshot): GameSnapshot {
             .filter((seat) => seat.team === winnerTeam)
             .map((seat) => seat.index);
 
-    const pointsAwarded = pointsForWinners(state, winnerTeam, totals);
     const result: GameResult = {
       reason: "blocked",
       winners,
       winnerTeam,
       pointsAwarded,
       pipTotals: totals,
+      ...(nextOpenerTeam != null ? { nextOpenerTeam } : {}),
     };
     let next: GameSnapshot = { ...state, phase: "finished", result };
     next = appendLog(
       next,
       "win",
       `Blocked · team ${winnerTeam} +${pointsAwarded}`,
-      `Pips [${totals.join(", ")}]` +
-        (usedStarterTiebreak
-          ? ` · individual tie → opener's team (seat ${state.starter}) wins`
-          : ` · fewest pips seat ${tiedSeats.join("/")}`)
+      `Pips [${totals.join(", ")}]` + tieDetail
     );
     return next;
   }
@@ -733,7 +775,8 @@ export function teamLabels(modeId: PlayModeId): Record<number, string> {
 export function createMatch(
   modeId: PlayModeId,
   setId: DominoSetId,
-  maxPoints: number
+  maxPoints: number,
+  drawRule: DrawRuleId = "classic"
 ): MatchSnapshot {
   const labels = teamLabels(modeId);
   const teamScores: Record<number, number> = {};
@@ -748,12 +791,13 @@ export function createMatch(
     modeId,
     setId,
     maxPoints,
+    drawRule,
     gamesWon,
     completedGames: [],
     gameIndex: 1,
     teamScores,
     hands: [],
-    current: createGame(modeId, setId, 1),
+    current: createGame(modeId, setId, 1, undefined, undefined, drawRule),
     gameOver: false,
     gameWinnerTeams: [],
   };
@@ -828,6 +872,9 @@ export function dealNextHand(match: MatchSnapshot): MatchSnapshot {
   if (!game || game.phase !== "finished") return accounted;
   if (accounted.gameOver) return accounted;
 
+  const nextOpener =
+    game.result?.nextOpenerTeam ?? game.result?.winnerTeam;
+
   return {
     ...accounted,
     current: createGame(
@@ -835,7 +882,8 @@ export function dealNextHand(match: MatchSnapshot): MatchSnapshot {
       accounted.setId,
       game.handIndex + 1,
       undefined,
-      game.result?.winnerTeam
+      nextOpener,
+      accounted.drawRule
     ),
     gameOver: false,
     gameWinnerTeams: [],
@@ -876,7 +924,8 @@ export function startNextGame(match: MatchSnapshot): MatchSnapshot {
       accounted.setId,
       1,
       undefined,
-      winnerTeam
+      winnerTeam,
+      accounted.drawRule
     ),
     gameOver: false,
     gameWinnerTeams: [],
