@@ -22,6 +22,7 @@ import {
 import type {
   ChainSide,
   DominoSetId,
+  DrawRuleId,
   GameSnapshot,
   LegalMove,
   MatchSnapshot,
@@ -124,6 +125,7 @@ export default function PlayGame() {
   const [modeId, setModeId] = useState<PlayModeId>("2v2");
   const [setId, setSetId] = useState<DominoSetId>("double_nine");
   const [maxPoints, setMaxPoints] = useState(150);
+  const [drawRule, setDrawRule] = useState<DrawRuleId>("classic");
   const [match, setMatch] = useState<MatchSnapshot | null>(null);
   const setPlayTableActive = useSetRecoilState(playTableActiveRecoil);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -209,12 +211,12 @@ export default function PlayGame() {
     setBusy(false);
     setPendingFlight(null);
     setFlight(null);
-    setMatch(createMatch(modeId, setId, maxPoints));
+    setMatch(createMatch(modeId, setId, maxPoints, drawRule));
     setLogOpen(false);
     setNotesOpen(false);
     setRearrangeMode(false);
     dismissPassFlash();
-  }, [modeId, setId, maxPoints, dismissPassFlash]);
+  }, [modeId, setId, maxPoints, drawRule, dismissPassFlash]);
 
   const handleMaxPoints = useCallback((n: number) => {
     setMaxPoints(Math.max(1, Math.round(n)));
@@ -653,10 +655,12 @@ export default function PlayGame() {
           modeId={modeId}
           setId={setId}
           maxPoints={maxPoints}
+          drawRule={drawRule}
           botBrain={botBrain}
           onMode={setModeId}
           onSet={setSetId}
           onMaxPoints={handleMaxPoints}
+          onDrawRule={setDrawRule}
           onBotBrain={handleBotBrain}
           onStart={start}
         />
@@ -1080,35 +1084,71 @@ export default function PlayGame() {
                               >
                                 {t("playHandDone", { n: game.handIndex })}
                               </Typography>
-                              <Typography
-                                sx={{
-                                  fontFamily: (theme) =>
-                                    theme.typography.h2.fontFamily,
-                                  fontWeight: 800,
-                                  fontSize: { xs: 22, sm: 26 },
-                                  color: "primary.dark",
-                                  lineHeight: 1.15,
-                                  mt: 0.5,
-                                }}
-                              >
-                                {t("playHandWinner", {
-                                  name: t(labels[game.result.winnerTeam]),
-                                })}
-                              </Typography>
-                              <Typography
-                                sx={{
-                                  fontWeight: 800,
-                                  fontSize: { xs: 28, sm: 32 },
-                                  color: "secondary.main",
-                                  fontVariantNumeric: "tabular-nums",
-                                  lineHeight: 1.1,
-                                  mt: 0.5,
-                                }}
-                              >
-                                {t("playHandPoints", {
-                                  points: game.result.pointsAwarded,
-                                })}
-                              </Typography>
+                              {game.result.reason === "blocked" &&
+                              game.result.pointsAwarded === 0 &&
+                              game.result.nextOpenerTeam != null ? (
+                                <>
+                                  <Typography
+                                    sx={{
+                                      fontFamily: (theme) =>
+                                        theme.typography.h2.fontFamily,
+                                      fontWeight: 800,
+                                      fontSize: { xs: 22, sm: 26 },
+                                      color: "primary.dark",
+                                      lineHeight: 1.15,
+                                      mt: 0.5,
+                                    }}
+                                  >
+                                    {t("playHandWash")}
+                                  </Typography>
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 700,
+                                      fontSize: 14,
+                                      color: "text.secondary",
+                                      mt: 0.75,
+                                    }}
+                                  >
+                                    {t("playHandWashNext", {
+                                      team: t(
+                                        labels[game.result.nextOpenerTeam]
+                                      ),
+                                    })}
+                                  </Typography>
+                                </>
+                              ) : (
+                                <>
+                                  <Typography
+                                    sx={{
+                                      fontFamily: (theme) =>
+                                        theme.typography.h2.fontFamily,
+                                      fontWeight: 800,
+                                      fontSize: { xs: 22, sm: 26 },
+                                      color: "primary.dark",
+                                      lineHeight: 1.15,
+                                      mt: 0.5,
+                                    }}
+                                  >
+                                    {t("playHandWinner", {
+                                      name: t(labels[game.result.winnerTeam]),
+                                    })}
+                                  </Typography>
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 800,
+                                      fontSize: { xs: 28, sm: 32 },
+                                      color: "secondary.main",
+                                      fontVariantNumeric: "tabular-nums",
+                                      lineHeight: 1.1,
+                                      mt: 0.5,
+                                    }}
+                                  >
+                                    {t("playHandPoints", {
+                                      points: game.result.pointsAwarded,
+                                    })}
+                                  </Typography>
+                                </>
+                              )}
                               <Stack
                                 direction="row"
                                 spacing={1}

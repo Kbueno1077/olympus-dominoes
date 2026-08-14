@@ -1,12 +1,16 @@
 "use client";
 
 import type { BotBrainId } from "@/lib/play/botBrain";
-import type { DominoSetId, PlayModeId } from "@/lib/play/types";
+import type { DominoSetId, DrawRuleId, PlayModeId } from "@/lib/play/types";
 import { useTranslation } from "@/i18n/useTranslation";
 import { pressableSx, tapFeedback } from "@/modules/Play/pressFeedback";
 import CheckOutlined from "@mui/icons-material/CheckOutlined";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import TouchAppOutlined from "@mui/icons-material/TouchAppOutlined";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Button,
   Card,
@@ -24,15 +28,23 @@ type Props = {
   modeId: PlayModeId;
   setId: DominoSetId;
   maxPoints: number;
+  drawRule: DrawRuleId;
   botBrain: BotBrainId;
   onMode: (mode: PlayModeId) => void;
   onSet: (set: DominoSetId) => void;
   onMaxPoints: (n: number) => void;
+  onDrawRule: (id: DrawRuleId) => void;
   onBotBrain: (id: BotBrainId) => void;
   onStart: () => void;
 };
 
 const MODE_IDS: PlayModeId[] = ["1v1", "2v2", "ffa4"];
+const DRAW_RULE_IDS: DrawRuleId[] = [
+  "classic",
+  "wash",
+  "gambler",
+  "reversed",
+];
 const TARGETS = [100, 150, 200] as const;
 const FIRST_TO_MIN = 1;
 
@@ -53,14 +65,78 @@ function modeCopy(
   }
 }
 
+function drawRuleCopy(
+  id: DrawRuleId
+): { titleKey: string; bodyKey: string } {
+  switch (id) {
+    case "classic":
+      return {
+        titleKey: "playDrawRuleClassicTitle",
+        bodyKey: "playDrawRuleClassicBody",
+      };
+    case "wash":
+      return {
+        titleKey: "playDrawRuleWashTitle",
+        bodyKey: "playDrawRuleWashBody",
+      };
+    case "gambler":
+      return {
+        titleKey: "playDrawRuleGamblerTitle",
+        bodyKey: "playDrawRuleGamblerBody",
+      };
+    case "reversed":
+      return {
+        titleKey: "playDrawRuleReversedTitle",
+        bodyKey: "playDrawRuleReversedBody",
+      };
+    default: {
+      const _exhaustive: never = id;
+      return _exhaustive;
+    }
+  }
+}
+
+function setRuleKeys(setId: DominoSetId): string[] {
+  switch (setId) {
+    case "double_six":
+      return [
+        "playRulesSixDeal",
+        "playRulesSixDraw",
+        "playRulesPlayEnds",
+        "playRulesPass",
+        "playRulesOut",
+        "playRulesBlocked",
+        "playRulesDrawTie",
+        "playRulesMatch",
+      ];
+    case "double_nine":
+      return [
+        "playRulesNineDeal",
+        "playRulesNineBlock",
+        "playRulesPlayEnds",
+        "playRulesPass",
+        "playRulesOut",
+        "playRulesBlocked",
+        "playRulesDrawTie",
+        "playRulesMatch",
+      ];
+    default: {
+      const _exhaustive: never = setId;
+      return _exhaustive;
+    }
+  }
+}
+
 export default function PlaySetup({
   modeId,
   setId,
   maxPoints,
+  drawRule,
   botBrain,
   onMode,
   onSet,
   onMaxPoints,
+  onDrawRule,
   onBotBrain,
   onStart,
 }: Props) {
@@ -92,6 +168,20 @@ export default function PlaySetup({
       ] satisfies { id: BotBrainId; label: string; blurb: string }[],
     [t]
   );
+
+  const ruleKeys = useMemo(() => setRuleKeys(setId), [setId]);
+  const rulesSummary = (() => {
+    switch (setId) {
+      case "double_six":
+        return t("playRulesSummarySix");
+      case "double_nine":
+        return t("playRulesSummaryNine");
+      default: {
+        const _exhaustive: never = setId;
+        return _exhaustive;
+      }
+    }
+  })();
 
   const commitFirstTo = (raw: string) => {
     const parsed = Number.parseInt(raw, 10);
@@ -186,6 +276,89 @@ export default function PlaySetup({
             variant="overline"
             sx={{ color: "text.secondary", mb: 1, display: "block" }}
           >
+            {t("playSet")}
+          </Typography>
+          <ToggleButtonGroup
+            exclusive
+            fullWidth
+            size="small"
+            value={setId}
+            onChange={(_e, next) => next && onSet(next)}
+          >
+            <ToggleButton value="double_six">
+              {t("playSetDoubleSix")}
+            </ToggleButton>
+            <ToggleButton value="double_nine">
+              {t("playSetDoubleNine")}
+            </ToggleButton>
+          </ToggleButtonGroup>
+
+          <Accordion
+            disableGutters
+            elevation={0}
+            sx={{
+              mt: 1.25,
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: "12px !important",
+              overflow: "hidden",
+              bgcolor: alpha("#fff", 0.45),
+              "&:before": { display: "none" },
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                minHeight: 48,
+                px: 1.5,
+                "&.Mui-expanded": { minHeight: 48 },
+                "& .MuiAccordionSummary-content": {
+                  my: 1,
+                  "&.Mui-expanded": { my: 1 },
+                },
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  {t("playRulesTitle")}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  {rulesSummary}
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 1.5, pt: 0, pb: 1.75 }}>
+              <Stack spacing={1}>
+                {ruleKeys.map((key) => (
+                  <Stack
+                    key={key}
+                    direction="row"
+                    spacing={1}
+                    alignItems="flex-start"
+                  >
+                    <CheckOutlined
+                      sx={{
+                        fontSize: 16,
+                        mt: "2px",
+                        color: "primary.main",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                      {t(key)}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+        </Box>
+
+        <Box>
+          <Typography
+            variant="overline"
+            sx={{ color: "text.secondary", mb: 1, display: "block" }}
+          >
             {t("playMode")}
           </Typography>
           <Stack spacing={1.25}>
@@ -229,46 +402,27 @@ export default function PlaySetup({
             variant="overline"
             sx={{ color: "text.secondary", mb: 1, display: "block" }}
           >
-            {t("playSet")}
-          </Typography>
-          <ToggleButtonGroup
-            exclusive
-            fullWidth
-            size="small"
-            value={setId}
-            onChange={(_e, next) => next && onSet(next)}
-          >
-            <ToggleButton value="double_six">
-              {t("playSetDoubleSix")}
-            </ToggleButton>
-            <ToggleButton value="double_nine">
-              {t("playSetDoubleNine")}
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        <Box>
-          <Typography
-            variant="overline"
-            sx={{ color: "text.secondary", mb: 1, display: "block" }}
-          >
             {t("playFirstToLabel")}
           </Typography>
-          <Stack spacing={1.25}>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {TARGETS.map((preset) => (
-                <Chip
-                  key={preset}
-                  label={preset}
-                  clickable
-                  onPointerDown={tapFeedback}
-                  variant={maxPoints === preset ? "filled" : "outlined"}
-                  color={maxPoints === preset ? "primary" : "default"}
-                  onClick={() => onMaxPoints(preset)}
-                  sx={pressableSx}
-                />
-              ))}
-            </Stack>
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            flexWrap="wrap"
+            alignItems="center"
+          >
+            {TARGETS.map((preset) => (
+              <Chip
+                key={preset}
+                label={preset}
+                clickable
+                onPointerDown={tapFeedback}
+                variant={maxPoints === preset ? "filled" : "outlined"}
+                color={maxPoints === preset ? "primary" : "default"}
+                onClick={() => onMaxPoints(preset)}
+                sx={pressableSx}
+              />
+            ))}
             <TextField
               size="small"
               type="number"
@@ -286,11 +440,7 @@ export default function PlaySetup({
                   (event.target as HTMLInputElement).blur();
                 }
               }}
-              helperText={t("playFirstToCustomHint", {
-                min: FIRST_TO_MIN,
-              })}
-              fullWidth
-              sx={{ maxWidth: 280 }}
+              sx={{ width: 120 }}
             />
           </Stack>
         </Box>
@@ -300,13 +450,73 @@ export default function PlaySetup({
             variant="overline"
             sx={{ color: "text.secondary", mb: 1, display: "block" }}
           >
-            {t("playConfigBotBrain")}
+            {t("playDrawRule")}
           </Typography>
+          <Stack spacing={1.25}>
+            {DRAW_RULE_IDS.map((id) => {
+              const { titleKey, bodyKey } = drawRuleCopy(id);
+              const active = drawRule === id;
+              return (
+                <Box
+                  key={id}
+                  component="button"
+                  type="button"
+                  onPointerDown={tapFeedback}
+                  onClick={() => onDrawRule(id)}
+                  sx={{
+                    ...pressableSx,
+                    textAlign: "left",
+                    p: 1.5,
+                    borderRadius: 2,
+                    border: "1.5px solid",
+                    borderColor: active
+                      ? "primary.main"
+                      : alpha("#241D14", 0.12),
+                    backgroundColor: active
+                      ? alpha("#1F6B58", 0.1)
+                      : alpha("#fff", 0.4),
+                    cursor: "pointer",
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    spacing={1}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, color: "text.primary" }}>
+                        {t(titleKey)}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary" }}
+                      >
+                        {t(bodyKey)}
+                      </Typography>
+                    </Box>
+                    {active ? (
+                      <CheckOutlined
+                        sx={{
+                          fontSize: 20,
+                          color: "primary.main",
+                          flexShrink: 0,
+                        }}
+                      />
+                    ) : null}
+                  </Stack>
+                </Box>
+              );
+            })}
+          </Stack>
+        </Box>
+
+        <Box>
           <Typography
-            variant="body2"
-            sx={{ color: "text.secondary", mb: 1.25, maxWidth: 52 * 8 }}
+            variant="overline"
+            sx={{ color: "text.secondary", mb: 1, display: "block" }}
           >
-            {t("playConfigBotBrainBody")}
+            {t("playConfigBotBrain")}
           </Typography>
           <Stack spacing={1.25}>
             {difficultyOptions.map((option) => {
