@@ -50,6 +50,7 @@ import { alpha } from "@mui/material/styles";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const MAX_COMPARE = 10;
+const MAX_MATCHUP = 4;
 const SIDE_A = "#2F6F9F";
 const SIDE_B = "#B8453A";
 
@@ -281,6 +282,26 @@ export default function AnalyticsCompare({
     [t]
   );
 
+  const maxPlayers = matchupMode ? MAX_MATCHUP : MAX_COMPARE;
+
+  // Matchup is 2v2 / FFA-of-4 at most — trim if someone had more from free compare.
+  useEffect(() => {
+    if (!matchupMode) return;
+    setSelectedIds((current) => {
+      if (current.length <= MAX_MATCHUP) return current;
+      const kept = current.slice(0, MAX_MATCHUP);
+      const dropped = new Set(current.slice(MAX_MATCHUP));
+      setTeams((prev) => {
+        const next = { ...prev };
+        dropped.forEach((id) => {
+          delete next[id];
+        });
+        return next;
+      });
+      return kept;
+    });
+  }, [matchupMode]);
+
   const togglePlayer = (playerId: number) => {
     setSelectedIds((current) => {
       if (current.includes(playerId)) {
@@ -291,7 +312,7 @@ export default function AnalyticsCompare({
         });
         return current.filter((id) => id !== playerId);
       }
-      if (current.length >= MAX_COMPARE) return current;
+      if (current.length >= maxPlayers) return current;
       setTeams((prev) => ({
         ...prev,
         [playerId]: defaultTeamForNew(prev),
@@ -363,67 +384,113 @@ export default function AnalyticsCompare({
           }
         >
           {selectedPlayers.length === 0 ? null : matchupMode ? (
-            <Stack spacing={0.5} sx={{ mb: 1.5 }}>
+            <Stack spacing={1} sx={{ mb: 1.5 }}>
               {selectedPlayers.map((player) => (
-                <Stack
+                <Box
                   key={player.id}
-                  direction="row"
-                  alignItems="center"
-                  spacing={1.25}
-                  sx={{ minHeight: 36 }}
+                  sx={{
+                    p: 1,
+                    borderRadius: 1.5,
+                    backgroundColor: "background.paper",
+                    border: "1px solid",
+                    borderColor: (theme) =>
+                      alpha(theme.palette.grey[600], 0.14),
+                  }}
                 >
-                  <Typography sx={{ flex: 1, minWidth: 0 }} noWrap>
-                    {player.name}
-                  </Typography>
-                  <Stack direction="row" spacing={1}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    spacing={1}
+                    sx={{ mb: 0.85 }}
+                  >
+                    <Typography
+                      sx={{ fontWeight: 600, fontSize: 14 }}
+                      title={player.name}
+                      noWrap
+                    >
+                      {player.name}
+                    </Typography>
+                    <Button
+                      size="small"
+                      color="inherit"
+                      onClick={() => togglePlayer(player.id)}
+                      aria-label={t("statsCompareRemove", {
+                        name: player.name,
+                      })}
+                      sx={{
+                        minWidth: 0,
+                        px: 0.75,
+                        color: "text.secondary",
+                        lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </Stack>
+                  <Stack direction="row" spacing={0.5}>
                     {(
                       [
                         {
                           value: 1 as const,
-                          color: SIDE_A,
-                          label: t("statsMatchupTeamA"),
+                          label: t("historyFilterSideA"),
+                          activeBorder: SIDE_A,
+                          activeBg: alpha(SIDE_A, 0.14),
+                          activeColor: SIDE_A,
                         },
                         {
                           value: 2 as const,
-                          color: SIDE_B,
-                          label: t("statsMatchupTeamB"),
+                          label: t("historyFilterSideB"),
+                          activeBorder: SIDE_B,
+                          activeBg: alpha(SIDE_B, 0.14),
+                          activeColor: SIDE_B,
                         },
                       ] as const
                     ).map((option) => {
                       const selected = teams[player.id] === option.value;
                       return (
-                        <Box
+                        <Button
                           key={option.value}
-                          component="button"
-                          type="button"
-                          aria-label={option.label}
+                          size="small"
+                          variant="outlined"
+                          aria-label={
+                            option.value === 1
+                              ? t("statsMatchupTeamA")
+                              : t("statsMatchupTeamB")
+                          }
                           aria-pressed={selected}
-                          onClick={() => setPlayerTeam(player.id, option.value)}
+                          onClick={() =>
+                            setPlayerTeam(player.id, option.value)
+                          }
                           sx={{
-                            width: 18,
-                            height: 18,
-                            borderRadius: "50%",
-                            border: `2px solid ${option.color}`,
+                            flex: 1,
+                            minWidth: 0,
+                            px: 0.5,
+                            py: 0.35,
+                            fontSize: 12,
+                            fontWeight: selected ? 700 : 500,
+                            borderColor: selected
+                              ? option.activeBorder
+                              : (theme) =>
+                                  alpha(theme.palette.grey[600], 0.22),
                             backgroundColor: selected
-                              ? option.color
+                              ? option.activeBg
                               : "transparent",
-                            p: 0,
-                            cursor: "pointer",
+                            color: selected
+                              ? option.activeColor
+                              : "text.secondary",
+                            "&:hover": {
+                              borderColor: option.activeBorder,
+                              backgroundColor: option.activeBg,
+                            },
                           }}
-                        />
+                        >
+                          {option.label}
+                        </Button>
                       );
                     })}
                   </Stack>
-                  <Button
-                    size="small"
-                    color="inherit"
-                    onClick={() => togglePlayer(player.id)}
-                    aria-label={t("statsCompareRemove", { name: player.name })}
-                    sx={{ minWidth: 0, px: 1, color: "text.secondary" }}
-                  >
-                    ×
-                  </Button>
-                </Stack>
+                </Box>
               ))}
             </Stack>
           ) : (
@@ -451,18 +518,14 @@ export default function AnalyticsCompare({
             </Stack>
           )}
 
-          <Button variant="outlined" onClick={() => setPickerOpen(true)}>
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => setPickerOpen(true)}
+          >
             {t("statsComparePick")}
           </Button>
 
-          {matchupMode && selectedPlayers.length < 2 ? (
-            <Typography
-              variant="body2"
-              sx={{ color: "text.secondary", mt: 1.25 }}
-            >
-              {t("statsMatchupNeedPlayers")}
-            </Typography>
-          ) : null}
           {matchupMode &&
           selectedPlayers.length >= 2 &&
           !alignmentReady ? (
@@ -683,10 +746,18 @@ export default function AnalyticsCompare({
       >
         <DialogTitle>{t("statsComparePick")}</DialogTitle>
         <DialogContent dividers>
+          {matchupMode ? (
+            <Typography
+              variant="body2"
+              sx={{ color: "text.secondary", mb: 1.25 }}
+            >
+              {t("statsMatchupPickMax")}
+            </Typography>
+          ) : null}
           <Stack>
             {players.map((player) => {
               const checked = selectedIds.includes(player.id);
-              const disabled = !checked && selectedIds.length >= MAX_COMPARE;
+              const disabled = !checked && selectedIds.length >= maxPlayers;
               return (
                 <FormControlLabel
                   key={player.id}

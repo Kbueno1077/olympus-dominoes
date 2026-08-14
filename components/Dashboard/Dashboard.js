@@ -39,8 +39,24 @@ const HOW_STEPS = [
 ];
 
 const SPLIT_SIDES = [
-  { title: "homeAppTitle", body: "homeAppBody" },
-  { title: "homeWebTitle", body: "homeWebBody" },
+  {
+    title: "homeAppTitle",
+    bullets: [
+      "homeAppBulletScore",
+      "homeAppBulletConcurrent",
+      "homeAppBulletHistory",
+      "homeAppBulletExport",
+    ],
+  },
+  {
+    title: "homeWebTitle",
+    bullets: [
+      "homeWebBulletAnalytics",
+      "homeWebBulletSingleGame",
+      "homeWebBulletThrowaway",
+      "homeWebBulletSourceOfTruth",
+    ],
+  },
 ];
 
 function FeatureRow({ t }) {
@@ -177,7 +193,7 @@ function HistoryNotice({ t, onOpenAnalytics }) {
 
 /** Quiet disclosure — same tone as How it works, not a feature-matrix card. */
 function AppVsWebDetails({ t }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   return (
     <Box>
@@ -231,13 +247,31 @@ function AppVsWebDetails({ t }) {
             <Box key={side.title}>
               <Typography
                 variant="subtitle1"
-                sx={{ color: "text.primary", fontWeight: 600, mb: 0.5 }}
+                sx={{ color: "text.primary", fontWeight: 600, mb: 0.75 }}
               >
                 {t(side.title)}
               </Typography>
-              <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                {t(side.body)}
-              </Typography>
+              <Box
+                component="ul"
+                sx={{
+                  m: 0,
+                  pl: 2.25,
+                  color: "text.secondary",
+                  "& li": { mb: 0.65 },
+                  "& li:last-child": { mb: 0 },
+                }}
+              >
+                {side.bullets.map((key) => (
+                  <Typography
+                    key={key}
+                    component="li"
+                    variant="body2"
+                    sx={{ color: "inherit" }}
+                  >
+                    {t(key)}
+                  </Typography>
+                ))}
+              </Box>
             </Box>
           ))}
         </Box>
