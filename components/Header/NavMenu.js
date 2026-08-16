@@ -11,6 +11,7 @@ import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
 import LeaderboardOutlined from "@mui/icons-material/LeaderboardOutlined";
 import CallMergeOutlined from "@mui/icons-material/CallMergeOutlined";
+import ScienceOutlined from "@mui/icons-material/ScienceOutlined";
 import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
 import SmartToyOutlined from "@mui/icons-material/SmartToyOutlined";
 import {
@@ -98,6 +99,12 @@ export default function NavMenu({ dense = false }) {
               label: t("mergeNav"),
               match: (p) => p === "/merge" || p.startsWith("/merge/"),
               Icon: CallMergeOutlined,
+            },
+            {
+              href: "/jose-lab",
+              label: t("joseLabNav"),
+              match: (p) => p === "/jose-lab" || p.startsWith("/jose-lab/"),
+              Icon: ScienceOutlined,
             },
           ]
         : []),
