@@ -131,6 +131,7 @@ const en = {
   podiumNav: "Podium",
   leaderboardNav: "Leaderboard",
   mergeNav: "Merge",
+  joseLabNav: "Jose lab",
   statsTitle: "Stats",
   leaderboardTitle: "Leaderboard",
   leaderboardSubtitle: "Ranked by Jose's Coefficient.",
@@ -275,6 +276,7 @@ const en = {
   datasetsImportNew: "Import New",
   datasetsDelete: "Delete",
   datasetsInfo: "Info",
+  datasetsExport: "Export CSV",
   datasetsInfoTitle: "Data set info",
   datasetsInfoEmpty: "No metadata for this data set yet.",
   datasetsInfoLabel: "Label",
@@ -288,7 +290,7 @@ const en = {
   datasetsNameTitle: "Name this data set",
   datasetsDeleteTitle: "Delete “{name}”?",
   datasetsDeleteBody:
-    "This removes the data set from this browser. Export from the mobile app again if you might need it.",
+    "This removes the data set from this browser. Export CSV first if you might need it.",
   datasetsSwitchTitle: "Switch data set?",
   datasetsSwitchBody:
     "History and analytics will switch to “{name}”.",
@@ -469,6 +471,8 @@ const en = {
     "Recompute the ranking score for every player from saved stats. Use after a formula change.",
   toastJosesSynced: "Jose's Coefficient updated.",
   toastJosesSyncFailed: "Could not update Jose's Coefficient. Try again.",
+  toastDatasetExported: "CSV downloaded.",
+  toastDatasetExportFailed: "Could not export this data set.",
   statsChartRecord: "{name} · games",
   statsChartRecordGeneric: "Games",
   statsChartGames: "Games",
@@ -906,6 +910,7 @@ const es = {
   podiumNav: "Podio",
   leaderboardNav: "Clasificación",
   mergeNav: "Fusionar",
+  joseLabNav: "Lab José",
   statsTitle: "Estadísticas",
   leaderboardTitle: "Clasificación",
   leaderboardSubtitle: "Ordenada por el Coeficiente de José.",
@@ -1051,6 +1056,7 @@ const es = {
   datasetsImportNew: "Importar nuevo",
   datasetsDelete: "Eliminar",
   datasetsInfo: "Info",
+  datasetsExport: "Exportar CSV",
   datasetsInfoTitle: "Información del conjunto",
   datasetsInfoEmpty: "Aún no hay metadatos para este conjunto.",
   datasetsInfoLabel: "Etiqueta",
@@ -1064,7 +1070,7 @@ const es = {
   datasetsNameTitle: "Nombre de este conjunto",
   datasetsDeleteTitle: "¿Eliminar “{name}”?",
   datasetsDeleteBody:
-    "Se quita el conjunto de este navegador. Exporta de nuevo desde la app móvil si lo puedes necesitar.",
+    "Se quita el conjunto de este navegador. Exporta el CSV primero si lo puedes necesitar.",
   datasetsSwitchTitle: "¿Cambiar de conjunto?",
   datasetsSwitchBody:
     "El historial y la analítica pasarán a “{name}”.",
@@ -1246,6 +1252,8 @@ const es = {
   toastJosesSynced: "Coeficiente de José actualizado.",
   toastJosesSyncFailed:
     "No se pudo actualizar el coeficiente de José. Inténtalo de nuevo.",
+  toastDatasetExported: "CSV descargado.",
+  toastDatasetExportFailed: "No se pudo exportar este conjunto.",
   statsChartRecord: "{name} · juegos",
   statsChartRecordGeneric: "Juegos",
   statsChartGames: "Juegos",

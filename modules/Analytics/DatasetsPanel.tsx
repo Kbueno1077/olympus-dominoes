@@ -7,8 +7,14 @@ import {
   loadDatasetData,
   suggestedDatasetNameFromFile,
 } from "@/lib/analytics/datasets";
+import {
+  downloadOlympusCsv,
+  exportBasenameForDataset,
+  serializeOlympusExport,
+} from "@/lib/analytics/serializeExport";
 import { useTranslation } from "@/i18n/useTranslation";
 import useToast from "@/hooks/useToast";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import SyncIcon from "@mui/icons-material/Sync";
 import {
@@ -110,6 +116,19 @@ export default function DatasetsPanel({
     }
   };
 
+  const exportDataset = (id: string, name: string) => {
+    void run(() => {
+      const payload = id === registry.activeDatasetId ? data : loadDatasetData(id);
+      if (!payload) {
+        displayToast(t("toastDatasetExportFailed"), "error");
+        return;
+      }
+      const csv = serializeOlympusExport(payload, { label: name });
+      downloadOlympusCsv(exportBasenameForDataset(name), csv);
+      displayToast(t("toastDatasetExported"), "success");
+    });
+  };
+
   const handleSyncJoses = () => {
     void run(() => {
       try {
@@ -198,6 +217,14 @@ export default function DatasetsPanel({
                   onClick={() => openDatasetInfo(ds.id, ds.displayName)}
                 >
                   {t("datasetsInfo")}
+                </Button>
+                <Button
+                  size="small"
+                  disabled={busy}
+                  startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => exportDataset(ds.id, ds.displayName)}
+                >
+                  {t("datasetsExport")}
                 </Button>
                 <Button
                   size="small"

@@ -15,6 +15,7 @@ import { pressableRowSx, pressableSx, tapFeedback } from "@/modules/Play/pressFe
 import { isGameStartedRecoil } from "@/recoil/recoilState";
 import BarChartOutlined from "@mui/icons-material/BarChartOutlined";
 import CallMergeOutlined from "@mui/icons-material/CallMergeOutlined";
+import ScienceOutlined from "@mui/icons-material/ScienceOutlined";
 import CheckOutlined from "@mui/icons-material/CheckOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import CompareArrowsOutlined from "@mui/icons-material/CompareArrowsOutlined";
@@ -223,6 +224,12 @@ export default function PlayConfigDrawer({
               label: t("mergeNav"),
               match: (p: string) => p === "/merge" || p.startsWith("/merge/"),
               Icon: CallMergeOutlined,
+            },
+            {
+              href: "/jose-lab",
+              label: t("joseLabNav"),
+              match: (p: string) => p === "/jose-lab" || p.startsWith("/jose-lab/"),
+              Icon: ScienceOutlined,
             },
           ]
         : []),

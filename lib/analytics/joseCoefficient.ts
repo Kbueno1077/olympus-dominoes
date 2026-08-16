@@ -1,21 +1,23 @@
 import type { OlympusExportData, PlayerStatsView } from "./types";
 
 /**
- * Jose's Coefficient — keep in sync with the mobile app:
+ * Jose's Coefficient — linear kn (lab formula B).
+ * Keep in sync with the mobile app:
  * olympus-dominoes-app/src/domain/joseCoefficient.ts
  * and README § Jose's Coefficient.
+ *
+ * Previous shipped formula was tanh lead (lab A). Do not bring tanh back
+ * unless product asks. Never put a top cap on denom.
  */
 
-export const JOSES_LEAD_SATURATION = 20;
-export const JOSES_LEAD_SCALE = 8;
-/** Floor for secondary-stat rates — short heaters cannot inflate 2nds. */
+/** Floor for secondary-stat rates — short heaters cannot inflate extras. */
 export const JOSES_SECONDARY_MIN_GAMES = 25;
 
 export const JOSES_COEFFICIENT_WEIGHTS = {
-  /** Multiplier on leadScore(W−L). Absolute net — not divided by G. */
-  games: 1.7,
-  datas: 3,
-  points: 0.1,
+  /** `kGames × (W−L)`. Linear, not divided by G, not tanh-capped. */
+  games: 3,
+  datas: 7.5,
+  points: 0.15,
   pollos: 10,
   zapatos: 4,
 } as const;
@@ -35,9 +37,9 @@ export type JosesCoefficientInput = Pick<
   | "zapatosAgainst"
 >;
 
-/** `20 * tanh(net / 8)` — soft-caps past ~±20. */
-export function josesLeadScore(netGames: number): number {
-  return JOSES_LEAD_SATURATION * Math.tanh(netGames / JOSES_LEAD_SCALE);
+/** Lead term: `kGames × (W−L)`. */
+export function josesGamesTerm(netGames: number): number {
+  return JOSES_COEFFICIENT_WEIGHTS.games * netGames;
 }
 
 export function josesSecondaryDenom(gamesPlayed: number): number {
@@ -45,9 +47,8 @@ export function josesSecondaryDenom(gamesPlayed: number): number {
 }
 
 /**
- * Lead = 1.7 × leadScore(W−L)
- * 2nds = datas/points/pollos/zapatos over max(G, 25)
- * R = Lead + 2nds; null when G = 0
+ * R = 3×(W−L) + (7.5·ΔDW + 0.15·ΔPF + 10·ΔPo + 4·ΔZap) / max(G, 25)
+ * null when G = 0
  */
 export function computeJosesCoefficient(
   stats: JosesCoefficientInput
@@ -56,7 +57,6 @@ export function computeJosesCoefficient(
   if (G <= 0) return null;
 
   const {
-    games: wGames,
     datas: wDatas,
     points: wPoints,
     pollos: wPollos,
@@ -67,7 +67,7 @@ export function computeJosesCoefficient(
   const denom = josesSecondaryDenom(G);
 
   return (
-    wGames * josesLeadScore(net) +
+    josesGamesTerm(net) +
     (wDatas * (stats.handsFor - stats.handsAgainst)) / denom +
     (wPoints * (stats.pointsFor - stats.pointsAgainst)) / denom +
     (wPollos * (stats.pollosFor - stats.pollosAgainst)) / denom +
