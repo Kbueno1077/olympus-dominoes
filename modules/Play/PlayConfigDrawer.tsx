@@ -218,24 +218,20 @@ export default function PlayConfigDrawer({
         match: (p: string) => p === "/podium" || p.startsWith("/podium/"),
         Icon: EmojiEventsOutlined,
       },
-      ...(process.env.NODE_ENV === "development"
-        ? [
-            {
-              href: "/merge",
-              label: t("mergeNav"),
-              match: (p: string) => p === "/merge" || p.startsWith("/merge/"),
-              Icon: CallMergeOutlined,
-              localOnly: true,
-            },
-            {
-              href: "/f-lab",
-              label: t("fLabNav"),
-              match: (p: string) => p === "/f-lab" || p.startsWith("/f-lab/"),
-              Icon: ScienceOutlined,
-              localOnly: true,
-            },
-          ]
-        : []),
+      {
+        href: "/merge",
+        label: t("mergeNav"),
+        match: (p: string) => p === "/merge" || p.startsWith("/merge/"),
+        Icon: CallMergeOutlined,
+        gated: true,
+      },
+      {
+        href: "/f-lab",
+        label: t("fLabNav"),
+        match: (p: string) => p === "/f-lab" || p.startsWith("/f-lab/"),
+        Icon: ScienceOutlined,
+        gated: true,
+      },
     ],
     [t, matchInProgress]
   );
@@ -547,7 +543,7 @@ export default function PlayConfigDrawer({
                         color: "text.secondary",
                       }}
                     />
-                    {"localOnly" in item && item.localOnly ? (
+                    {"gated" in item && item.gated ? (
                       <LockOutlined
                         sx={{ fontSize: 16, color: "text.secondary", ml: 0.5 }}
                       />

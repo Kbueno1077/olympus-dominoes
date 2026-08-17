@@ -93,24 +93,20 @@ export default function NavMenu({ dense = false }) {
         match: (p) => p === "/podium" || p.startsWith("/podium/"),
         Icon: EmojiEventsOutlined,
       },
-      ...(process.env.NODE_ENV === "development"
-        ? [
-            {
-              href: "/merge",
-              label: t("mergeNav"),
-              match: (p) => p === "/merge" || p.startsWith("/merge/"),
-              Icon: CallMergeOutlined,
-              localOnly: true,
-            },
-            {
-              href: "/f-lab",
-              label: t("fLabNav"),
-              match: (p) => p === "/f-lab" || p.startsWith("/f-lab/"),
-              Icon: ScienceOutlined,
-              localOnly: true,
-            },
-          ]
-        : []),
+      {
+        href: "/merge",
+        label: t("mergeNav"),
+        match: (p) => p === "/merge" || p.startsWith("/merge/"),
+        Icon: CallMergeOutlined,
+        gated: true,
+      },
+      {
+        href: "/f-lab",
+        label: t("fLabNav"),
+        match: (p) => p === "/f-lab" || p.startsWith("/f-lab/"),
+        Icon: ScienceOutlined,
+        gated: true,
+      },
     ],
     [t, matchInProgress]
   );
@@ -242,7 +238,7 @@ export default function NavMenu({ dense = false }) {
                   color: "text.secondary",
                 }}
               />
-              {item.localOnly ? (
+              {item.gated ? (
                 <LockOutlined
                   sx={{ fontSize: 16, color: "text.secondary", ml: 0.5 }}
                 />
