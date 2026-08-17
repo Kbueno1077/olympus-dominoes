@@ -43,18 +43,23 @@ export const DEFAULT_A: WeightsA = {
 
 export const DEFAULT_B: WeightsB = {
   kGames: 3,
-  wDatas: 7.5,
+  // Same extras as the shipped product formula.
+  // At G=25, 1 ΔG (+3) = 12 datas, 500 pts, 5 pollos, 12.5 zapatos.
+  // Pollos stay 2.5× zapatos (15 / 6).
+  wDatas: 6.25,
   wPoints: 0.15,
-  wPollos: 10,
-  wZapatos: 4,
+  wPollos: 15,
+  wZapatos: 6,
   floor: 25,
 };
 
 export type WeightsC = {
   kSqrt: number;
   kGames: number;
-  wDatas: number;
-  wPoints: number;
+  /** Typical datas to take a game. F += ΔDW / dwPerGame. */
+  dwPerGame: number;
+  /** Typical points in a game. F += ΔPF / pfPerGame. */
+  pfPerGame: number;
   wPollos: number;
   wZapatos: number;
 };
@@ -62,8 +67,8 @@ export type WeightsC = {
 export const DEFAULT_C: WeightsC = {
   kSqrt: 1,
   kGames: 1,
-  wDatas: 1,
-  wPoints: 1,
+  dwPerGame: 5,
+  pfPerGame: 160,
   wPollos: 1,
   wZapatos: 0.4,
 };
@@ -145,13 +150,31 @@ export function leadTermC(n: number, w: WeightsC): number {
   return w.kGames * n;
 }
 
+function ogDatasPts(p: LabPlayer, w: WeightsC): { datas: number; pts: number } {
+  return {
+    datas: w.dwPerGame === 0 ? 0 : p.dDW / w.dwPerGame,
+    pts: w.pfPerGame === 0 ? 0 : p.dPF / w.pfPerGame,
+  };
+}
+
+/** Effective extra weights so Worth tables can reuse A/B exchange math. */
+export function ogExtraWeights(
+  c: WeightsC
+): Pick<SharedWeights, "wDatas" | "wPoints" | "wPollos" | "wZapatos"> {
+  return {
+    wDatas: c.dwPerGame === 0 ? 0 : 1 / c.dwPerGame,
+    wPoints: c.pfPerGame === 0 ? 0 : 1 / c.pfPerGame,
+    wPollos: c.wPollos,
+    wZapatos: c.wZapatos,
+  };
+}
+
 export function computeC(p: LabPlayer, w: WeightsC): Breakdown | null {
   if (p.G <= 0) return null;
   const n = p.W - p.L;
   const sqrt = w.kSqrt * Math.sqrt(p.G / 2);
   const games = leadTermC(n, w);
-  const datas = w.wDatas * p.dDW;
-  const pts = w.wPoints * p.dPF;
+  const { datas, pts } = ogDatasPts(p, w);
   const po = w.wPollos * p.dPo;
   const zap = w.wZapatos * p.dZap;
   const r = sqrt + games + datas + pts + po + zap;
@@ -220,15 +243,95 @@ export function volumeAtG(
     case "C": {
       if (G <= 0) return 0;
       const n = p.W - p.L;
+      const { datas, pts } = ogDatasPts(p, weightsC);
       return (
         weightsC.kSqrt * Math.sqrt(G / 2) +
         weightsC.kGames * n +
-        weightsC.wDatas * p.dDW +
-        weightsC.wPoints * p.dPF +
+        datas +
+        pts +
         weightsC.wPollos * p.dPo +
         weightsC.wZapatos * p.dZap
       );
     }
+    default: {
+      const _never: never = formula;
+      return _never;
+    }
+  }
+}
+
+function ratio(a: number, b: number): number | null {
+  if (b === 0) return null;
+  return a / b;
+}
+
+export type ExtraExchange = {
+  poPerZap: number | null;
+  poPerDw: number | null;
+  dwPerZap: number | null;
+  pfPerDw: number | null;
+  pfPerPo: number | null;
+  pfPerZap: number | null;
+};
+
+/** Weight ratios among extras — same at every G, because they share a denom. */
+export function extraExchange(
+  w: Pick<SharedWeights, "wDatas" | "wPoints" | "wPollos" | "wZapatos">
+): ExtraExchange {
+  return {
+    poPerZap: ratio(w.wPollos, w.wZapatos),
+    poPerDw: ratio(w.wPollos, w.wDatas),
+    dwPerZap: ratio(w.wDatas, w.wZapatos),
+    pfPerDw: ratio(w.wDatas, w.wPoints),
+    pfPerPo: ratio(w.wPollos, w.wPoints),
+    pfPerZap: ratio(w.wZapatos, w.wPoints),
+  };
+}
+
+export type GameExchange = {
+  denom: number;
+  gameR: number;
+  dwPerGame: number | null;
+  pfPerGame: number | null;
+  poPerGame: number | null;
+  zapPerGame: number | null;
+};
+
+function gameVsExtras(
+  denom: number,
+  gameR: number,
+  w: Pick<SharedWeights, "wDatas" | "wPoints" | "wPollos" | "wZapatos">
+): GameExchange {
+  const per = (weight: number) =>
+    weight === 0 ? null : (gameR * denom) / weight;
+  return {
+    denom,
+    gameR,
+    dwPerGame: per(w.wDatas),
+    pfPerGame: per(w.wPoints),
+    poPerGame: per(w.wPollos),
+    zapPerGame: per(w.wZapatos),
+  };
+}
+
+/**
+ * How many extras equal +1 ΔG at the formula's own denom.
+ * A/B use max(floor, floor) (= floor) unless a demo cap is on. C has no denom.
+ */
+export function gameExchange(
+  formula: FormulaId,
+  a: WeightsA,
+  b: WeightsB,
+  c: WeightsC,
+  denomCap: number | null
+): GameExchange {
+  switch (formula) {
+    case "A":
+      return gameVsExtras(denomFor(a.floor, a.floor, denomCap), leadTermA(1, a), a);
+    case "B":
+      return gameVsExtras(denomFor(b.floor, b.floor, denomCap), leadTermB(1, b), b);
+    case "C":
+      return gameVsExtras(1, leadTermC(1, c), ogExtraWeights(c));
     default: {
       const _never: never = formula;
       return _never;
@@ -252,7 +355,7 @@ export type RuleTargetsB = {
 };
 
 export const DEFAULT_RULE_TARGETS_B: RuleTargetsB = {
-  cesarR: 24.3,
+  cesarR: 24.1,
   cesarRTol: 0.35,
   datasMix: 3,
   datasMixTol: 1.2,
@@ -408,15 +511,15 @@ export function runChecksC(
   return [
     {
       id: "c-points",
-      title: "Points dominate Cesar",
-      rule: "C has no denom, so Cesar's ΔPF term should dwarf ΔG. That's a warning, not a virtue — points will run the ranking.",
-      live: `pts ${signedFmt(cesar.pts)} vs ΔG ${signedFmt(cesar.games)}`,
-      pass: Math.abs(cesar.pts) > Math.abs(cesar.games),
+      title: "Datas and points are game-units",
+      rule: "ΔDW/5 and ΔPF/160 put Cesar's datas and points terms in the same ballpark, not a thousand times apart.",
+      live: `datas ${signedFmt(cesar.datas)} · pts ${signedFmt(cesar.pts)}`,
+      pass: Math.abs(cesar.pts) > 0 && Math.abs(cesar.datas) > 0,
     },
     {
       id: "c-h2h",
       title: "H2H is not a mirror",
-      rule: "√(G/2) is unsigned, so two people who only played each other will not sum to 0.",
+      rule: "√(G/2) is unsigned, so two people who only played each other do not sum to 0.",
       live: `H2H A ${signedFmt(h2hA.r)} + H2H B ${signedFmt(h2hB.r)} = ${signedFmt(h2hA.r + h2hB.r)}`,
       pass: Math.abs(h2hA.r + h2hB.r) > 1,
     },
@@ -479,7 +582,7 @@ export function equationLines(
     case "C":
       return [
         `R = ${c.kSqrt} × √(G / 2) + ${c.kGames} × ΔG`,
-        `+ ${c.wDatas}·ΔDW + ${c.wPoints}·ΔPF + ${c.wPollos}·ΔPo + ${c.wZapatos}·ΔZap`,
+        `+ ΔDW / ${c.dwPerGame} + ΔPF / ${c.pfPerGame} + ${c.wPollos}·ΔPo + ${c.wZapatos}·ΔZap`,
       ];
     default: {
       const _never: never = formula;

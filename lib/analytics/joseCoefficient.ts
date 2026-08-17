@@ -16,10 +16,10 @@ export const JOSES_SECONDARY_MIN_GAMES = 25;
 export const JOSES_COEFFICIENT_WEIGHTS = {
   /** `kGames × (W−L)`. Linear, not divided by G, not tanh-capped. */
   games: 3,
-  datas: 7.5,
+  datas: 6.25,
   points: 0.15,
-  pollos: 10,
-  zapatos: 4,
+  pollos: 15,
+  zapatos: 6,
 } as const;
 
 export type JosesCoefficientInput = Pick<
@@ -47,7 +47,7 @@ export function josesSecondaryDenom(gamesPlayed: number): number {
 }
 
 /**
- * R = 3×(W−L) + (7.5·ΔDW + 0.15·ΔPF + 10·ΔPo + 4·ΔZap) / max(G, 25)
+ * R = 3×(W−L) + (6.25·ΔDW + 0.15·ΔPF + 15·ΔPo + 6·ΔZap) / max(G, 25)
  * null when G = 0
  */
 export function computeJosesCoefficient(

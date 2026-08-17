@@ -16,6 +16,7 @@ import { isGameStartedRecoil } from "@/recoil/recoilState";
 import BarChartOutlined from "@mui/icons-material/BarChartOutlined";
 import CallMergeOutlined from "@mui/icons-material/CallMergeOutlined";
 import ScienceOutlined from "@mui/icons-material/ScienceOutlined";
+import LockOutlined from "@mui/icons-material/LockOutlined";
 import CheckOutlined from "@mui/icons-material/CheckOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import CompareArrowsOutlined from "@mui/icons-material/CompareArrowsOutlined";
@@ -224,12 +225,14 @@ export default function PlayConfigDrawer({
               label: t("mergeNav"),
               match: (p: string) => p === "/merge" || p.startsWith("/merge/"),
               Icon: CallMergeOutlined,
+              localOnly: true,
             },
             {
-              href: "/jose-lab",
-              label: t("joseLabNav"),
-              match: (p: string) => p === "/jose-lab" || p.startsWith("/jose-lab/"),
+              href: "/f-lab",
+              label: t("fLabNav"),
+              match: (p: string) => p === "/f-lab" || p.startsWith("/f-lab/"),
               Icon: ScienceOutlined,
+              localOnly: true,
             },
           ]
         : []),
@@ -544,6 +547,11 @@ export default function PlayConfigDrawer({
                         color: "text.secondary",
                       }}
                     />
+                    {"localOnly" in item && item.localOnly ? (
+                      <LockOutlined
+                        sx={{ fontSize: 16, color: "text.secondary", ml: 0.5 }}
+                      />
+                    ) : null}
                   </ListItemButton>
                 );
               })}
