@@ -1264,12 +1264,9 @@ export default function JoseLab() {
         gap={1}
       >
         <Box>
-          <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-            <Typography variant="h5" sx={{ fontWeight: 800 }}>
-              F-lab
-            </Typography>
-            <Chip size="small" label="local only" color="warning" />
-          </Stack>
+          <Typography variant="h5" sx={{ fontWeight: 800 }}>
+            F-lab
+          </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
             Move sliders and watch the CSV seasons first (Valhalla, Cesar,
             Eliecer, Randy, Guillermo). Mocks are below — heaters and ugly +4,
