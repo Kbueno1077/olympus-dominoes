@@ -1,6 +1,7 @@
 "use client";
 
 import DominoTile from "@/components/DominoTile";
+import Iconify from "@/components/Iconify";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
@@ -30,6 +31,9 @@ const HERO_TILES = [
   { top: 2, bottom: 7, rotate: 9 },
 ];
 
+const APP_STORE_URL =
+  "https://apps.apple.com/us/app/olympus-dominoes/id6799737142";
+
 const FEATURE_KEYS = ["featurePlayers", "featureModes", "featureLocal"];
 
 const HOW_STEPS = [
@@ -58,6 +62,36 @@ const SPLIT_SIDES = [
     ],
   },
 ];
+
+function AppStoreButton({ t }) {
+  return (
+    <Button
+      component="a"
+      href={APP_STORE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      variant="contained"
+      size="large"
+      startIcon={
+        <Iconify
+          icon="ion:logo-apple-appstore"
+          sx={{ width: 28, height: 28 }}
+        />
+      }
+      sx={{
+        fontSize: 16.5,
+        textTransform: "none",
+        fontWeight: 700,
+        letterSpacing: 0.01,
+        px: 3.25,
+        minHeight: 56,
+        "& .MuiButton-startIcon": { mr: 1.25 },
+      }}
+    >
+      {t("homeAppStore")}
+    </Button>
+  );
+}
 
 function FeatureRow({ t }) {
   return (
@@ -348,6 +382,8 @@ export default function Dashboard({
                   {t("heroSubtitle")}
                 </Typography>
               </Stack>
+
+              <AppStoreButton t={t} />
 
               <FeatureRow t={t} />
             </Stack>

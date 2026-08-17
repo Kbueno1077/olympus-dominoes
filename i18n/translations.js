@@ -103,6 +103,7 @@ const en = {
   homeWebBulletThrowaway:
     "The notepad here is just for fun and doesn’t touch your league",
   homeWebBulletSourceOfTruth: "The phone app is still where your real record lives",
+  homeAppStore: "Download on the App Store",
 
   // Analytics
   analyticsTitle: "Analytics",
@@ -885,6 +886,7 @@ const es = {
     "La libreta de aquí es solo por diversión y no toca tu liga",
   homeWebBulletSourceOfTruth:
     "La app del teléfono sigue siendo donde vive tu marca real",
+  homeAppStore: "Descargar en el App Store",
 
   // Analytics
   analyticsTitle: "Analítica",
