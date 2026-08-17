@@ -1,10 +1,14 @@
+import DevGateForm from "@/modules/DevGate/DevGateForm";
+import { isGateConfigured, isGateOpen, isLocalDev } from "@/lib/devGate/server";
 import { notFound } from "next/navigation";
 import MergePageClient from "./MergePageClient";
 
 export default function MergePage() {
-  if (process.env.NODE_ENV !== "development") {
+  if (isLocalDev() || isGateOpen("merge")) {
+    return <MergePageClient />;
+  }
+  if (!isGateConfigured("merge")) {
     notFound();
   }
-
-  return <MergePageClient />;
+  return <DevGateForm gate="merge" />;
 }

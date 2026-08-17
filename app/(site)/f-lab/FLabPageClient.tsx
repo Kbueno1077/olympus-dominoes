@@ -2,6 +2,6 @@
 
 import JoseLab from "@/modules/JoseLab/JoseLab";
 
-export default function JoseLabPageClient() {
+export default function FLabPageClient() {
   return <JoseLab />;
 }

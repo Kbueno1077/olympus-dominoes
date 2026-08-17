@@ -52,6 +52,14 @@ type ReadmeRow = {
   dPo: number;
   dZap: number;
   pin: boolean;
+  HF?: number;
+  HA?: number;
+  PF?: number;
+  PA?: number;
+  PoF?: number;
+  PoA?: number;
+  ZapF?: number;
+  ZapA?: number;
 };
 
 type TestRow = {
@@ -92,6 +100,11 @@ const README_ROWS: ReadmeRow[] = [
   { id: "comeback", name: "Comeback", W: 16, L: 19, G: 35, dDW: 12, dPF: 445, dPo: -1, dZap: 0, pin: false },
   { id: "randy", name: "Randy (CSV)", W: 12, L: 17, G: 29, dDW: -19, dPF: -609, dPo: -4, dZap: 1, pin: true },
   { id: "guillermo", name: "Guillermo (CSV)", W: 6, L: 13, G: 19, dDW: -26, dPF: -877, dPo: -3, dZap: 0, pin: false },
+  // Valhalla.csv · 2 vs 2 · 55 · 21 games (Kevin+Jose vs Raulito+Rudelys)
+  { id: "kevin", name: "Kevin (CSV)", W: 11, L: 10, G: 21, dDW: 9, dPF: 388, dPo: 5, dZap: -1, pin: true, HF: 70, HA: 61, PF: 2765, PA: 2377, PoF: 5, PoA: 0, ZapF: 1, ZapA: 2 },
+  { id: "jose", name: "Jose (CSV)", W: 11, L: 10, G: 21, dDW: 9, dPF: 388, dPo: 5, dZap: -1, pin: false, HF: 70, HA: 61, PF: 2765, PA: 2377, PoF: 5, PoA: 0, ZapF: 1, ZapA: 2 },
+  { id: "raulito", name: "Raulito (CSV)", W: 10, L: 11, G: 21, dDW: -9, dPF: -388, dPo: -5, dZap: 1, pin: false, HF: 61, HA: 70, PF: 2377, PA: 2765, PoF: 0, PoA: 5, ZapF: 2, ZapA: 1 },
+  { id: "rudelys", name: "Rudelys (CSV)", W: 10, L: 11, G: 21, dDW: -9, dPF: -388, dPo: -5, dZap: 1, pin: false, HF: 61, HA: 70, PF: 2377, PA: 2765, PoF: 0, PoA: 5, ZapF: 2, ZapA: 1 },
 ];
 
 const TEST_ROWS: TestRow[] = [
@@ -139,6 +152,8 @@ export const TEST_PLAYERS: LabPlayer[] = TEST_ROWS.map((row) => ({
 }));
 
 export const DEFAULT_CSV_PINS = [
+  "kevin",
+  "raulito",
   "cesar",
   "eliecer",
   "randy",

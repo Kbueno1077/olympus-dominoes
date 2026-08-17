@@ -11,6 +11,7 @@ import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import HomeOutlined from "@mui/icons-material/HomeOutlined";
 import LeaderboardOutlined from "@mui/icons-material/LeaderboardOutlined";
 import CallMergeOutlined from "@mui/icons-material/CallMergeOutlined";
+import LockOutlined from "@mui/icons-material/LockOutlined";
 import ScienceOutlined from "@mui/icons-material/ScienceOutlined";
 import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
 import SmartToyOutlined from "@mui/icons-material/SmartToyOutlined";
@@ -99,12 +100,14 @@ export default function NavMenu({ dense = false }) {
               label: t("mergeNav"),
               match: (p) => p === "/merge" || p.startsWith("/merge/"),
               Icon: CallMergeOutlined,
+              localOnly: true,
             },
             {
-              href: "/jose-lab",
-              label: t("joseLabNav"),
-              match: (p) => p === "/jose-lab" || p.startsWith("/jose-lab/"),
+              href: "/f-lab",
+              label: t("fLabNav"),
+              match: (p) => p === "/f-lab" || p.startsWith("/f-lab/"),
               Icon: ScienceOutlined,
+              localOnly: true,
             },
           ]
         : []),
@@ -239,6 +242,11 @@ export default function NavMenu({ dense = false }) {
                   color: "text.secondary",
                 }}
               />
+              {item.localOnly ? (
+                <LockOutlined
+                  sx={{ fontSize: 16, color: "text.secondary", ml: 0.5 }}
+                />
+              ) : null}
             </MenuItem>
           );
         })}

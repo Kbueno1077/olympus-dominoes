@@ -6,16 +6,11 @@ import {
   DEFAULT_C,
   computePlayer,
   equationLines,
-  failingPlayerIds,
-  checkPlayerIds,
-  DEFAULT_RULE_TARGETS_B,
-  runChecksA,
-  runChecksB,
-  runChecksC,
+  extraExchange,
+  gameExchange,
+  ogExtraWeights,
   type Breakdown,
-  type CheckResult,
   type FormulaId,
-  type RuleTargetsB,
   type WeightsA,
   type WeightsB,
   type WeightsC,
@@ -62,7 +57,6 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
@@ -290,25 +284,25 @@ function LabSection({
   );
 }
 
-function RulesPanel({
-  checks,
-  targetsB,
-  onTargetsB,
-  onFocus,
+const EMPTY_FAIL_IDS: Set<string> = new Set();
+
+function LabAccordion({
+  title,
+  defaultExpanded = false,
+  children,
 }: {
-  checks: CheckResult[];
-  targetsB: RuleTargetsB;
-  onTargetsB: (next: RuleTargetsB) => void;
-  onFocus: (id: string) => void;
+  title: string;
+  defaultExpanded?: boolean;
+  children: ReactNode;
 }) {
-  const warnings = checks.filter((check) => !check.pass).length;
   return (
     <Accordion
       disableGutters
+      defaultExpanded={defaultExpanded}
       sx={{
         boxShadow: "none",
         border: "1px solid",
-        borderColor: warnings ? "warning.main" : "divider",
+        borderColor: "divider",
         borderRadius: "12px !important",
         overflow: "hidden",
         bgcolor: "background.paper",
@@ -330,101 +324,152 @@ function RulesPanel({
         }}
       >
         <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
-          Rules
+          {title}
         </Typography>
-        {warnings > 0 ? (
-          <Chip
-            size="small"
-            color="warning"
-            label={warnings}
-            sx={{ height: 22, minWidth: 22, fontWeight: 800 }}
-          />
-        ) : null}
       </AccordionSummary>
       <AccordionDetails sx={{ px: 1.5, pt: 0, pb: 1.5 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
-          Most of these are ranking tests, not a target score. Named people are
-          stand-ins for a shape of season — a heater, a grinder, an ugly +4 —
-          and the formula has to pick a winner between those shapes. Tap a rule
-          to pin the people in it.
-        </Typography>
-        <Stack gap={0.75}>
-          {checks.map((check) => {
-            const broken = !check.pass;
-            return (
-              <Box
-                key={check.id}
-                onClick={() => onFocus(check.id)}
-                sx={{
-                  cursor: "pointer",
-                  borderRadius: 1,
-                  px: 1,
-                  py: 0.75,
-                  border: "1px solid",
-                  borderColor: broken ? "warning.main" : "divider",
-                  bgcolor: (theme) =>
-                    broken ? alpha(theme.palette.warning.main, 0.12) : "transparent",
-                  borderLeftWidth: 4,
-                  borderLeftColor: broken ? "warning.main" : "success.light",
-                }}
-              >
-                <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={1}>
-                  <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                    {broken ? "Warning · " : "Holding · "}
-                    {check.title}
-                  </Typography>
-                  {check.id === "cesar-anchor" ? (
-                    <TextField
-                      size="small"
-                      type="number"
-                      label="target R"
-                      value={targetsB.cesarR}
-                      onClick={(event) => event.stopPropagation()}
-                      onChange={(event) => {
-                        const cesarR = Number(event.target.value);
-                        if (Number.isFinite(cesarR)) onTargetsB({ ...targetsB, cesarR });
-                      }}
-                      inputProps={{ step: 0.1 }}
-                      sx={{ width: 108, "& .MuiInputBase-input": { py: 0.5, fontSize: 12 } }}
-                    />
-                  ) : null}
-                  {check.id === "cesar-weights" ? (
-                    <TextField
-                      size="small"
-                      type="number"
-                      label="datasMix"
-                      value={targetsB.datasMix}
-                      onClick={(event) => event.stopPropagation()}
-                      onChange={(event) => {
-                        const datasMix = Number(event.target.value);
-                        if (Number.isFinite(datasMix)) onTargetsB({ ...targetsB, datasMix });
-                      }}
-                      inputProps={{ step: 0.1, min: 0 }}
-                      sx={{ width: 108, "& .MuiInputBase-input": { py: 0.5, fontSize: 12 } }}
-                    />
-                  ) : null}
-                </Stack>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                  {check.rule}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: "block",
-                    mt: 0.25,
-                    fontWeight: 700,
-                    fontFamily: "ui-monospace, Menlo, monospace",
-                    color: broken ? "warning.dark" : "text.primary",
-                  }}
-                >
-                  {check.live}
-                </Typography>
-              </Box>
-            );
-          })}
-        </Stack>
+        {children}
       </AccordionDetails>
     </Accordion>
+  );
+}
+
+function fmtQty(n: number | null, digits = 1): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  const rounded = Math.round(n * 100) / 100;
+  if (Math.abs(rounded - Math.round(rounded)) < 0.049) {
+    return String(Math.round(rounded));
+  }
+  return rounded.toFixed(digits);
+}
+
+function ExchangeTable({
+  formula,
+  weightsA,
+  weightsB,
+  weightsC,
+  denomCap,
+}: {
+  formula: FormulaId;
+  weightsA: WeightsA;
+  weightsB: WeightsB;
+  weightsC: WeightsC;
+  denomCap: number | null;
+}) {
+  const extras = (() => {
+    switch (formula) {
+      case "A":
+        return extraExchange(weightsA);
+      case "B":
+        return extraExchange(weightsB);
+      case "C":
+        return extraExchange(ogExtraWeights(weightsC));
+      default: {
+        const _never: never = formula;
+        return _never;
+      }
+    }
+  })();
+  const vsGame = gameExchange(formula, weightsA, weightsB, weightsC, denomCap);
+  const among = [
+    { left: "1 ΔPo", right: `${fmtQty(extras.poPerZap, 2)} ΔZap` },
+    { left: "1 ΔPo", right: `${fmtQty(extras.poPerDw, 2)} ΔDW` },
+    { left: "1 ΔDW", right: `${fmtQty(extras.dwPerZap, 2)} ΔZap` },
+    { left: "1 ΔDW", right: `${fmtQty(extras.pfPerDw)} ΔPF` },
+    { left: "1 ΔPo", right: `${fmtQty(extras.pfPerPo)} ΔPF` },
+    { left: "1 ΔZap", right: `${fmtQty(extras.pfPerZap)} ΔPF` },
+  ];
+  const games = [
+    { left: "ΔDW", right: fmtQty(vsGame.dwPerGame, 2) },
+    { left: "ΔPF", right: fmtQty(vsGame.pfPerGame) },
+    { left: "ΔPo", right: fmtQty(vsGame.poPerGame, 2) },
+    { left: "ΔZap", right: fmtQty(vsGame.zapPerGame, 2) },
+  ];
+  const cellSx = {
+    py: 0.45,
+    px: 1,
+    fontFamily: "ui-monospace, Menlo, monospace",
+    fontSize: 12,
+    borderColor: "divider",
+  };
+
+  return (
+    <Stack gap={1.5}>
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+        {formula === "C"
+          ? `OG F(x) has no G floor. Datas and points are typical-game units (ΔDW / ${weightsC.dwPerGame}, ΔPF / ${weightsC.pfPerGame}). Pollos and zapatos still add as raw weights. √(G/2) is unsigned, so it is not in this table.`
+          : `Live from the sliders. Extras share a denom, so pollos vs zapatos vs datas never depends on G. Matching a game does: 1 ΔG is worth ${fmtQty(vsGame.gameR, 2)} on R at denom ${fmtQty(vsGame.denom)} (the floor). Past that, you need more extras per win.`}
+      </Typography>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 1.5,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+        }}
+      >
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 800, display: "block", mb: 0.5 }}>
+            1 ΔG equals
+          </Typography>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={cellSx}>Unit</TableCell>
+                <TableCell align="right" sx={cellSx}>
+                  Count
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {games.map((row) => (
+                <TableRow key={row.left}>
+                  <TableCell sx={cellSx}>{row.left}</TableCell>
+                  <TableCell align="right" sx={{ ...cellSx, fontWeight: 700 }}>
+                    {row.right}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Box>
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 800, display: "block", mb: 0.5 }}>
+            Among extras
+          </Typography>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={cellSx}>1 of</TableCell>
+                <TableCell align="right" sx={cellSx}>
+                  Equals
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {among.map((row) => (
+                <TableRow key={`${row.left}-${row.right}`}>
+                  <TableCell sx={cellSx}>{row.left}</TableCell>
+                  <TableCell align="right" sx={{ ...cellSx, fontWeight: 700 }}>
+                    {row.right}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Box>
+      </Box>
+    </Stack>
+  );
+}
+
+function RulesPanel() {
+  return (
+    <LabAccordion title="Rules">
+      <Typography variant="caption" color="text.secondary">
+        No ranking tests yet. We’ll put them back here once the extras mix
+        settles.
+      </Typography>
+    </LabAccordion>
   );
 }
 
@@ -515,7 +560,7 @@ function formulaChrome(formula: FormulaId): {
     case "C":
       return {
         color: JOSE_C,
-        label: "Adds to R",
+        label: "Adds to F",
         cols: ["√(G/2)", "ΔG", "ΔDW", "ΔPF", "ΔPo", "ΔZap", "R"],
       };
     default: {
@@ -904,7 +949,6 @@ export default function JoseLab() {
   const [capOn, setCapOn] = useState(false);
   const [denomCapValue, setDenomCapValue] = useState(DENOM_CAP_DEMO);
   const [extras, setExtras] = useState<ExtraMap>({});
-  const [targetsB, setTargetsB] = useState<RuleTargetsB>(DEFAULT_RULE_TARGETS_B);
 
   const denomCap = capOn ? denomCapValue : null;
   const deferredA = useDeferredValue(weightsA);
@@ -1001,38 +1045,6 @@ export default function JoseLab() {
   );
   const bumpCount = extraCount(extras);
 
-  const checks = useMemo(() => {
-    switch (formula) {
-      case "A":
-        return runChecksA(liveReadme, liveTest, deferredA, deferredCap);
-      case "B":
-        return runChecksB(liveReadme, liveTest, deferredB, deferredCap, targetsB);
-      case "C":
-        return runChecksC(liveReadme, liveTest, deferredC);
-      default: {
-        const _never: never = formula;
-        return _never;
-      }
-    }
-  }, [formula, deferredA, deferredB, deferredC, deferredCap, liveReadme, liveTest, targetsB]);
-  const failIds = useMemo(() => failingPlayerIds(checks), [checks]);
-
-  const focusRule = useCallback((id: string) => {
-    const ids = checkPlayerIds(id);
-    if (ids.length === 0) return;
-    const csv = ids.filter((playerId) => {
-      const player = README_PLAYERS.find((row) => row.id === playerId);
-      return player ? isCsvPlayer(player) : false;
-    });
-    const mock = ids.filter((playerId) => !csv.includes(playerId));
-    if (csv.length > 0) {
-      setCsvPins((pins) => pins.concat(csv.filter((id) => !pins.includes(id))));
-    }
-    if (mock.length > 0) {
-      setMockPins((pins) => pins.concat(mock.filter((id) => !pins.includes(id))));
-    }
-  }, []);
-
   const sliders: SliderSpec[] = (() => {
     switch (formula) {
       case "A":
@@ -1126,7 +1138,7 @@ export default function JoseLab() {
             label: "wDatas",
             min: 0,
             max: 15,
-            step: 0.1,
+            step: 0.05,
             value: weightsB.wDatas,
             onChange: (wDatas) => setWeightsB((w) => ({ ...w, wDatas })),
           },
@@ -1143,8 +1155,8 @@ export default function JoseLab() {
             id: "wPollos",
             label: "wPollos",
             min: 0,
-            max: 20,
-            step: 0.5,
+            max: 30,
+            step: 0.25,
             value: weightsB.wPollos,
             onChange: (wPollos) => setWeightsB((w) => ({ ...w, wPollos })),
           },
@@ -1153,7 +1165,7 @@ export default function JoseLab() {
             label: "wZapatos",
             min: 0,
             max: 12,
-            step: 0.5,
+            step: 0.25,
             value: weightsB.wZapatos,
             onChange: (wZapatos) => setWeightsB((w) => ({ ...w, wZapatos })),
           },
@@ -1188,22 +1200,22 @@ export default function JoseLab() {
             onChange: (kGames) => setWeightsC((w) => ({ ...w, kGames })),
           },
           {
-            id: "wDatas",
-            label: "wDatas",
-            min: 0,
-            max: 4,
-            step: 0.1,
-            value: weightsC.wDatas,
-            onChange: (wDatas) => setWeightsC((w) => ({ ...w, wDatas })),
+            id: "dwPerGame",
+            label: "datas / win",
+            min: 1,
+            max: 12,
+            step: 0.5,
+            value: weightsC.dwPerGame,
+            onChange: (dwPerGame) => setWeightsC((w) => ({ ...w, dwPerGame })),
           },
           {
-            id: "wPoints",
-            label: "wPoints",
-            min: 0,
-            max: 2,
-            step: 0.05,
-            value: weightsC.wPoints,
-            onChange: (wPoints) => setWeightsC((w) => ({ ...w, wPoints })),
+            id: "pfPerGame",
+            label: "points / game",
+            min: 40,
+            max: 300,
+            step: 5,
+            value: weightsC.pfPerGame,
+            onChange: (pfPerGame) => setWeightsC((w) => ({ ...w, pfPerGame })),
           },
           {
             id: "wPollos",
@@ -1254,13 +1266,14 @@ export default function JoseLab() {
         <Box>
           <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
             <Typography variant="h5" sx={{ fontWeight: 800 }}>
-              Jose’s Coefficient lab
+              F-lab
             </Typography>
             <Chip size="small" label="local only" color="warning" />
           </Stack>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-            Move sliders and watch the CSV seasons first (Cesar, Eliecer, Randy,
-            Guillermo). Mocks are below — heaters and ugly +4, not real people.
+            Move sliders and watch the CSV seasons first (Valhalla, Cesar,
+            Eliecer, Randy, Guillermo). Mocks are below — heaters and ugly +4,
+            not real people.
           </Typography>
         </Box>
         <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
@@ -1272,9 +1285,9 @@ export default function JoseLab() {
               if (value) setFormula(value);
             }}
           >
-            <ToggleButton value="B">B · linear kn shipped</ToggleButton>
-            <ToggleButton value="A">A · tanh previous</ToggleButton>
-            <ToggleButton value="C">C · √(G/2) example</ToggleButton>
+            <ToggleButton value="B">K(x)</ToggleButton>
+            <ToggleButton value="C">OG · F(x)</ToggleButton>
+            <ToggleButton value="A">Tangent (x)</ToggleButton>
           </ToggleButtonGroup>
           <Button
             size="small"
@@ -1283,7 +1296,12 @@ export default function JoseLab() {
               resetWeights(formula, setWeightsA, setWeightsB, setWeightsC);
             }}
           >
-            Reset {formula}
+            Reset{" "}
+            {formula === "C"
+              ? "OG"
+              : formula === "B"
+                ? "K(x)"
+                : "Tangent (x)"}
           </Button>
         </Stack>
       </Stack>
@@ -1366,12 +1384,16 @@ export default function JoseLab() {
         }}
       >
       <Stack gap={1}>
-        <RulesPanel
-          checks={checks}
-          targetsB={targetsB}
-          onTargetsB={setTargetsB}
-          onFocus={focusRule}
-        />
+        <LabAccordion title="Worth" defaultExpanded>
+          <ExchangeTable
+            formula={formula}
+            weightsA={deferredA}
+            weightsB={deferredB}
+            weightsC={deferredC}
+            denomCap={deferredCap}
+          />
+        </LabAccordion>
+        <RulesPanel />
         {bumpCount > 0 ? (
           <Box>
             <Button size="small" color="warning" onClick={() => setExtras({})}>
@@ -1383,7 +1405,8 @@ export default function JoseLab() {
 
       <LabSection
         title="CSV · real seasons"
-        hint="Cesar, Ariel, Eliecer, Randy, Guillermo. Pin a row to put that person on the charts."
+        hint="Valhalla (Kevin, Jose, Raulito, Rudelys) plus Cesar, Ariel, Eliecer, Randy, Guillermo. Pin a row to put that person on the charts."
+        sx={{ mt: 4 }}
       >
         <JoseLabCharts
           formula={formula}
@@ -1399,7 +1422,7 @@ export default function JoseLab() {
           title="CSV seasons · T–G–P, nets, live A and B"
           hint="Tap G, W, L, or a delta to age that person. Wins and losses also add to G. Pin the row to plot."
           rows={scoredReadmeCsv}
-          failIds={failIds}
+          failIds={EMPTY_FAIL_IDS}
           formula={formula}
           pinnedIds={csvPins}
           onTogglePin={toggleCsvPin}
@@ -1436,7 +1459,7 @@ export default function JoseLab() {
           title="Mock scenarios · T–G–P, nets, live A and B"
           hint="Same bumpers. Pin a row onto the graphs above."
           rows={scoredReadmeMock}
-          failIds={failIds}
+          failIds={EMPTY_FAIL_IDS}
           formula={formula}
           pinnedIds={mockPins}
           onTogglePin={toggleMockPin}
@@ -1451,7 +1474,7 @@ export default function JoseLab() {
           title="Mock fixtures · full stocks"
           hint="W/L still add to G. Stock cells bump the matching delta (HF−HA, PF−PA, …)."
           rows={scoredTestMock}
-          failIds={failIds}
+          failIds={EMPTY_FAIL_IDS}
           formula={formula}
           pinnedIds={mockPins}
           onTogglePin={toggleMockPin}

@@ -174,14 +174,14 @@ denom = max(G, 25)
 
 R =
   3 × (W − L)
-+ 7.5  × (DW − DL) / denom
++ 6.25 × (DW − DL) / denom
 + 0.15 × (PF − PA) / denom
-+  10  × (PolF − PolA) / denom
-+   4  × (ZapF − ZapA) / denom
++  15  × (PolF − PolA) / denom
++   6  × (ZapF − ZapA) / denom
 ```
 
-Cesar (CSV) at stock: kn +15.0, datas +4.9, pts +3.2, pollos +1.4, zap −0.1
-→ **R ≈ +24.3**. Randy is Cesar’s mirror (−24.3).
+Cesar (CSV) at stock: kn +15.0, datas +4.1, pts +3.2, pollos +2.1, zap −0.2
+→ **R ≈ +24.1**. Randy is Cesar’s mirror (−24.1).
 
 ### Persistence & UI (web)
 
@@ -195,7 +195,7 @@ Cesar (CSV) at stock: kn +15.0, datas +4.9, pts +3.2, pollos +1.4, zap −0.1
 
 ### Calibration rule (humans + agents)
 
-- Must hold at defaults: Cesar R ≈ +24.3; Cesar kn ≈ 3× datas and datas >
+- Must hold at defaults: Cesar R ≈ +24.1; Cesar kn ≈ 3.7× datas and datas >
   points; Ugly+4 can lose to Luis; test Ugly+4 loses to loud EvenBlow;
   no denom cap.
 - After formula changes: update `joseCoefficient.ts` here **and** the mobile
@@ -208,10 +208,10 @@ Cesar (CSV) at stock: kn +15.0, datas +4.9, pts +3.2, pollos +1.4, zap −0.1
 |----------|---------|----------------|
 | **3 × n** | Absolute `W−L` | Cesar +5 → +15 games; extras stay a minority. |
 | **denom = max(G, 25)** | All secondary rates | Short heater cannot out-rate a longer season on extras alone. |
-| **7.5** | `(DW−DL)/denom` | Datas are the main secondary; Cesar datas ~+4.9. |
-| **0.15** | `(PF−PA)/denom` | Points tie-break; Cesar pts ~+3.2, still under datas. |
-| **10** | Pollo net / denom | Badge among equals. |
-| **4** | Zapato net / denom | Weaker than pollo. |
+| **6.25** | `(DW−DL)/denom` | Datas still the main secondary; Cesar datas ~+4.1. At G=25, 1 ΔG = 12 datas. |
+| **0.15** | `(PF−PA)/denom` | Points tie-break; Cesar pts ~+3.2, still under datas. At G=25, 1 ΔG = 500 pts. |
+| **15** | Pollo net / denom | 5 pollos = 1 ΔG at the floor. Cesar pollos ~+2.1. |
+| **6** | Zapato net / denom | Pollos stay 2.5× zapatos (15 / 6). At G=25, 1 ΔG = 12.5 zapatos. |
 
 Cuban scoring context: games to **150**, typical win ~**170**, ~**30–40**
 pts/hand; ΔPF/net often ~100–130 (like the CSV export).
@@ -222,28 +222,28 @@ Same calibration set as the lab. Sorted by **R**. kn = `3n`. 2nds = `R − kn`.
 
 | # | Player | Record | Net | kn | 2nds | R | ΔDW | ΔPF | ΔPo | ΔZap |
 |---|--------|--------|-----|----|------|---|-----|-----|-----|------|
-| 1 | Pedro | 24–6–30 | +18 | 54.0 | +25.2 | **79.2** | +56 | +2010 | +3 | +1 |
-| 2 | DominantPair | 18–7–25 | +11 | 33.0 | +21.5 | **54.5** | +39 | +1375 | +3 | +2 |
-| 3 | Cesar (CSV) | 17–12–29 | +5 | 15.0 | +9.3 | **24.3** | +19 | +609 | +4 | −1 |
-| 4 | Ariel (CSV) | 17–12–29 | +5 | 15.0 | +9.3 | **24.3** | +19 | +609 | +4 | −1 |
-| 5 | Ana | 18–12–30 | +6 | 18.0 | +4.2 | **22.2** | +9 | +330 | +1 | 0 |
-| 6 | HotWeekend | 6–2–8 | +4 | 12.0 | +7.4 | **19.4** | +13 | +490 | +1 | +1 |
-| 7 | Solid40 | 22–18–40 | +4 | 12.0 | +3.6 | **15.6** | +10 | +380 | +1 | 0 |
-| 8 | Maya50 | 27–23–50 | +4 | 12.0 | +2.8 | **14.8** | +10 | +380 | +1 | 0 |
-| 9 | Grinder100 | 52–48–100 | +4 | 12.0 | +1.5 | **13.5** | +11 | +380 | +1 | 0 |
-| 10 | Luis | 16–14–30 | +2 | 6.0 | +4.2 | **10.2** | +8 | +260 | +2 | +2 |
-| 11 | Eliecer (CSV) | 6–4–10 | +2 | 6.0 | +3.5 | **9.5** | +7 | +268 | −1 | +1 |
-| 12 | Omar80loud | 41–39–80 | +2 | 6.0 | +2.5 | **8.5** | +13 | +455 | +3 | +2 |
-| 13 | Omar80 | 41–39–80 | +2 | 6.0 | +1.0 | **7.0** | +5 | +190 | +1 | 0 |
-| 14 | Quiet+2 | 16–14–30 | +2 | 6.0 | +0.5 | **6.5** | +1 | +40 | 0 | 0 |
-| 15 | Ugly+4 | 17–13–30 | +4 | 12.0 | −8.1 | **3.9** | −17 | −600 | −2 | −1 |
-| 16 | NearEven | 23–22–45 | +1 | 3.0 | +0.7 | **3.7** | +2 | +95 | 0 | 0 |
-| 17 | EvenBlow | 15–15–30 | 0 | 0.0 | +0.5 | **0.5** | 0 | 0 | +1 | +1 |
-| 18 | Comeback | 16–19–35 | −3 | −9.0 | +4.2 | **−4.8** | +12 | +445 | −1 | 0 |
-| 19 | Randy (CSV) | 12–17–29 | −5 | −15.0 | −9.3 | **−24.3** | −19 | −609 | −4 | +1 |
-| 20 | Guillermo (CSV) | 6–13–19 | −7 | −21.0 | −14.3 | **−35.3** | −26 | −877 | −3 | 0 |
+| 1 | Pedro | 24–6–30 | +18 | 54.0 | +23.4 | **77.4** | +56 | +2010 | +3 | +1 |
+| 2 | DominantPair | 18–7–25 | +11 | 33.0 | +20.3 | **53.3** | +39 | +1375 | +3 | +2 |
+| 3 | Cesar (CSV) | 17–12–29 | +5 | 15.0 | +9.1 | **24.1** | +19 | +609 | +4 | −1 |
+| 4 | Ariel (CSV) | 17–12–29 | +5 | 15.0 | +9.1 | **24.1** | +19 | +609 | +4 | −1 |
+| 5 | Ana | 18–12–30 | +6 | 18.0 | +4.0 | **22.0** | +9 | +330 | +1 | 0 |
+| 6 | HotWeekend | 6–2–8 | +4 | 12.0 | +7.0 | **19.0** | +13 | +490 | +1 | +1 |
+| 7 | Solid40 | 22–18–40 | +4 | 12.0 | +3.4 | **15.4** | +10 | +380 | +1 | 0 |
+| 8 | Maya50 | 27–23–50 | +4 | 12.0 | +2.7 | **14.7** | +10 | +380 | +1 | 0 |
+| 9 | Grinder100 | 52–48–100 | +4 | 12.0 | +1.4 | **13.4** | +11 | +380 | +1 | 0 |
+| 10 | Luis | 16–14–30 | +2 | 6.0 | +4.4 | **10.4** | +8 | +260 | +2 | +2 |
+| 11 | Eliecer (CSV) | 6–4–10 | +2 | 6.0 | +3.0 | **9.0** | +7 | +268 | −1 | +1 |
+| 12 | Omar80loud | 41–39–80 | +2 | 6.0 | +2.6 | **8.6** | +13 | +455 | +3 | +2 |
+| 13 | Omar80 | 41–39–80 | +2 | 6.0 | +0.9 | **6.9** | +5 | +190 | +1 | 0 |
+| 14 | Quiet+2 | 16–14–30 | +2 | 6.0 | +0.4 | **6.4** | +1 | +40 | 0 | 0 |
+| 15 | Ugly+4 | 17–13–30 | +4 | 12.0 | −7.7 | **4.3** | −17 | −600 | −2 | −1 |
+| 16 | NearEven | 23–22–45 | +1 | 3.0 | +0.6 | **3.6** | +2 | +95 | 0 | 0 |
+| 17 | EvenBlow | 15–15–30 | 0 | 0.0 | +0.7 | **0.7** | 0 | 0 | +1 | +1 |
+| 18 | Comeback | 16–19–35 | −3 | −9.0 | +3.6 | **−5.4** | +12 | +445 | −1 | 0 |
+| 19 | Randy (CSV) | 12–17–29 | −5 | −15.0 | −9.1 | **−24.1** | −19 | −609 | −4 | +1 |
+| 20 | Guillermo (CSV) | 6–13–19 | −7 | −21.0 | −13.6 | **−34.6** | −26 | −877 | −3 | 0 |
 
-Checks: Cesar R ≈ +24.3; Ugly+4 < Luis; Solid40 > Luis; Randy = −Cesar.
+Checks: Cesar R ≈ +24.1; Ugly+4 < Luis; Solid40 > Luis; Randy = −Cesar.
 
 ### Agents / implementers
 

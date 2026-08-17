@@ -48,6 +48,285 @@ const PART_COLORS = {
   zap: "rgb(180, 84, 47)",
 };
 
+type BreakdownBarRow = {
+  name: string;
+  dG: number;
+  dDW: number;
+  dPF: number;
+  dPo: number;
+  dZap: number;
+  sqrt: number;
+  games: number;
+  datas: number;
+  pts: number;
+  po: number;
+  zap: number;
+  r: number;
+};
+
+const BREAKDOWN_TIP_LINES = [
+  { label: "ΔG", delta: "dG", add: "games" },
+  { label: "ΔDW", delta: "dDW", add: "datas" },
+  { label: "ΔPF", delta: "dPF", add: "pts" },
+  { label: "ΔPo", delta: "dPo", add: "po" },
+  { label: "ΔZap", delta: "dZap", add: "zap" },
+] as const;
+
+const TIP_MONO =
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace';
+
+type TipItem = {
+  name?: string;
+  value?: number | string;
+  dataKey?: string | number;
+  payload?: Record<string, unknown>;
+};
+
+function signedDelta(n: number): string {
+  if (n > 0) return `+${n}`;
+  return String(n);
+}
+
+function signedAdd(n: number): string {
+  const text = n.toFixed(2);
+  return n > 0 ? `+${text}` : text;
+}
+
+function addColor(n: number): string {
+  if (n > 0) return "success.dark";
+  if (n < 0) return "error.dark";
+  return "text.secondary";
+}
+
+function TipShell({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <Box
+      sx={{
+        px: 1.25,
+        py: 1,
+        minWidth: 188,
+        bgcolor: "background.paper",
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 1,
+        boxShadow: 1,
+      }}
+    >
+      <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.75 }}>
+        {title}
+      </Typography>
+      {children}
+    </Box>
+  );
+}
+
+function TipRow({
+  label,
+  value,
+  color,
+  strong = false,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+  strong?: boolean;
+}) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        gap: 1.5,
+        fontFamily: TIP_MONO,
+        fontSize: strong ? 13 : 12,
+        fontWeight: strong ? 800 : 400,
+        lineHeight: 1.55,
+      }}
+    >
+      <Box
+        component="span"
+        sx={{ color: strong ? "text.primary" : "text.secondary" }}
+      >
+        {label}
+      </Box>
+      <Box
+        component="span"
+        sx={{ fontWeight: 700, color: color ?? "text.primary" }}
+      >
+        {value}
+      </Box>
+    </Box>
+  );
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value !== "" && !Number.isNaN(Number(value))) {
+    return Number(value);
+  }
+  return null;
+}
+
+function BreakdownTooltip({
+  active,
+  payload,
+  formula,
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<{ payload?: BreakdownBarRow }>;
+  formula?: FormulaId;
+}) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload;
+  if (!row) return null;
+  return (
+    <TipShell title={row.name}>
+      {formula === "C" ? (
+        <TipRow
+          label="√(G/2)"
+          value={`(${signedAdd(row.sqrt)})`}
+          color={addColor(row.sqrt)}
+        />
+      ) : null}
+      {BREAKDOWN_TIP_LINES.map((line) => (
+        <TipRow
+          key={line.label}
+          label={`${line.label} ${signedDelta(row[line.delta])}`}
+          value={`(${signedAdd(row[line.add])})`}
+          color={addColor(row[line.add])}
+        />
+      ))}
+      <Box
+        sx={{
+          mt: 0.75,
+          pt: 0.6,
+          borderTop: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <TipRow
+          label="R"
+          value={signedAdd(row.r)}
+          color={addColor(row.r)}
+          strong
+        />
+      </Box>
+    </TipShell>
+  );
+}
+
+function LeadTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<TipItem>;
+  label?: string | number;
+}) {
+  if (!active || !payload?.length) return null;
+  const person = payload.find(
+    (item) => typeof item.payload?.name === "string"
+  );
+  if (person && typeof person.payload?.name === "string") {
+    const n = asNumber(person.payload.n) ?? asNumber(label) ?? 0;
+    const lead = asNumber(person.payload.lead) ?? asNumber(person.value) ?? 0;
+    return (
+      <TipShell title={person.payload.name}>
+        <TipRow label={`ΔG ${signedDelta(n)}`} value={`(${signedAdd(lead)})`} color={addColor(lead)} />
+      </TipShell>
+    );
+  }
+  const row = payload[0]?.payload;
+  const n = asNumber(row?.n) ?? asNumber(label) ?? 0;
+  const lines = [
+    { label: "K(x)", key: "B" },
+    { label: "OG F(x)", key: "C" },
+    { label: "Tangent (x)", key: "A" },
+  ] as const;
+  return (
+    <TipShell title={`ΔG ${signedDelta(n)}`}>
+      {lines.map((line) => {
+        const value = asNumber(row?.[line.key]) ?? 0;
+        return (
+          <TipRow
+            key={line.key}
+            label={line.label}
+            value={`(${signedAdd(value)})`}
+            color={addColor(value)}
+          />
+        );
+      })}
+    </TipShell>
+  );
+}
+
+function ScatterTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<TipItem>;
+}) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload;
+  const name = typeof row?.name === "string" ? row.name : "";
+  const n = asNumber(row?.n) ?? 0;
+  const r = asNumber(row?.r) ?? 0;
+  return (
+    <TipShell title={name || "R"}>
+      <TipRow label="ΔG" value={signedDelta(n)} />
+      <Box
+        sx={{
+          mt: 0.75,
+          pt: 0.6,
+          borderTop: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <TipRow label="R" value={signedAdd(r)} color={addColor(r)} strong />
+      </Box>
+    </TipShell>
+  );
+}
+
+function VolumeTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<TipItem>;
+  label?: string | number;
+}) {
+  if (!active || !payload?.length) return null;
+  const G = asNumber(payload[0]?.payload?.G) ?? asNumber(label) ?? 0;
+  return (
+    <TipShell title={`G ${G}`}>
+      {payload.map((item) => {
+        const value = asNumber(item.value);
+        if (value == null) return null;
+        const name = String(item.name ?? item.dataKey ?? "");
+        if (name === "G") return null;
+        return (
+          <TipRow
+            key={name}
+            label={name}
+            value={`(${signedAdd(value)})`}
+            color={addColor(value)}
+          />
+        );
+      })}
+    </TipShell>
+  );
+}
+
 function ChartCard({
   title,
   height = 300,
@@ -187,12 +466,18 @@ export default memo(function JoseLabCharts({
     .sort((a, b) => (b.br?.r ?? 0) - (a.br?.r ?? 0))
     .map((row) => ({
       name: personName(row.player),
+      dG: row.br!.n,
+      dDW: row.player.dDW,
+      dPF: row.player.dPF,
+      dPo: row.player.dPo,
+      dZap: row.player.dZap,
       sqrt: Number(row.br!.sqrt.toFixed(2)),
       games: Number(row.br!.games.toFixed(2)),
       datas: Number(row.br!.datas.toFixed(2)),
       pts: Number(row.br!.pts.toFixed(2)),
       po: Number(row.br!.po.toFixed(2)),
       zap: Number(row.br!.zap.toFixed(2)),
+      r: Number(row.br!.r.toFixed(2)),
     }));
 
   const volumeKeys = pinNames;
@@ -232,25 +517,16 @@ export default memo(function JoseLabCharts({
               tick={{ fontSize: 11 }}
             />
             <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
+            <Tooltip content={<LeadTooltip />} />
             <Legend />
             <ReferenceLine y={0} stroke={alpha("#241D14", 0.35)} />
-            <Line
-              type="monotone"
-              dataKey="A"
-              stroke={COLOR_A}
-              dot={false}
-              strokeWidth={2}
-              name="A tanh"
-              isAnimationActive={false}
-            />
             <Line
               type="monotone"
               dataKey="B"
               stroke={COLOR_B}
               dot={false}
               strokeWidth={2}
-              name="B kn"
+              name="K(x)"
               isAnimationActive={false}
             />
             <Line
@@ -259,7 +535,16 @@ export default memo(function JoseLabCharts({
               stroke={COLOR_C}
               dot={false}
               strokeWidth={2}
-              name="C ΔG"
+              name="OG F(x)"
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="A"
+              stroke={COLOR_A}
+              dot={false}
+              strokeWidth={2}
+              name="Tangent (x)"
               isAnimationActive={false}
             />
             <Scatter name="people" data={leadPeople} dataKey="lead" fill={PIN} isAnimationActive={false}>
@@ -278,13 +563,7 @@ export default memo(function JoseLabCharts({
             />
             <XAxis type="number" dataKey="n" name="n" tick={{ fontSize: 11 }} />
             <YAxis type="number" dataKey="r" name="R" tick={{ fontSize: 11 }} />
-            <Tooltip
-              formatter={(value) => Number(value).toFixed(1)}
-              labelFormatter={(_, payload) => {
-                const name = payload?.[0]?.payload?.name;
-                return typeof name === "string" ? name : "";
-              }}
-            />
+            <Tooltip content={<ScatterTooltip />} />
             <ReferenceLine y={0} stroke={alpha("#241D14", 0.35)} />
             <Scatter
               name="others"
@@ -317,16 +596,18 @@ export default memo(function JoseLabCharts({
               width={110}
               tick={{ fontSize: 12 }}
             />
-            <Tooltip formatter={(value) => Number(value).toFixed(2)} />
+            <Tooltip content={(props) => <BreakdownTooltip {...props} formula={formula} />} />
             <Legend />
             <ReferenceLine x={0} stroke={alpha("#241D14", 0.35)} />
-            <Bar
-              dataKey="sqrt"
-              stackId="r"
-              name="√(G/2)"
-              fill={PART_COLORS.sqrt}
-              isAnimationActive={false}
-            />
+            {formula === "C" ? (
+              <Bar
+                dataKey="sqrt"
+                stackId="r"
+                name="√(G/2)"
+                fill={PART_COLORS.sqrt}
+                isAnimationActive={false}
+              />
+            ) : null}
             <Bar
               dataKey="games"
               stackId="r"
@@ -378,7 +659,7 @@ export default memo(function JoseLabCharts({
             />
             <XAxis dataKey="G" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
+            <Tooltip content={<VolumeTooltip />} />
             <Legend />
             {volumeKeys.map((name, i) => (
               <Line
