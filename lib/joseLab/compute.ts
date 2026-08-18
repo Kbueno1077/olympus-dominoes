@@ -1,6 +1,6 @@
 import type { LabPlayer } from "./data";
 
-export type FormulaId = "A" | "B" | "C";
+export type FormulaId = "A" | "B" | "C" | "K2";
 
 export type WeightsA = {
   leadCap: number;
@@ -51,6 +51,27 @@ export const DEFAULT_B: WeightsB = {
   wPollos: 15,
   wZapatos: 6,
   floor: 25,
+};
+
+/** Playground: no /G. kGames scales ΔG, pollos, and zapatos. Datas/points stay raw. */
+export type WeightsK2 = {
+  kGames: number;
+  /** Datas that add +1 on R. */
+  dwPerGame: number;
+  /** Points that add +1 on R. */
+  pfPerGame: number;
+  /** Pollos that equal one win (same R as kGames × ΔG). */
+  pollosPerGame: number;
+  /** One zapato as a fraction of one pollo (2/5). */
+  zapPerPollo: number;
+};
+
+export const DEFAULT_K2: WeightsK2 = {
+  kGames: 3,
+  dwPerGame: 4,
+  pfPerGame: 165,
+  pollosPerGame: 5,
+  zapPerPollo: 0.4,
 };
 
 export type WeightsC = {
@@ -114,7 +135,7 @@ export function leadTermA(n: number, w: WeightsA): number {
   return w.leadMix * w.leadCap * Math.tanh(n / w.leadScale);
 }
 
-export function leadTermB(n: number, w: WeightsB): number {
+export function leadTermB(n: number, w: { kGames: number }): number {
   return w.kGames * n;
 }
 
@@ -146,11 +167,51 @@ export function computeB(
   return { n, denom, sqrt: 0, games, ...seconds, r, seconds: r - games };
 }
 
+/** 4 datas / 165 pts = +1 R. 5 pollos = 1 win. Zapato = 2/5 of a pollo. */
+export function k2ExtraWeights(
+  w: WeightsK2
+): Pick<SharedWeights, "wDatas" | "wPoints" | "wPollos" | "wZapatos"> {
+  const unit = (count: number) => (count === 0 ? 0 : 1 / count);
+  const wPollos = w.pollosPerGame === 0 ? 0 : w.kGames / w.pollosPerGame;
+  return {
+    wDatas: unit(w.dwPerGame),
+    wPoints: unit(w.pfPerGame),
+    wPollos,
+    wZapatos: wPollos * w.zapPerPollo,
+  };
+}
+
+function k2Seconds(p: LabPlayer, w: WeightsK2) {
+  const weights = k2ExtraWeights(w);
+  return {
+    datas: weights.wDatas * p.dDW,
+    pts: weights.wPoints * p.dPF,
+    po: weights.wPollos * p.dPo,
+    zap: weights.wZapatos * p.dZap,
+  };
+}
+
+/**
+ * K2: no /G. kGames scales ΔG, pollos, and zapatos so +5 pollos = +1 game.
+ * Datas and points stay raw (ΔDW/4, ΔPF/165). A zapato is 2/5 of a pollo.
+ */
+export function computeK2(p: LabPlayer, w: WeightsK2): Breakdown | null {
+  if (p.G <= 0) return null;
+  const n = p.W - p.L;
+  const games = leadTermB(n, w);
+  const seconds = k2Seconds(p, w);
+  const r = games + seconds.datas + seconds.pts + seconds.po + seconds.zap;
+  return { n, denom: 1, sqrt: 0, games, ...seconds, r, seconds: r - games };
+}
+
 export function leadTermC(n: number, w: WeightsC): number {
   return w.kGames * n;
 }
 
-function ogDatasPts(p: LabPlayer, w: WeightsC): { datas: number; pts: number } {
+function ogDatasPts(
+  p: LabPlayer,
+  w: { dwPerGame: number; pfPerGame: number }
+): { datas: number; pts: number } {
   return {
     datas: w.dwPerGame === 0 ? 0 : p.dDW / w.dwPerGame,
     pts: w.pfPerGame === 0 ? 0 : p.dPF / w.pfPerGame,
@@ -159,7 +220,12 @@ function ogDatasPts(p: LabPlayer, w: WeightsC): { datas: number; pts: number } {
 
 /** Effective extra weights so Worth tables can reuse A/B exchange math. */
 export function ogExtraWeights(
-  c: WeightsC
+  c: {
+    dwPerGame: number;
+    pfPerGame: number;
+    wPollos: number;
+    wZapatos: number;
+  }
 ): Pick<SharedWeights, "wDatas" | "wPoints" | "wPollos" | "wZapatos"> {
   return {
     wDatas: c.dwPerGame === 0 ? 0 : 1 / c.dwPerGame,
@@ -198,6 +264,7 @@ export function computePlayer(
   weightsA: WeightsA,
   weightsB: WeightsB,
   weightsC: WeightsC,
+  weightsK2: WeightsK2,
   denomCap: number | null
 ): Breakdown | null {
   switch (formula) {
@@ -207,6 +274,8 @@ export function computePlayer(
       return computeB(p, weightsB, denomCap);
     case "C":
       return computeC(p, weightsC);
+    case "K2":
+      return computeK2(p, weightsK2);
     default: {
       const _never: never = formula;
       return _never;
@@ -232,6 +301,7 @@ export function volumeAtG(
   weightsA: WeightsA,
   weightsB: WeightsB,
   weightsC: WeightsC,
+  weightsK2: WeightsK2,
   G: number,
   denomCap: number | null
 ): number {
@@ -240,6 +310,10 @@ export function volumeAtG(
       return extrasAtG(p, weightsA, G, denomCap);
     case "B":
       return extrasAtG(p, weightsB, G, denomCap);
+    case "K2": {
+      const seconds = k2Seconds(p, weightsK2);
+      return seconds.datas + seconds.pts + seconds.po + seconds.zap;
+    }
     case "C": {
       if (G <= 0) return 0;
       const n = p.W - p.L;
@@ -323,6 +397,7 @@ export function gameExchange(
   a: WeightsA,
   b: WeightsB,
   c: WeightsC,
+  k2: WeightsK2,
   denomCap: number | null
 ): GameExchange {
   switch (formula) {
@@ -330,6 +405,8 @@ export function gameExchange(
       return gameVsExtras(denomFor(a.floor, a.floor, denomCap), leadTermA(1, a), a);
     case "B":
       return gameVsExtras(denomFor(b.floor, b.floor, denomCap), leadTermB(1, b), b);
+    case "K2":
+      return gameVsExtras(1, leadTermB(1, k2), k2ExtraWeights(k2));
     case "C":
       return gameVsExtras(1, leadTermC(1, c), ogExtraWeights(c));
     default: {
@@ -566,6 +643,7 @@ export function equationLines(
   a: WeightsA,
   b: WeightsB,
   c: WeightsC,
+  k2: WeightsK2,
   denomCap: number | null
 ): string[] {
   const cap = denomCap == null ? "" : `, cap ${denomCap}`;
@@ -579,6 +657,12 @@ export function equationLines(
       ];
     case "B":
       return [`R = ${b.kGames} × ΔG`, `+ ${extras(b)}`];
+    case "K2":
+      return [
+        `R = ${k2.kGames} × ΔG`,
+        `+ ΔDW / ${k2.dwPerGame} + ΔPF / ${k2.pfPerGame}`,
+        `+ ${k2.kGames} × (ΔPo / ${k2.pollosPerGame} + ${k2.zapPerPollo} × ΔZap / ${k2.pollosPerGame})`,
+      ];
     case "C":
       return [
         `R = ${c.kSqrt} × √(G / 2) + ${c.kGames} × ΔG`,
