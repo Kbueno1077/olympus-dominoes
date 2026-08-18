@@ -177,7 +177,6 @@ export default function PlaySetup({
   const difficultyOptions = useMemo(
     () =>
       [
-        { id: "classic" as const, label: t("playBotBrainClassic") },
         { id: "table_sense" as const, label: t("playBotBrainTableSense") },
         { id: "pimc" as const, label: t("playBotBrainPimc") },
       ] satisfies { id: BotBrainId; label: string }[],

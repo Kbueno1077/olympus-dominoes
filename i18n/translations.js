@@ -78,6 +78,34 @@ const en = {
   madeForTheTable: "Made for the table",
   privacyLink: "Privacy Policy",
   changelogLink: "Changelog",
+  howToUseLink: "How to use",
+  howToUseTitle: "How to use",
+  howToUseIntro:
+    "This is the companion website to the Olympus Dominoes phone app. Import a save here to see your record bigger — history, charts, rankings. You can also keep a casual scoreboard, or play against bots (that table is better on a bigger screen).",
+  howToUsePhoneTitle: "The phone app",
+  howToUsePhoneBody:
+    "The app is still the real record. Keep score at the table, leave a few matches open, and share a CSV here when you want the full picture.",
+  howToUseWebTitle: "On this site",
+  howToUsePlayTitle: "Play against bots",
+  howToUsePlayBody:
+    "Deal real tiles and play a full table against bots on this device. It works on a phone, but the table is better on a bigger screen — laptop, tablet, or TV.",
+  howToUseNotepadTitle: "Casual scoreboard",
+  howToUseNotepadBody:
+    "Need a pad for a live mesa and you only have a browser? Names, partners or free for all, a target. One game at a time, and it doesn’t touch your league.",
+  howToUseSaveTitle: "See it bigger",
+  howToUseSaveBody:
+    "On the phone: Settings → Export. Drop the CSV into Analytics here. History, Stats, Leaderboard, Compare, and Podium open that same save on a bigger screen, with charts. Nothing is sent to a server.",
+  howToUsePagesTitle: "Where to go",
+  howToUsePagePlay: "Play vs bots — better on a bigger screen.",
+  howToUsePageMatch: "A casual scoreboard for a live table.",
+  howToUsePageHistory: "Imported matches, easier to browse.",
+  howToUsePageStats: "One player’s numbers, with charts.",
+  howToUsePageLeaderboard: "Rank the table by Jose’s Coefficient.",
+  howToUsePageCompare: "Put two or more players side by side.",
+  howToUsePagePodium: "Trophies and the hall of mild disgrace.",
+  howToUseJoseNoteLabel: "A note on Jose’s Coefficient",
+  howToUseJoseNote:
+    "The ranking on Stats and the Leaderboard is named for Jose — not a lab, the one at the table. In the 90s he filled a notebook and came up with the original formula. We kept the name and later modified the math. Same ghost, new bones. Credit where the pencil was.",
   howItWorksTitle: "How it works",
   howStep1Title: "Set the table",
   howStep1Body: "Name the players, choose partners or free for all, and pick a target.",
@@ -741,16 +769,16 @@ const en = {
   playConfigBotBrainBody:
     "How hard the bots play. Harder levels only use what everyone can see — passes and open ends — never hidden hands.",
   playBotBrainClassic: "Easy",
-  playBotBrainTableSense: "Standard",
-  playBotBrainPimc: "Expert",
+  playBotBrainTableSense: "Normal",
+  playBotBrainPimc: "Better",
   playBotBrainClassicBlurb: "Plays the obvious bones from its hand.",
   playBotBrainTableSenseBlurb: "Watches passes, partners, and open ends.",
   playBotBrainPimcBlurb: "Thinks ahead through many possible deals.",
   playBotBrainClassicHint:
     "Hand heuristics only: doubles, pip dump, suit thickness. Blind to who passed what.",
-  playBotBrainRulesTitle: "How Standard plays",
+  playBotBrainRulesTitle: "How Normal plays",
   playBotBrainRulesMore: "How this level plays",
-  playBotPimcRulesTitle: "How Expert plays",
+  playBotPimcRulesTitle: "How Better plays",
   playBotPimcRuleSearch:
     "Tries each legal move across many random “what if” deals of the unseen tiles, then picks the best average result",
   playBotPimcRuleVoids:
@@ -782,7 +810,7 @@ const en = {
   playBotRuleNoCheat:
     "Never peeks at hidden hands or the boneyard — only what everyone at the mesa can see",
   playBotBrainLocked:
-    "Difficulty is locked for this match. Return to setup to change Easy / Standard / Expert.",
+    "Difficulty is locked for this match. Return to setup to change Normal / Better.",
   playConfigDebug: "Hand log",
   playConfigNav: "Go to",
   playConfigAria: "Open settings",
@@ -858,6 +886,34 @@ const es = {
   madeForTheTable: "Hecho para la mesa",
   privacyLink: "Política de privacidad",
   changelogLink: "Novedades",
+  howToUseLink: "Cómo usarlo",
+  howToUseTitle: "Cómo usarlo",
+  howToUseIntro:
+    "Este es el sitio compañero de la app de Olympus Dominoes. Importa un respaldo aquí para ver tu historial más grande — partidas, gráficos, rankings. También puedes anotar una mesa a la ligera, o jugar contra bots (esa mesa se ve mejor en una pantalla grande).",
+  howToUsePhoneTitle: "La app del teléfono",
+  howToUsePhoneBody:
+    "La app sigue siendo el registro de verdad. Anota en la mesa, deja varias partidas abiertas, y comparte un CSV aquí cuando quieras ver el panorama.",
+  howToUseWebTitle: "En este sitio",
+  howToUsePlayTitle: "Jugar contra bots",
+  howToUsePlayBody:
+    "Reparte fichas de verdad y juega una mesa completa contra bots en este dispositivo. Funciona en el teléfono, pero la mesa se ve mejor en una pantalla grande — laptop, tablet o televisor.",
+  howToUseNotepadTitle: "Marcador casual",
+  howToUseNotepadBody:
+    "¿Necesitas una libreta para una mesa en vivo y solo tienes el navegador? Nombres, parejas o todos contra todos, una meta. Una partida a la vez, y no toca tu liga.",
+  howToUseSaveTitle: "Véelo más grande",
+  howToUseSaveBody:
+    "En el teléfono: Ajustes → Exportar. Suelta el CSV en Analítica aquí. Historial, Stats, Clasificación, Comparar y Podio abren ese mismo respaldo en una pantalla grande, con gráficos. Nada se envía a un servidor.",
+  howToUsePagesTitle: "Por dónde ir",
+  howToUsePagePlay: "Juega vs bots — mejor en una pantalla grande.",
+  howToUsePageMatch: "Un marcador casual para una mesa en vivo.",
+  howToUsePageHistory: "Partidas importadas, más fáciles de revisar.",
+  howToUsePageStats: "Los números de un jugador, con gráficos.",
+  howToUsePageLeaderboard: "Ordena la mesa por el Coeficiente de José.",
+  howToUsePageCompare: "Pon dos o más jugadores lado a lado.",
+  howToUsePagePodium: "Trofeos y el salón de la leve desgracia.",
+  howToUseJoseNoteLabel: "Una nota sobre el Coeficiente de José",
+  howToUseJoseNote:
+    "El ranking en Stats y la Clasificación lleva el nombre de José — no un laboratorio, el de la mesa. En los 90 llenó un cuaderno y sacó la fórmula original. El nombre se quedó y más tarde modificamos la matemática. El mismo fantasma, otros huesos. Crédito a quien tenía el lápiz.",
   howItWorksTitle: "Cómo funciona",
   howStep1Title: "Arma la mesa",
   howStep1Body: "Pon los nombres, elige parejas o todos contra todos, y fija la meta.",
@@ -1533,7 +1589,7 @@ const es = {
     "Qué tan duros juegan los bots. Los niveles más altos solo usan lo que todos ven — pases y puntas — nunca manos ocultas.",
   playBotBrainClassic: "Fácil",
   playBotBrainTableSense: "Normal",
-  playBotBrainPimc: "Experto",
+  playBotBrainPimc: "Mejor",
   playBotBrainClassicBlurb: "Juega las fichas obvias de su mano.",
   playBotBrainTableSenseBlurb: "Mira pases, pareja y puntas abiertas.",
   playBotBrainPimcBlurb: "Piensa adelante en muchos repartos posibles.",
@@ -1541,7 +1597,7 @@ const es = {
     "Solo heurísticas de mano: dobles, pips, grosor de palo. Ciego a quién pasó qué.",
   playBotBrainRulesTitle: "Cómo juega Normal",
   playBotBrainRulesMore: "Cómo juega este nivel",
-  playBotPimcRulesTitle: "Cómo juega Experto",
+  playBotPimcRulesTitle: "Cómo juega Mejor",
   playBotPimcRuleSearch:
     "Prueba cada jugada legal en muchos repartos aleatorios de las fichas ocultas y elige el mejor promedio",
   playBotPimcRuleVoids:
@@ -1573,7 +1629,7 @@ const es = {
   playBotRuleNoCheat:
     "Nunca mira manos ocultas ni el pozo — solo lo que todos en la mesa ven",
   playBotBrainLocked:
-    "La dificultad está bloqueada en esta partida. Vuelve a la configuración para cambiar Fácil / Normal / Experto.",
+    "La dificultad está bloqueada en esta partida. Vuelve a la configuración para cambiar Normal / Mejor.",
   playConfigDebug: "Registro de mano",
   playConfigNav: "Ir a",
   playConfigAria: "Abrir ajustes",
