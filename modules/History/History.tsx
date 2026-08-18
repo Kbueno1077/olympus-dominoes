@@ -15,6 +15,7 @@ import {
   formatMatchScoreline,
   getMatchDetail,
   listMatches,
+  playerNamesFromDetail,
   resolveMatchHeading,
   seatNamesFromDetail,
   teamLabelsForDetail,
@@ -186,6 +187,7 @@ function HistoryList({
               sx={{ color: "text.secondary", mb: 0.75, lineHeight: 1.4 }}
             >
               {modeName(item.modeLabel)} ·{" "}
+              {t(item.isClosed ? "closedMatch" : "openTable")} ·{" "}
               {t("historyGames", { n: item.gameCount })} ·{" "}
               {t("firstTo", { n: item.maxPoints })}
             </Typography>
@@ -229,6 +231,7 @@ function HistoryDetailView({
 }) {
   const { t, modeName, teamName } = useTranslation();
   const seatNames = seatNamesFromDetail(detail);
+  const headerNames = playerNamesFromDetail(detail);
   const teamLabels = teamLabelsForDetail(detail);
   const isFreeForAll = detail.modeLabel === "Free For All";
   const teamNumbers = activeTeamNumbers(detail.playersAmount, isFreeForAll);
@@ -291,16 +294,13 @@ function HistoryDetailView({
           sx={{ color: "text.secondary", mb: 0.75, lineHeight: 1.4 }}
         >
           {modeName(detail.modeLabel)} ·{" "}
+          {t(detail.isClosed ? "closedMatch" : "openTable")} ·{" "}
           {t("playersCount", { n: detail.playersAmount })} ·{" "}
           {t("firstTo", { n: detail.maxPoints })} ·{" "}
           {t("historyGames", { n: detail.games.length })}
         </Typography>
         <Typography variant="body2" sx={{ color: "text.primary", mb: 1.5 }}>
-          {detail.seats
-            .slice(0, detail.playersAmount)
-            .map((s) => s.displayName)
-            .filter(Boolean)
-            .join(" · ")}
+          {headerNames.join(" · ")}
         </Typography>
 
         <Stack direction="row" spacing={1}>
@@ -568,7 +568,7 @@ export default function History() {
   };
 
   const openCompare = () => {
-    if (!detail) return;
+    if (!detail || !detail.isClosed) return;
     const launch = buildHistoryMatchCompareLaunch({
       modeLabel: detail.modeLabel,
       playersAmount: detail.playersAmount,
@@ -580,7 +580,7 @@ export default function History() {
   };
 
   const canCompare = useMemo(() => {
-    if (!detail) return false;
+    if (!detail || !detail.isClosed) return false;
     return detail.seats.some(
       (s) =>
         s.seat >= 1 &&

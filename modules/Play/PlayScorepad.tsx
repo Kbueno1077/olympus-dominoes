@@ -26,12 +26,14 @@ type ShutoutMarks = {
 function handsByTeam(
   hands: HandRecord[],
   teams: number[]
-): Record<number, number[]> {
-  const map: Record<number, number[]> = Object.fromEntries(
-    teams.map((team) => [team, [] as number[]])
-  );
+): Record<number, { points: number; taken: number }[]> {
+  const map: Record<number, { points: number; taken: number }[]> =
+    Object.fromEntries(teams.map((team) => [team, []]));
   for (const hand of hands) {
-    map[hand.winnerTeam]?.push(hand.pointsAwarded);
+    map[hand.winnerTeam]?.push({
+      points: hand.pointsAwarded,
+      taken: hand.handIndex,
+    });
   }
   return map;
 }
@@ -235,11 +237,12 @@ function GamePad({
                     —
                   </Typography>
                 ) : (
-                  teamHands.map((pts, handIndex) => {
+                  teamHands.map((hand, handIndex) => {
                     const isFirst = handIndex === 0;
+                    const pts = hand.points;
                     const running = teamHands
                       .slice(0, handIndex + 1)
-                      .reduce((a, b) => a + b, 0);
+                      .reduce((sum, row) => sum + row.points, 0);
                     return (
                       <Stack
                         key={`${team}-${handIndex}-${pts}`}
@@ -254,6 +257,21 @@ function GamePad({
                           borderColor: "divider",
                         }}
                       >
+                        {hand.taken > 0 ? (
+                          <Typography
+                            component="span"
+                            sx={{
+                              minWidth: 12,
+                              fontSize: 10,
+                              lineHeight: 1,
+                              fontWeight: 600,
+                              color: "text.disabled",
+                              textAlign: "right",
+                            }}
+                          >
+                            {hand.taken}
+                          </Typography>
+                        ) : null}
                         <Typography
                           component="span"
                           sx={{

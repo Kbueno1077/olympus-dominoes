@@ -7,11 +7,12 @@ import {
   type HistorySeat,
 } from "./historyFilters";
 import {
-  computeMatchStatsDelta,
+  computeHistoryMatchStatsDelta,
   mergeStatsDeltas,
   type MatchGame,
   type NamedSeat,
   type PlayerStatDelta,
+  type StatsDelta,
 } from "./matchStats";
 import type { OlympusExportData, PlayerStatsView } from "./types";
 
@@ -159,10 +160,18 @@ export function computeMatchupStats(args: {
     id: asNumber(row.id),
     mode_label: asString(row.mode_label),
     players_amount: asNumber(row.players_amount),
+    is_closed: row.is_closed === 0 || row.is_closed === "0" ? 0 : 1,
   }));
 
   const seats = (tables.match_players ?? []).map((row) => ({
     match_id: asNumber(row.match_id),
+    seat: asNumber(row.seat),
+    display_name: asString(row.display_name),
+    player_id: asNullableNumber(row.player_id),
+  }));
+
+  const gameSeatRows = (tables.game_players ?? []).map((row) => ({
+    game_id: asNumber(row.game_id),
     seat: asNumber(row.seat),
     display_name: asString(row.display_name),
     player_id: asNullableNumber(row.player_id),
@@ -202,6 +211,27 @@ export function computeMatchupStats(args: {
     historySeatsByMatch.set(seat.match_id, history);
   }
 
+  const seatsByGame = new Map<number, NamedSeat[]>();
+  const historySeatsByGame = new Map<number, HistorySeat[]>();
+  for (const seat of gameSeatRows) {
+    const named = seatsByGame.get(seat.game_id) ?? [];
+    named.push({
+      seat: seat.seat,
+      displayName: seat.display_name,
+      playerId: seat.player_id,
+    });
+    seatsByGame.set(seat.game_id, named);
+
+    const history = historySeatsByGame.get(seat.game_id) ?? [];
+    history.push({
+      seat: seat.seat,
+      displayName: seat.display_name,
+      playerId: seat.player_id,
+      nameKey: normalizeNameKey(seat.display_name),
+    });
+    historySeatsByGame.set(seat.game_id, history);
+  }
+
   const scoresByGame = new Map<number, HistoryScoreRow[]>();
   for (const score of scores) {
     const list = scoresByGame.get(score.game_id) ?? [];
@@ -209,46 +239,91 @@ export function computeMatchupStats(args: {
     scoresByGame.set(score.game_id, list);
   }
 
-  const gamesByMatch = new Map<number, MatchGame[]>();
+  const gamesByMatch = new Map<
+    number,
+    { gameId: number; game: MatchGame; seats: NamedSeat[] }[]
+  >();
   for (const row of gameRows) {
     const matchId = asNumber(row.match_id);
     const gameId = asNumber(row.id);
     const list = gamesByMatch.get(matchId) ?? [];
-    list.push(
-      gameFromScores(
+    list.push({
+      gameId,
+      game: gameFromScores(
         scoresByGame.get(gameId) ?? [],
         row.winner_team == null ? null : asString(row.winner_team)
-      )
-    );
+      ),
+      seats: seatsByGame.get(gameId) ?? [],
+    });
     gamesByMatch.set(matchId, list);
   }
 
-  const matching = matches.filter((match) => {
-    if (match.mode_label !== modeLabel) return false;
-    return matchPassesHistoryFilter(
-      {
-        playersAmount: match.players_amount,
-        modeLabel: match.mode_label,
-        seats: historySeatsByMatch.get(match.id) ?? [],
-      },
-      filter
-    );
-  });
-
-  const deltas = matching.map((match) =>
-    computeMatchStatsDelta({
-      modeLabel: match.mode_label,
-      playersAmount: match.players_amount,
-      seats: seatsByMatch.get(match.id) ?? [],
-      games: gamesByMatch.get(match.id) ?? [],
-    })
-  );
-  const merged = mergeStatsDeltas(deltas);
-
+  const deltas: StatsDelta[] = [];
+  const matching: typeof matches = [];
   let gameCount = 0;
-  for (const match of matching) {
-    gameCount += gamesByMatch.get(match.id)?.length ?? 0;
+
+  for (const match of matches) {
+    if (match.mode_label !== modeLabel) continue;
+    const isClosed = match.is_closed !== 0;
+    const matchGames = gamesByMatch.get(match.id) ?? [];
+
+    if (isClosed) {
+      if (
+        !matchPassesHistoryFilter(
+          {
+            playersAmount: match.players_amount,
+            modeLabel: match.mode_label,
+            seats: historySeatsByMatch.get(match.id) ?? [],
+          },
+          filter
+        )
+      ) {
+        continue;
+      }
+      matching.push(match);
+      gameCount += matchGames.length;
+      deltas.push(
+        computeHistoryMatchStatsDelta({
+          isClosed: true,
+          modeLabel: match.mode_label,
+          playersAmount: match.players_amount,
+          matchSeats: seatsByMatch.get(match.id) ?? [],
+          games: matchGames.map((entry) => ({
+            game: entry.game,
+            seats: entry.seats,
+          })),
+        })
+      );
+      continue;
+    }
+
+    const matchingGames = matchGames.filter((entry) =>
+      matchPassesHistoryFilter(
+        {
+          playersAmount: match.players_amount,
+          modeLabel: match.mode_label,
+          seats: historySeatsByGame.get(entry.gameId) ?? [],
+        },
+        filter
+      )
+    );
+    if (matchingGames.length === 0) continue;
+    matching.push(match);
+    gameCount += matchingGames.length;
+    deltas.push(
+      computeHistoryMatchStatsDelta({
+        isClosed: false,
+        modeLabel: match.mode_label,
+        playersAmount: match.players_amount,
+        matchSeats: [],
+        games: matchingGames.map((entry) => ({
+          game: entry.game,
+          seats: entry.seats,
+        })),
+      })
+    );
   }
+  const merged = mergeStatsDeltas(deltas);
 
   const byPlayerId: Record<number, PlayerStatsView> = {};
   for (const playerId of playerIds) {

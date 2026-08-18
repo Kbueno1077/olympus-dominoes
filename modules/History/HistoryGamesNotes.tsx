@@ -1,7 +1,7 @@
 "use client";
 
 import Note from "@/components/Notes/Note";
-import type { HistoryGame } from "@/lib/analytics/history";
+import { seatNamesFromSeats, type HistoryGame } from "@/lib/analytics/history";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   activeTeamNumbers,
@@ -32,18 +32,16 @@ export default function HistoryGamesNotes({
   const teamNumbers = activeTeamNumbers(playersAmount, isFreeForAll);
   const columnCount = teamNumbers.length;
 
-  const labelsByNumber = useMemo(
-    () =>
-      teamInitialLabelsByNumber(
-        playersAmount,
-        modeLabel,
-        seatNames
-      ) as Record<number, string>,
-    [playersAmount, modeLabel, seatNames]
-  );
-
-  const labelFor = (teamNumber: number) =>
-    labelsByNumber[teamNumber] || teamName(teamNumber);
+  const labelFor = (teamNumber: number, game: HistoryGame) => {
+    const names =
+      game.seats.length > 0 ? seatNamesFromSeats(game.seats) : seatNames;
+    const labels = teamInitialLabelsByNumber(
+      playersAmount,
+      modeLabel,
+      names
+    ) as Record<number, string>;
+    return labels[teamNumber] || teamName(teamNumber);
+  };
 
   const ordered = useMemo(
     () =>
@@ -78,7 +76,7 @@ export default function HistoryGamesNotes({
               </Typography>
               {winningTeam ? (
                 <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                  {t("tookIt", { team: labelFor(winningTeam) })}
+                  {t("tookIt", { team: labelFor(winningTeam, game) })}
                 </Typography>
               ) : null}
             </Stack>
@@ -124,9 +122,14 @@ export default function HistoryGamesNotes({
                         `t${teamNumber}Datas` as keyof HistoryGame
                       ] as number[]) ?? []
                     }
+                    taken={
+                      (game[
+                        `t${teamNumber}Taken` as keyof HistoryGame
+                      ] as number[]) ?? []
+                    }
                     isWinner={winningTeam === teamNumber}
                     teamNumber={teamNumber}
-                    label={labelFor(teamNumber)}
+                    label={labelFor(teamNumber, game)}
                   />
                 </Box>
               ))}

@@ -1,21 +1,9 @@
 import { atom, selector } from "recoil";
 import { recoilPersist } from "recoil-persist";
 import { DEFAULT_DOMINO_SET_ID } from "../utils/dominoSets";
-import { gameModes4 } from "../utils/matchSettings";
+import { gameModes4, emptyGame } from "../utils/matchSettings";
 
 const { persistAtom } = recoilPersist();
-
-const emptyGame = {
-    t1Datas: [],
-    t1TotalPoints: 0,
-    t2Datas: [],
-    t2TotalPoints: 0,
-    t3Datas: [],
-    t3TotalPoints: 0,
-    t4Datas: [],
-    t4TotalPoints: 0,
-    winner: "none",
-};
 
 export const textState = atom({
     key: "textState", // unique ID (with respect to other atoms/selectors)

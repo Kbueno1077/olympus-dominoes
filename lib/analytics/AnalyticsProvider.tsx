@@ -44,7 +44,10 @@ import {
   type MergeResolutions,
   type MergeSource,
 } from "./mergeDatasets";
-import { withEnsuredPlayerPublicIds } from "./playerIdentity";
+import {
+  backfillSeatPlayerIds,
+  withEnsuredPlayerPublicIds,
+} from "./playerIdentity";
 import { recalculateAllJosesCoefficients } from "./joseCoefficient";
 import { withStatsFilledFromMatches } from "./recomputeFromMatches";
 import type { OlympusExportData } from "./types";
@@ -126,7 +129,8 @@ function hydrateDatasetData(
 ): OlympusExportData | null {
   if (!data) return null;
   const withPlayers = withEnsuredPlayerPublicIds(data);
-  const withMatches = withEnsuredMatchPublicIds(withPlayers);
+  const withSeats = backfillSeatPlayerIds(withPlayers);
+  const withMatches = withEnsuredMatchPublicIds(withSeats);
   const withTiles = withEnsuredTileSets(withMatches);
   const withStats = withStatsFilledFromMatches(withTiles);
   const ensured = withEnsuredDbMeta(withStats, {
@@ -144,7 +148,8 @@ function prepareImportedData(
   label?: string
 ): OlympusExportData {
   const withPlayers = withEnsuredPlayerPublicIds(parsed);
-  const withMatches = withEnsuredMatchPublicIds(withPlayers);
+  const withSeats = backfillSeatPlayerIds(withPlayers);
+  const withMatches = withEnsuredMatchPublicIds(withSeats);
   const withTiles = withEnsuredTileSets(withMatches);
   const withStats = withStatsFilledFromMatches(withTiles);
   const withMeta = withEnsuredDbMeta(withStats, {

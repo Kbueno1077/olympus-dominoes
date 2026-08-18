@@ -7,6 +7,7 @@ export const EXPORT_TABLES = [
   "matches",
   "match_players",
   "games",
+  "game_players",
   "game_team_scores",
   "player_stats",
   "player_h2h",

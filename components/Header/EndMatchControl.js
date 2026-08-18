@@ -21,21 +21,9 @@ import {
   DEFAULT_DOMINO_SET_ID,
   getDominoSet,
 } from "@/utils/dominoSets";
-import { gameModes4 } from "@/utils/matchSettings";
+import { gameModes4, emptyGame } from "@/utils/matchSettings";
 import { useRouter } from "next/navigation";
 import { useSetRecoilState } from "recoil";
-
-const emptyGame = {
-  t1Datas: [],
-  t1TotalPoints: 0,
-  t2Datas: [],
-  t2TotalPoints: 0,
-  t3Datas: [],
-  t3TotalPoints: 0,
-  t4Datas: [],
-  t4TotalPoints: 0,
-  winner: "none",
-};
 
 /** Clears the in-progress match and returns the form to its defaults. */
 export default function EndMatchControl({ fullWidth = false }) {

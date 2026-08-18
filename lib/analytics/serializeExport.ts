@@ -1,5 +1,6 @@
 import { DB_META_COLUMNS } from "./dbMeta";
 import { withEnsuredDbMeta } from "./dbMetaState";
+import { defaultMatchIsClosed } from "./parseExport";
 import {
   EXPORT_TABLES,
   type ExportTable,
@@ -26,6 +27,7 @@ const MATCH_COLUMNS = [
   "mode_label",
   "tile_set",
   "max_points",
+  "is_closed",
   "public_id",
 ] as const;
 
@@ -39,12 +41,21 @@ const MATCH_PLAYER_COLUMNS = [
 
 const GAME_COLUMNS = ["id", "match_id", "game_index", "winner_team"] as const;
 
+const GAME_PLAYER_COLUMNS = [
+  "id",
+  "game_id",
+  "seat",
+  "display_name",
+  "player_id",
+] as const;
+
 const GAME_TEAM_SCORE_COLUMNS = [
   "id",
   "game_id",
   "team_number",
   "total_points",
   "hands_json",
+  "hands_taken_json",
   "hand_count",
 ] as const;
 
@@ -99,6 +110,8 @@ function knownColumns(table: ExportTable): readonly string[] {
       return MATCH_PLAYER_COLUMNS;
     case "games":
       return GAME_COLUMNS;
+    case "game_players":
+      return GAME_PLAYER_COLUMNS;
     case "game_team_scores":
       return GAME_TEAM_SCORE_COLUMNS;
     case "player_stats":
@@ -156,12 +169,20 @@ function rowsForTable(
     case "player_h2h":
       return data.player_h2h.map((row) => ({ ...row }));
     case "matches":
-      return data.tables.matches ?? data.matches ?? [];
+      return (data.tables.matches ?? data.matches ?? []).map((row) => ({
+        ...row,
+        is_closed: defaultMatchIsClosed(row.is_closed),
+      }));
     case "app_settings":
     case "match_players":
     case "games":
-    case "game_team_scores":
+    case "game_players":
       return data.tables[table] ?? [];
+    case "game_team_scores":
+      return (data.tables.game_team_scores ?? []).map((row) => ({
+        ...row,
+        hands_taken_json: row.hands_taken_json ?? "[]",
+      }));
     default: {
       const _never: never = table;
       return _never;

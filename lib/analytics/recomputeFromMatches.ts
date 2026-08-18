@@ -6,7 +6,7 @@
 import { getMatchDetail, listMatches } from "./history";
 import { recalculateAllJosesCoefficients } from "./joseCoefficient";
 import {
-  computeMatchStatsDelta,
+  computeHistoryMatchStatsDelta,
   mergeStatsDeltas,
   type StatsDelta,
 } from "./matchStats";
@@ -73,11 +73,12 @@ export function recomputeAggregatesFromMatches(
     const detail = getMatchDetail(data, item.id);
     if (!detail) continue;
     deltas.push(
-      computeMatchStatsDelta({
+      computeHistoryMatchStatsDelta({
+        isClosed: detail.isClosed,
         modeLabel: detail.modeLabel,
         playersAmount: detail.playersAmount,
-        seats: detail.seats,
-        games: detail.games,
+        matchSeats: detail.seats,
+        games: detail.games.map((game) => ({ game, seats: game.seats })),
       })
     );
   }
