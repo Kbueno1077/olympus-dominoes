@@ -194,6 +194,7 @@ function gameContentDigest(
         asNumber(row.team_number),
         asNumber(row.total_points),
         asString(row.hands_json, "[]"),
+        asString(row.hands_taken_json, "[]"),
       ].join(":")
     );
     scoresByGame.set(gameId, list);
@@ -222,9 +223,27 @@ function buildMatchCandidate(
     .sort((a, b) => asNumber(a.seat) - asNumber(b.seat));
 
   const playersAmount = asNumber(matchRow.players_amount);
-  const activeSeats = seats.filter(
+  let activeSeats = seats.filter(
     (row) => asNumber(row.seat) >= 1 && asNumber(row.seat) <= playersAmount
   );
+
+  if (activeSeats.length === 0) {
+    const gameIds = new Set(
+      (source.data.tables.games ?? [])
+        .filter((row) => asNumber(row.match_id) === matchId)
+        .map((row) => asNumber(row.id))
+    );
+    const seen = new Set<string>();
+    const openSeats: Record<string, unknown>[] = [];
+    for (const row of source.data.tables.game_players ?? []) {
+      if (!gameIds.has(asNumber(row.game_id))) continue;
+      const key = asString(row.display_name).trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      openSeats.push(row);
+    }
+    activeSeats = openSeats;
+  }
 
   const seatPublicIds = activeSeats.map((row) => {
     const pid = asNullableNumber(row.player_id);
@@ -747,6 +766,7 @@ function copyMatchSubtree(
   match: Record<string, unknown>;
   matchPlayers: Record<string, unknown>[];
   games: Record<string, unknown>[];
+  gamePlayers: Record<string, unknown>[];
   scores: Record<string, unknown>[];
 } {
   const matchRow = (source.tables.matches ?? source.matches ?? []).find(
@@ -776,6 +796,7 @@ function copyMatchSubtree(
     .sort((a, b) => asNumber(a.game_index) - asNumber(b.game_index));
 
   const games: Record<string, unknown>[] = [];
+  const gamePlayers: Record<string, unknown>[] = [];
   const scores: Record<string, unknown>[] = [];
   const oldToNewGame = new Map<number, number>();
 
@@ -790,6 +811,17 @@ function copyMatchSubtree(
     });
   }
 
+  for (const row of source.tables.game_players ?? []) {
+    const oldGameId = asNumber(row.game_id);
+    const newGameId = oldToNewGame.get(oldGameId);
+    if (newGameId == null) continue;
+    gamePlayers.push({
+      ...row,
+      game_id: newGameId,
+      player_id: remapPlayerId(asNullableNumber(row.player_id)),
+    });
+  }
+
   for (const row of source.tables.game_team_scores ?? []) {
     const oldGameId = asNumber(row.game_id);
     const newGameId = oldToNewGame.get(oldGameId);
@@ -800,7 +832,7 @@ function copyMatchSubtree(
     });
   }
 
-  return { match, matchPlayers, games, scores };
+  return { match, matchPlayers, games, gamePlayers, scores };
 }
 
 /**
@@ -859,6 +891,7 @@ export function materializeMergedExport(
   const matches: Record<string, unknown>[] = [];
   const matchPlayers: Record<string, unknown>[] = [];
   const games: Record<string, unknown>[] = [];
+  const gamePlayers: Record<string, unknown>[] = [];
   const scores: Record<string, unknown>[] = [];
   const nextGameId = { value: 1 };
   let nextMatchId = 1;
@@ -879,6 +912,7 @@ export function materializeMergedExport(
     matches.push(subtree.match);
     matchPlayers.push(...subtree.matchPlayers);
     games.push(...subtree.games);
+    gamePlayers.push(...subtree.gamePlayers);
     scores.push(...subtree.scores);
   }
 
@@ -904,6 +938,7 @@ export function materializeMergedExport(
       matches,
       match_players: matchPlayers,
       games,
+      game_players: gamePlayers,
       game_team_scores: scores,
       player_stats: [],
       player_h2h: [],

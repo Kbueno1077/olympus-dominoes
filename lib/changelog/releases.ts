@@ -18,6 +18,19 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "4.7.0",
+    date: "2026-08-17",
+    summary:
+      "Open tables from the phone app, a How to use page, and clearer bots.",
+    highlights: [
+      "Import rotating / open-table matches from the app. Every game stays under one History match, and each game shows who sat.",
+      "History labels Closed match vs Open table. Compare seating stays on closed matches, where the lineup does not change.",
+      "Added: How to use — a short companion-site guide from the home footer.",
+      "Play vs bots: Normal and Better (Better is the default). Easy is gone.",
+      "App Store button is back on the home screen.",
+    ],
+  },
+  {
     version: "4.6.0",
     date: "2026-08-10",
     summary: "Double-six sets, plus an internal Play vs bots table.",

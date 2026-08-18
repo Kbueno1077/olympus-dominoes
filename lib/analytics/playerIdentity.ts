@@ -105,3 +105,51 @@ export function findMatchingPlayer(
     ) ?? null
   );
 }
+
+function asNullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function linkSeatRow(
+  row: Record<string, unknown>,
+  byNameKey: Map<string, number>
+): Record<string, unknown> {
+  if (asNullableNumber(row.player_id) != null) return row;
+  const key = normalizeNameKey(String(row.display_name ?? ""));
+  if (!key) return row;
+  const playerId = byNameKey.get(key);
+  if (playerId == null) return row;
+  return { ...row, player_id: playerId };
+}
+
+/**
+ * Fill null `player_id` on match_players and game_players from roster name_key.
+ */
+export function backfillSeatPlayerIds(
+  data: OlympusExportData
+): OlympusExportData {
+  const byNameKey = new Map<string, number>();
+  for (const player of data.players) {
+    const key = player.name_key || normalizeNameKey(player.name);
+    if (key) byNameKey.set(key, player.id);
+  }
+
+  const matchPlayers = (data.tables.match_players ?? []).map((row) =>
+    linkSeatRow(row, byNameKey)
+  );
+  const gamePlayers = (data.tables.game_players ?? []).map((row) =>
+    linkSeatRow(row, byNameKey)
+  );
+
+  return {
+    ...data,
+    tables: {
+      ...data.tables,
+      match_players: matchPlayers,
+      game_players: gamePlayers,
+    },
+  };
+}

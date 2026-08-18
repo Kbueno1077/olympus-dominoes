@@ -17,6 +17,7 @@ export default function NoteHand({
   handleRemoveDataFromGame,
   index,
   teamDatas,
+  takenOrder,
   teamNumber,
 }) {
   const isFirst = index === 0;
@@ -48,6 +49,21 @@ export default function NoteHand({
         borderColor: (t) => t.palette.divider,
       }}
     >
+      {takenOrder > 0 ? (
+        <Typography
+          component="span"
+          sx={{
+            minWidth: 12,
+            fontSize: 10,
+            lineHeight: 1,
+            fontWeight: 600,
+            color: "text.disabled",
+            textAlign: "right",
+          }}
+        >
+          {takenOrder}
+        </Typography>
+      ) : null}
       <Typography
         component="span"
         sx={{

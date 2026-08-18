@@ -2,7 +2,7 @@
  * Durable CSV schema version.
  * Keep in sync with olympus-dominoes-app `src/domain/schemaVersion.ts`.
  */
-export const SCHEMA_VERSION = 18;
+export const SCHEMA_VERSION = 22;
 
 /** Pre-`db_meta` CSVs are treated as version 0 and still upgraded. */
 export const MIN_IMPORT_SCHEMA = 0;

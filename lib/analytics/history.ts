@@ -1,6 +1,9 @@
 import { teamNumberFrom } from "@/utils/matchSettings";
 import { teamInitialLabelsByNumber } from "@/utils/teams";
-import { stripTrailingPadHands } from "./hands";
+import {
+  parseHandsTakenJson,
+  stripTrailingPadHandsPair,
+} from "./hands";
 import type { OlympusExportData } from "./types";
 
 export type HistorySeat = {
@@ -12,13 +15,18 @@ export type HistorySeat = {
 export type HistoryGame = {
   t1Datas: number[];
   t1TotalPoints: number;
+  t1Taken: number[];
   t2Datas: number[];
   t2TotalPoints: number;
+  t2Taken: number[];
   t3Datas: number[];
   t3TotalPoints: number;
+  t3Taken: number[];
   t4Datas: number[];
   t4TotalPoints: number;
+  t4Taken: number[];
   winner: string;
+  seats: HistorySeat[];
 };
 
 export type MatchListItem = {
@@ -29,6 +37,7 @@ export type MatchListItem = {
   modeLabel: string;
   maxPoints: number;
   gameCount: number;
+  isClosed: boolean;
   playerNames: string[];
   /** Seats 1..playersAmount with optional linked export player ids. */
   seats: HistorySeat[];
@@ -43,6 +52,7 @@ export type MatchDetail = {
   playersAmount: number;
   modeLabel: string;
   maxPoints: number;
+  isClosed: boolean;
   seats: HistorySeat[];
   games: HistoryGame[];
 };
@@ -70,13 +80,18 @@ function emptyGame(winner: string): HistoryGame {
   return {
     t1Datas: [],
     t1TotalPoints: 0,
+    t1Taken: [],
     t2Datas: [],
     t2TotalPoints: 0,
+    t2Taken: [],
     t3Datas: [],
     t3TotalPoints: 0,
+    t3Taken: [],
     t4Datas: [],
     t4TotalPoints: 0,
+    t4Taken: [],
     winner,
+    seats: [],
   };
 }
 
@@ -85,37 +100,48 @@ function gameFromScores(
     team_number: number;
     total_points: number;
     hands_json: string;
+    hands_taken_json?: string | null;
   }[],
   winnerTeam: string | null
 ): HistoryGame {
   const game = emptyGame(winnerTeam ?? "none");
 
   for (const score of scores) {
-    let hands: number[] = [];
+    let rawHands: number[] = [];
     try {
       const parsed = JSON.parse(score.hands_json);
-      hands = Array.isArray(parsed) ? parsed.map((n) => Number(n) || 0) : [];
+      rawHands = Array.isArray(parsed)
+        ? parsed.map((n) => Number(n) || 0)
+        : [];
     } catch {
-      hands = [];
+      rawHands = [];
     }
-    hands = stripTrailingPadHands(hands);
+    const rawTaken = parseHandsTakenJson(
+      score.hands_taken_json,
+      rawHands.length
+    );
+    const { hands, taken } = stripTrailingPadHandsPair(rawHands, rawTaken);
 
     switch (score.team_number) {
       case 1:
         game.t1Datas = hands;
         game.t1TotalPoints = score.total_points;
+        game.t1Taken = taken;
         break;
       case 2:
         game.t2Datas = hands;
         game.t2TotalPoints = score.total_points;
+        game.t2Taken = taken;
         break;
       case 3:
         game.t3Datas = hands;
         game.t3TotalPoints = score.total_points;
+        game.t3Taken = taken;
         break;
       case 4:
         game.t4Datas = hands;
         game.t4TotalPoints = score.total_points;
+        game.t4Taken = taken;
         break;
       default:
         break;
@@ -155,6 +181,47 @@ export function formatMatchDate(
  * Mobile exports often store the English date as `title`. Treat that as empty
  * so the UI shows only the current-language timestamp.
  */
+function uniqueNamesPreserveOrder(names: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of names) {
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+  return out;
+}
+
+function uniqueSeatsPreserveOrder(seats: HistorySeat[]): HistorySeat[] {
+  const seen = new Set<string>();
+  const out: HistorySeat[] = [];
+  for (const seat of seats) {
+    const nameKey = seat.displayName.trim().toLowerCase();
+    const key =
+      seat.playerId != null ? `id:${seat.playerId}` : `name:${nameKey}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(seat);
+  }
+  return out;
+}
+
+export function matchIsClosed(row: Record<string, unknown>): boolean {
+  if (row.is_closed === 0 || row.is_closed === "0") return false;
+  return true;
+}
+
+function rowToSeat(row: Record<string, unknown>): HistorySeat {
+  return {
+    seat: asNumber(row.seat),
+    displayName: asString(row.display_name),
+    playerId: asNullableNumber(row.player_id),
+  };
+}
+
 export function resolveMatchHeading(
   language: string,
   title: string,
@@ -179,23 +246,25 @@ export function listMatches(data: OlympusExportData): MatchListItem[] {
   const matches = data.tables.matches ?? [];
   const seats = data.tables.match_players ?? [];
   const games = data.tables.games ?? [];
+  const gamePlayers = data.tables.game_players ?? [];
 
   const seatsByMatch = new Map<number, HistorySeat[]>();
   for (const row of seats) {
     const matchId = asNumber(row.match_id);
     const list = seatsByMatch.get(matchId) ?? [];
-    list.push({
-      seat: asNumber(row.seat),
-      displayName: asString(row.display_name),
-      playerId: asNullableNumber(row.player_id),
-    });
+    list.push(rowToSeat(row));
     seatsByMatch.set(matchId, list);
   }
 
+  const gamesByMatch = new Map<number, { id: number; game_index: number }[]>();
   const gameCountByMatch = new Map<number, number>();
   const winsByMatch = new Map<number, Map<number, number>>();
   for (const row of games) {
     const matchId = asNumber(row.match_id);
+    const gameId = asNumber(row.id);
+    const list = gamesByMatch.get(matchId) ?? [];
+    list.push({ id: gameId, game_index: asNumber(row.game_index) });
+    gamesByMatch.set(matchId, list);
     gameCountByMatch.set(matchId, (gameCountByMatch.get(matchId) ?? 0) + 1);
     const team = teamNumberFrom(asString(row.winner_team));
     if (team == null) continue;
@@ -204,18 +273,42 @@ export function listMatches(data: OlympusExportData): MatchListItem[] {
     winsByMatch.set(matchId, winMap);
   }
 
+  const seatsByGame = new Map<number, HistorySeat[]>();
+  for (const row of gamePlayers) {
+    const gameId = asNumber(row.game_id);
+    const list = seatsByGame.get(gameId) ?? [];
+    list.push(rowToSeat(row));
+    seatsByGame.set(gameId, list);
+  }
+
   return matches
     .map((row) => {
       const id = asNumber(row.id);
       const playersAmount = asNumber(row.players_amount);
       const modeLabel = asString(row.mode_label);
+      const isClosed = matchIsClosed(row);
       const matchSeats = (seatsByMatch.get(id) ?? [])
         .slice()
         .sort((a, b) => a.seat - b.seat);
-      const playerNames = matchSeats
-        .filter((s) => s.seat >= 1 && s.seat <= playersAmount)
-        .map((s) => s.displayName)
-        .filter(Boolean);
+      const openSeats = (gamesByMatch.get(id) ?? [])
+        .slice()
+        .sort((a, b) => a.game_index - b.game_index)
+        .flatMap((game) =>
+          (seatsByGame.get(game.id) ?? [])
+            .slice()
+            .sort((a, b) => a.seat - b.seat)
+        );
+      const playerNames =
+        matchSeats.length > 0
+          ? matchSeats
+              .filter((s) => s.seat >= 1 && s.seat <= playersAmount)
+              .map((s) => s.displayName)
+              .filter(Boolean)
+          : uniqueNamesPreserveOrder(openSeats.map((s) => s.displayName));
+      const filterSeats =
+        matchSeats.length > 0
+          ? matchSeats.filter((s) => s.seat >= 1 && s.seat <= playersAmount)
+          : uniqueSeatsPreserveOrder(openSeats);
 
       const isFreeForAll = modeLabel === "Free For All";
       const teamNumbers =
@@ -238,10 +331,9 @@ export function listMatches(data: OlympusExportData): MatchListItem[] {
         modeLabel,
         maxPoints: asNumber(row.max_points),
         gameCount: gameCountByMatch.get(id) ?? 0,
+        isClosed,
         playerNames,
-        seats: matchSeats.filter(
-          (s) => s.seat >= 1 && s.seat <= playersAmount
-        ),
+        seats: filterSeats,
         teamWins,
       };
     })
@@ -264,13 +356,9 @@ export function getMatchDetail(
   );
   if (!matchRow) return null;
 
-  const seats = (data.tables.match_players ?? [])
+  const matchSeats = (data.tables.match_players ?? [])
     .filter((row) => asNumber(row.match_id) === matchId)
-    .map((row) => ({
-      seat: asNumber(row.seat),
-      displayName: asString(row.display_name),
-      playerId: asNullableNumber(row.player_id),
-    }))
+    .map(rowToSeat)
     .sort((a, b) => a.seat - b.seat);
 
   const gameRows = (data.tables.games ?? [])
@@ -281,7 +369,12 @@ export function getMatchDetail(
   const scores = data.tables.game_team_scores ?? [];
   const scoresByGame = new Map<
     number,
-    { team_number: number; total_points: number; hands_json: string }[]
+    {
+      team_number: number;
+      total_points: number;
+      hands_json: string;
+      hands_taken_json?: string | null;
+    }[]
   >();
   for (const row of scores) {
     const gameId = asNumber(row.game_id);
@@ -290,16 +383,31 @@ export function getMatchDetail(
       team_number: asNumber(row.team_number),
       total_points: asNumber(row.total_points),
       hands_json: asString(row.hands_json, "[]"),
+      hands_taken_json: asString(row.hands_taken_json, "[]"),
     });
     scoresByGame.set(gameId, list);
   }
 
-  const games = gameRows.map((row) =>
-    gameFromScores(
+  const seatsByGame = new Map<number, HistorySeat[]>();
+  for (const row of data.tables.game_players ?? []) {
+    const gameId = asNumber(row.game_id);
+    const list = seatsByGame.get(gameId) ?? [];
+    list.push(rowToSeat(row));
+    seatsByGame.set(gameId, list);
+  }
+
+  const isClosed = matchIsClosed(matchRow);
+  const games = gameRows.map((row) => {
+    const game = gameFromScores(
       scoresByGame.get(asNumber(row.id)) ?? [],
       row.winner_team == null ? null : asString(row.winner_team)
-    )
-  );
+    );
+    const perGame = (seatsByGame.get(asNumber(row.id)) ?? [])
+      .slice()
+      .sort((a, b) => a.seat - b.seat);
+    game.seats = perGame.length > 0 ? perGame : isClosed ? matchSeats : [];
+    return game;
+  });
 
   return {
     id: asNumber(matchRow.id),
@@ -308,19 +416,36 @@ export function getMatchDetail(
     playersAmount: asNumber(matchRow.players_amount),
     modeLabel: asString(matchRow.mode_label),
     maxPoints: asNumber(matchRow.max_points),
-    seats,
+    isClosed,
+    seats: matchSeats,
     games,
   };
 }
 
-export function seatNamesFromDetail(detail: MatchDetail): string[] {
+export function seatNamesFromSeats(seats: HistorySeat[]): string[] {
   const names = ["", "", "", ""];
-  for (const seat of detail.seats) {
+  for (const seat of seats) {
     if (seat.seat >= 1 && seat.seat <= 4) {
       names[seat.seat - 1] = seat.displayName;
     }
   }
   return names;
+}
+
+export function seatNamesFromDetail(detail: MatchDetail): string[] {
+  return seatNamesFromSeats(detail.seats);
+}
+
+export function playerNamesFromDetail(detail: MatchDetail): string[] {
+  if (!detail.isClosed) {
+    return uniqueNamesPreserveOrder(
+      detail.games.flatMap((game) => game.seats.map((s) => s.displayName))
+    );
+  }
+  return detail.seats
+    .filter((s) => s.seat >= 1 && s.seat <= detail.playersAmount)
+    .map((s) => s.displayName)
+    .filter(Boolean);
 }
 
 export function teamLabelsForDetail(

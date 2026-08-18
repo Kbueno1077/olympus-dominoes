@@ -4,16 +4,19 @@ import {
   DEFAULT_A,
   DEFAULT_B,
   DEFAULT_C,
+  DEFAULT_K2,
   computePlayer,
   equationLines,
   extraExchange,
   gameExchange,
+  k2ExtraWeights,
   ogExtraWeights,
   type Breakdown,
   type FormulaId,
   type WeightsA,
   type WeightsB,
   type WeightsC,
+  type WeightsK2,
 } from "@/lib/joseLab/compute";
 import {
   DEFAULT_CSV_PINS,
@@ -77,6 +80,7 @@ import {
 const JOSE_A = "#6B4F8A";
 const JOSE_B = "rgb(31, 107, 88)";
 const JOSE_C = "rgb(61, 108, 140)";
+const JOSE_K2 = "rgb(180, 110, 30)";
 
 const DENOM_CAP_DEMO = 40;
 
@@ -105,6 +109,7 @@ type ScoredRow = {
   a: Breakdown | null;
   b: Breakdown | null;
   c: Breakdown | null;
+  k2: Breakdown | null;
   br: Breakdown | null;
 };
 
@@ -115,6 +120,7 @@ function scoreRows(
   weightsA: WeightsA,
   weightsB: WeightsB,
   weightsC: WeightsC,
+  weightsK2: WeightsK2,
   denomCap: number | null
 ): ScoredRow[] {
   return stocks.map((stock) => {
@@ -125,6 +131,7 @@ function scoreRows(
       weightsA,
       weightsB,
       weightsC,
+      weightsK2,
       denomCap
     );
     return {
@@ -133,6 +140,7 @@ function scoreRows(
       a: formula === "A" ? br : null,
       b: formula === "B" ? br : null,
       c: formula === "C" ? br : null,
+      k2: formula === "K2" ? br : null,
       br,
     };
   });
@@ -141,13 +149,16 @@ function scoreRows(
 function floorOf(
   formula: FormulaId,
   a: WeightsA,
-  b: WeightsB
+  b: WeightsB,
+  _k2: WeightsK2
 ): number | null {
   switch (formula) {
     case "A":
       return a.floor;
     case "B":
       return b.floor;
+    case "K2":
+      return null;
     case "C":
       return null;
     default: {
@@ -163,6 +174,8 @@ function scoreOf(row: ScoredRow, formula: FormulaId): number {
       return row.a?.r ?? Number.NEGATIVE_INFINITY;
     case "B":
       return row.b?.r ?? Number.NEGATIVE_INFINITY;
+    case "K2":
+      return row.k2?.r ?? Number.NEGATIVE_INFINITY;
     case "C":
       return row.c?.r ?? Number.NEGATIVE_INFINITY;
     default: {
@@ -172,13 +185,22 @@ function scoreOf(row: ScoredRow, formula: FormulaId): number {
   }
 }
 
-function resetWeights(formula: FormulaId, setA: (w: WeightsA) => void, setB: (w: WeightsB) => void, setC: (w: WeightsC) => void) {
+function resetWeights(
+  formula: FormulaId,
+  setA: (w: WeightsA) => void,
+  setB: (w: WeightsB) => void,
+  setC: (w: WeightsC) => void,
+  setK2: (w: WeightsK2) => void
+) {
   switch (formula) {
     case "A":
       setA(DEFAULT_A);
       return;
     case "B":
       setB(DEFAULT_B);
+      return;
+    case "K2":
+      setK2(DEFAULT_K2);
       return;
     case "C":
       setC(DEFAULT_C);
@@ -188,6 +210,85 @@ function resetWeights(formula: FormulaId, setA: (w: WeightsA) => void, setB: (w:
       return _never;
     }
   }
+}
+
+function formulaShortName(formula: FormulaId): string {
+  switch (formula) {
+    case "A":
+      return "Tangent (x)";
+    case "B":
+      return "K(x)";
+    case "K2":
+      return "K2(x)";
+    case "C":
+      return "OG";
+    default: {
+      const _never: never = formula;
+      return _never;
+    }
+  }
+}
+
+function knSliderSpecs<W extends WeightsB>(
+  weights: W,
+  setWeights: (updater: (w: W) => W) => void
+): SliderSpec[] {
+  return [
+    {
+      id: "kGames",
+      label: "kGames",
+      min: 0,
+      max: 8,
+      step: 0.1,
+      value: weights.kGames,
+      onChange: (kGames) => setWeights((w) => ({ ...w, kGames })),
+    },
+    {
+      id: "wDatas",
+      label: "wDatas",
+      min: 0,
+      max: 15,
+      step: 0.05,
+      value: weights.wDatas,
+      onChange: (wDatas) => setWeights((w) => ({ ...w, wDatas })),
+    },
+    {
+      id: "wPoints",
+      label: "wPoints",
+      min: 0,
+      max: 0.5,
+      step: 0.01,
+      value: weights.wPoints,
+      onChange: (wPoints) => setWeights((w) => ({ ...w, wPoints })),
+    },
+    {
+      id: "wPollos",
+      label: "wPollos",
+      min: 0,
+      max: 30,
+      step: 0.25,
+      value: weights.wPollos,
+      onChange: (wPollos) => setWeights((w) => ({ ...w, wPollos })),
+    },
+    {
+      id: "wZapatos",
+      label: "wZapatos",
+      min: 0,
+      max: 12,
+      step: 0.25,
+      value: weights.wZapatos,
+      onChange: (wZapatos) => setWeights((w) => ({ ...w, wZapatos })),
+    },
+    {
+      id: "floor",
+      label: "floor",
+      min: 1,
+      max: 80,
+      step: 1,
+      value: weights.floor,
+      onChange: (floor) => setWeights((w) => ({ ...w, floor })),
+    },
+  ];
 }
 
 type SliderSpec = {
@@ -348,12 +449,14 @@ function ExchangeTable({
   weightsA,
   weightsB,
   weightsC,
+  weightsK2,
   denomCap,
 }: {
   formula: FormulaId;
   weightsA: WeightsA;
   weightsB: WeightsB;
   weightsC: WeightsC;
+  weightsK2: WeightsK2;
   denomCap: number | null;
 }) {
   const extras = (() => {
@@ -362,6 +465,8 @@ function ExchangeTable({
         return extraExchange(weightsA);
       case "B":
         return extraExchange(weightsB);
+      case "K2":
+        return extraExchange(k2ExtraWeights(weightsK2));
       case "C":
         return extraExchange(ogExtraWeights(weightsC));
       default: {
@@ -370,7 +475,14 @@ function ExchangeTable({
       }
     }
   })();
-  const vsGame = gameExchange(formula, weightsA, weightsB, weightsC, denomCap);
+  const vsGame = gameExchange(
+    formula,
+    weightsA,
+    weightsB,
+    weightsC,
+    weightsK2,
+    denomCap
+  );
   const among = [
     { left: "1 ΔPo", right: `${fmtQty(extras.poPerZap, 2)} ΔZap` },
     { left: "1 ΔPo", right: `${fmtQty(extras.poPerDw, 2)} ΔDW` },
@@ -398,7 +510,9 @@ function ExchangeTable({
       <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
         {formula === "C"
           ? `OG F(x) has no G floor. Datas and points are typical-game units (ΔDW / ${weightsC.dwPerGame}, ΔPF / ${weightsC.pfPerGame}). Pollos and zapatos still add as raw weights. √(G/2) is unsigned, so it is not in this table.`
-          : `Live from the sliders. Extras share a denom, so pollos vs zapatos vs datas never depends on G. Matching a game does: 1 ΔG is worth ${fmtQty(vsGame.gameR, 2)} on R at denom ${fmtQty(vsGame.denom)} (the floor). Past that, you need more extras per win.`}
+          : formula === "K2"
+            ? `K2 has no /G. 1 win and ${weightsK2.pollosPerGame} pollos are both ${fmtQty(vsGame.gameR, 2)} on R. Datas and points stay raw (ΔDW / ${weightsK2.dwPerGame}, ΔPF / ${weightsK2.pfPerGame}). A zapato is ${weightsK2.zapPerPollo} of a pollo.`
+            : `Live from the sliders. Extras share a denom, so pollos vs zapatos vs datas never depends on G. Matching a game does: 1 ΔG is worth ${fmtQty(vsGame.gameR, 2)} on R at denom ${fmtQty(vsGame.denom)} (the floor). Past that, you need more extras per win.`}
       </Typography>
       <Box
         sx={{
@@ -557,6 +671,12 @@ function formulaChrome(formula: FormulaId): {
         label: "Adds to R",
         cols: ["ΔG", "ΔDW", "ΔPF", "ΔPo", "ΔZap", "R"],
       };
+    case "K2":
+      return {
+        color: JOSE_K2,
+        label: "Adds to R",
+        cols: ["ΔG", "ΔDW", "ΔPF", "ΔPo", "ΔZap", "R"],
+      };
     case "C":
       return {
         color: JOSE_C,
@@ -576,6 +696,8 @@ function breakdownOf(row: ScoredRow, formula: FormulaId): Breakdown | null {
       return row.a;
     case "B":
       return row.b;
+    case "K2":
+      return row.k2;
     case "C":
       return row.c;
     default: {
@@ -624,13 +746,8 @@ function ResultCells({
   );
   switch (formula) {
     case "A":
-      return (
-        <>
-          {contribCell(br?.games)}
-          {parts}
-        </>
-      );
     case "B":
+    case "K2":
       return (
         <>
           {contribCell(br?.games)}
@@ -944,6 +1061,7 @@ export default function JoseLab() {
   const [weightsA, setWeightsA] = useState<WeightsA>(DEFAULT_A);
   const [weightsB, setWeightsB] = useState<WeightsB>(DEFAULT_B);
   const [weightsC, setWeightsC] = useState<WeightsC>(DEFAULT_C);
+  const [weightsK2, setWeightsK2] = useState<WeightsK2>(DEFAULT_K2);
   const [csvPins, setCsvPins] = useState<string[]>([...DEFAULT_CSV_PINS]);
   const [mockPins, setMockPins] = useState<string[]>([...DEFAULT_MOCK_PINS]);
   const [capOn, setCapOn] = useState(false);
@@ -954,15 +1072,17 @@ export default function JoseLab() {
   const deferredA = useDeferredValue(weightsA);
   const deferredB = useDeferredValue(weightsB);
   const deferredC = useDeferredValue(weightsC);
+  const deferredK2 = useDeferredValue(weightsK2);
   const deferredCap = useDeferredValue(denomCap);
   const deferredExtras = useDeferredValue(extras);
   const liveStale =
     deferredA !== weightsA ||
     deferredB !== weightsB ||
     deferredC !== weightsC ||
+    deferredK2 !== weightsK2 ||
     deferredCap !== denomCap ||
     deferredExtras !== extras;
-  const floor = floorOf(formula, deferredA, deferredB);
+  const floor = floorOf(formula, deferredA, deferredB, deferredK2);
 
   const bump = useCallback(
     (id: string, stock: LabPlayer, key: BumpKey, delta: number) => {
@@ -997,9 +1117,10 @@ export default function JoseLab() {
         deferredA,
         deferredB,
         deferredC,
+        deferredK2,
         deferredCap
       ),
-    [formula, deferredA, deferredB, deferredC, deferredCap, deferredExtras]
+    [formula, deferredA, deferredB, deferredC, deferredK2, deferredCap, deferredExtras]
   );
   const scoredTest = useMemo(
     () =>
@@ -1010,9 +1131,10 @@ export default function JoseLab() {
         deferredA,
         deferredB,
         deferredC,
+        deferredK2,
         deferredCap
       ),
-    [formula, deferredA, deferredB, deferredC, deferredCap, deferredExtras]
+    [formula, deferredA, deferredB, deferredC, deferredK2, deferredCap, deferredExtras]
   );
 
   const scoredReadmeCsv = useMemo(
@@ -1123,60 +1245,55 @@ export default function JoseLab() {
           },
         ];
       case "B":
+        return knSliderSpecs(weightsB, setWeightsB);
+      case "K2":
         return [
           {
             id: "kGames",
-            label: "kGames",
+            label: "kGames (ΔG)",
             min: 0,
             max: 8,
             step: 0.1,
-            value: weightsB.kGames,
-            onChange: (kGames) => setWeightsB((w) => ({ ...w, kGames })),
+            value: weightsK2.kGames,
+            onChange: (kGames) => setWeightsK2((w) => ({ ...w, kGames })),
           },
           {
-            id: "wDatas",
-            label: "wDatas",
-            min: 0,
-            max: 15,
-            step: 0.05,
-            value: weightsB.wDatas,
-            onChange: (wDatas) => setWeightsB((w) => ({ ...w, wDatas })),
-          },
-          {
-            id: "wPoints",
-            label: "wPoints",
-            min: 0,
-            max: 0.5,
-            step: 0.01,
-            value: weightsB.wPoints,
-            onChange: (wPoints) => setWeightsB((w) => ({ ...w, wPoints })),
-          },
-          {
-            id: "wPollos",
-            label: "wPollos",
-            min: 0,
-            max: 30,
-            step: 0.25,
-            value: weightsB.wPollos,
-            onChange: (wPollos) => setWeightsB((w) => ({ ...w, wPollos })),
-          },
-          {
-            id: "wZapatos",
-            label: "wZapatos",
-            min: 0,
-            max: 12,
-            step: 0.25,
-            value: weightsB.wZapatos,
-            onChange: (wZapatos) => setWeightsB((w) => ({ ...w, wZapatos })),
-          },
-          {
-            id: "floor",
-            label: "floor",
+            id: "dwPerGame",
+            label: "datas / win",
             min: 1,
-            max: 80,
-            step: 1,
-            value: weightsB.floor,
-            onChange: (floor) => setWeightsB((w) => ({ ...w, floor })),
+            max: 12,
+            step: 0.1,
+            value: weightsK2.dwPerGame,
+            onChange: (dwPerGame) => setWeightsK2((w) => ({ ...w, dwPerGame })),
+          },
+          {
+            id: "pfPerGame",
+            label: "points / game",
+            min: 40,
+            max: 300,
+            step: 5,
+            value: weightsK2.pfPerGame,
+            onChange: (pfPerGame) => setWeightsK2((w) => ({ ...w, pfPerGame })),
+          },
+          {
+            id: "pollosPerGame",
+            label: "pollos / win",
+            min: 1,
+            max: 12,
+            step: 0.5,
+            value: weightsK2.pollosPerGame,
+            onChange: (pollosPerGame) =>
+              setWeightsK2((w) => ({ ...w, pollosPerGame })),
+          },
+          {
+            id: "zapPerPollo",
+            label: "zapatos / pollo",
+            min: 0,
+            max: 1,
+            step: 0.05,
+            value: weightsK2.zapPerPollo,
+            onChange: (zapPerPollo) =>
+              setWeightsK2((w) => ({ ...w, zapPerPollo })),
           },
         ];
       case "C":
@@ -1283,6 +1400,7 @@ export default function JoseLab() {
             }}
           >
             <ToggleButton value="B">K(x)</ToggleButton>
+            <ToggleButton value="K2">K2(x)</ToggleButton>
             <ToggleButton value="C">OG · F(x)</ToggleButton>
             <ToggleButton value="A">Tangent (x)</ToggleButton>
           </ToggleButtonGroup>
@@ -1290,15 +1408,16 @@ export default function JoseLab() {
             size="small"
             variant="outlined"
             onClick={() => {
-              resetWeights(formula, setWeightsA, setWeightsB, setWeightsC);
+              resetWeights(
+                formula,
+                setWeightsA,
+                setWeightsB,
+                setWeightsC,
+                setWeightsK2
+              );
             }}
           >
-            Reset{" "}
-            {formula === "C"
-              ? "OG"
-              : formula === "B"
-                ? "K(x)"
-                : "Tangent (x)"}
+            Reset {formulaShortName(formula)}
           </Button>
         </Stack>
       </Stack>
@@ -1317,7 +1436,14 @@ export default function JoseLab() {
             lineHeight: 1.35,
           }}
         >
-          {equationLines(formula, weightsA, weightsB, weightsC, denomCap).map((line) => (
+          {equationLines(
+            formula,
+            weightsA,
+            weightsB,
+            weightsC,
+            weightsK2,
+            denomCap
+          ).map((line) => (
             <Box key={line} component="div">
               {line}
             </Box>
@@ -1337,7 +1463,7 @@ export default function JoseLab() {
             <LabSlider key={spec.id} spec={spec} />
           ))}
         </Box>
-        {formula === "C" ? null : (
+        {formula === "C" || formula === "K2" ? null : (
           <>
             <FormControlLabel
               sx={{ mt: 0.5, ml: 0 }}
@@ -1387,6 +1513,7 @@ export default function JoseLab() {
             weightsA={deferredA}
             weightsB={deferredB}
             weightsC={deferredC}
+            weightsK2={deferredK2}
             denomCap={deferredCap}
           />
         </LabAccordion>
@@ -1410,6 +1537,7 @@ export default function JoseLab() {
           weightsA={deferredA}
           weightsB={deferredB}
           weightsC={deferredC}
+          weightsK2={deferredK2}
           denomCap={deferredCap}
           players={liveReadme}
           scored={scoredReadmeCsv}
@@ -1447,6 +1575,7 @@ export default function JoseLab() {
           weightsA={deferredA}
           weightsB={deferredB}
           weightsC={deferredC}
+          weightsK2={deferredK2}
           denomCap={deferredCap}
           players={liveMockPlayers}
           scored={scoredMockCharts}

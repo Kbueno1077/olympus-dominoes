@@ -10,6 +10,7 @@ import {
   type WeightsA,
   type WeightsB,
   type WeightsC,
+  type WeightsK2,
 } from "@/lib/joseLab/compute";
 import { personName, type LabPlayer } from "@/lib/joseLab/data";
 import { JOSES_ACCENT } from "@/modules/Analytics/dashboardChrome";
@@ -37,6 +38,7 @@ import {
 const COLOR_A = JOSES_ACCENT;
 const COLOR_B = "rgb(31, 107, 88)";
 const COLOR_C = "rgb(61, 108, 140)";
+const COLOR_K2 = "rgb(180, 110, 30)";
 const PIN = "rgb(180, 84, 47)";
 
 const PART_COLORS = {
@@ -104,8 +106,10 @@ function breakdownBars(formula: FormulaId): BreakdownBarSpec[] {
 
 function breakdownLegendOrder(formula: FormulaId) {
   const keys = breakdownBars(formula).map((bar) => bar.dataKey);
-  return (item: { dataKey?: string | number }) => {
-    const i = keys.indexOf(String(item.dataKey) as BreakdownBarKey);
+  return (item: { dataKey?: unknown }) => {
+    const raw = item.dataKey;
+    const key = typeof raw === "string" || typeof raw === "number" ? String(raw) : "";
+    const i = keys.indexOf(key as BreakdownBarKey);
     return i === -1 ? keys.length : i;
   };
 }
@@ -285,6 +289,7 @@ function LeadTooltip({
   const n = asNumber(row?.n) ?? asNumber(label) ?? 0;
   const lines = [
     { label: "K(x)", key: "B" },
+    { label: "K2(x)", key: "K2" },
     { label: "OG F(x)", key: "C" },
     { label: "Tangent (x)", key: "A" },
   ] as const;
@@ -365,6 +370,42 @@ function VolumeTooltip({
   );
 }
 
+function SqrtTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<TipItem>;
+  label?: string | number;
+}) {
+  if (!active || !payload?.length) return null;
+  const row =
+    payload.find((item) => item.dataKey === "raw" || item.dataKey === "term")
+      ?.payload ?? payload[0]?.payload;
+  const G = asNumber(row?.G) ?? asNumber(label) ?? 0;
+  const raw = asNumber(row?.raw);
+  const term = asNumber(row?.term);
+  return (
+    <TipShell title={`G ${G}`}>
+      {raw != null ? (
+        <TipRow
+          label="√(G/2)"
+          value={signedAdd(raw)}
+          color={PART_COLORS.sqrt}
+        />
+      ) : null}
+      {term != null ? (
+        <TipRow
+          label="kSqrt × √(G/2)"
+          value={signedAdd(term)}
+          color={COLOR_C}
+        />
+      ) : null}
+    </TipShell>
+  );
+}
+
 function ChartCard({
   title,
   height = 300,
@@ -389,13 +430,16 @@ function leadTerm(
   formula: FormulaId,
   weightsA: WeightsA,
   weightsB: WeightsB,
-  weightsC: WeightsC
+  weightsC: WeightsC,
+  weightsK2: WeightsK2
 ): number {
   switch (formula) {
     case "A":
       return leadTermA(n, weightsA);
     case "B":
       return leadTermB(n, weightsB);
+    case "K2":
+      return leadTermB(n, weightsK2);
     case "C":
       return leadTermC(n, weightsC);
     default: {
@@ -411,6 +455,8 @@ function scatterFill(formula: FormulaId): string {
       return alpha(COLOR_A, 0.35);
     case "B":
       return alpha(COLOR_B, 0.35);
+    case "K2":
+      return alpha(COLOR_K2, 0.35);
     case "C":
       return alpha(COLOR_C, 0.35);
     default: {
@@ -434,6 +480,7 @@ type Props = {
   weightsA: WeightsA;
   weightsB: WeightsB;
   weightsC: WeightsC;
+  weightsK2: WeightsK2;
   denomCap: number | null;
   players: LabPlayer[];
   scored: { player: LabPlayer; br: Breakdown | null }[];
@@ -456,6 +503,7 @@ export default memo(function JoseLabCharts({
   weightsA,
   weightsB,
   weightsC,
+  weightsK2,
   denomCap,
   players,
   scored,
@@ -475,6 +523,7 @@ export default memo(function JoseLabCharts({
       n,
       A: leadTermA(n, weightsA),
       B: leadTermB(n, weightsB),
+      K2: leadTermB(n, weightsK2),
       C: leadTermC(n, weightsC),
     };
   });
@@ -483,7 +532,7 @@ export default memo(function JoseLabCharts({
     const n = p.W - p.L;
     return {
       n,
-      lead: leadTerm(n, formula, weightsA, weightsB, weightsC),
+      lead: leadTerm(n, formula, weightsA, weightsB, weightsC, weightsK2),
       name: personName(p),
     };
   });
@@ -524,11 +573,22 @@ export default memo(function JoseLabCharts({
     const row: Record<string, number> = { G };
     pinnedPlayers.forEach((p) => {
       row[personName(p)] = Number(
-        volumeAtG(p, formula, weightsA, weightsB, weightsC, G, denomCap).toFixed(2)
+        volumeAtG(p, formula, weightsA, weightsB, weightsC, weightsK2, G, denomCap).toFixed(2)
       );
     });
     return row;
   });
+
+  const sqrtCurve = Array.from({ length: 51 }, (_, i) => {
+    const G = i * 4;
+    const raw = G <= 0 ? 0 : Math.sqrt(G / 2);
+    return {
+      G,
+      raw: Number(raw.toFixed(3)),
+      term: Number((weightsC.kSqrt * raw).toFixed(3)),
+    };
+  });
+  const sqrtYMax = Math.max(10, Math.ceil(weightsC.kSqrt * 10));
 
   return (
     <Box
@@ -565,6 +625,15 @@ export default memo(function JoseLabCharts({
               dot={false}
               strokeWidth={2}
               name="K(x)"
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="K2"
+              stroke={COLOR_K2}
+              dot={false}
+              strokeWidth={2}
+              name="K2(x)"
               isAnimationActive={false}
             />
             <Line
@@ -680,6 +749,54 @@ export default memo(function JoseLabCharts({
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>
+
+      {formula === "C" ? (
+        <ChartCard title="√(G/2) as G grows · OG F(x)">
+          <ResponsiveContainer width="100%" height="100%" debounce={80}>
+            <LineChart
+              data={sqrtCurve}
+              margin={{ top: 16, right: 28, left: 4, bottom: 4 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={alpha("#241D14", 0.12)}
+              />
+              <XAxis dataKey="G" tick={{ fontSize: 11 }} />
+              <YAxis
+                type="number"
+                domain={[0, sqrtYMax]}
+                allowDataOverflow
+                tick={{ fontSize: 11 }}
+              />
+              <Tooltip
+                content={<SqrtTooltip />}
+                isAnimationActive={false}
+                filterNull
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="raw"
+                stroke={PART_COLORS.sqrt}
+                strokeDasharray="4 3"
+                dot={false}
+                strokeWidth={2}
+                name="√(G/2)"
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="term"
+                stroke={COLOR_C}
+                dot={false}
+                strokeWidth={2}
+                name={`${weightsC.kSqrt} × √(G/2)`}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      ) : null}
     </Box>
   );
 });

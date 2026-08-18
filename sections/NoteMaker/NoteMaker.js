@@ -4,7 +4,7 @@ import AddScoreDialog from "@/components/Dialogs/AddScoreDialog/AddScoreDialog";
 import { useMatchTeamLabel } from "@/hooks/useMatchTeamLabel";
 import { useTranslation } from "@/i18n/useTranslation";
 import { currentGameRecoil, gameEditionModeRecoil } from "@/recoil/recoilState";
-import { activeTeamNumbers, TEAM_KEYS, teamNumberFrom } from "@/utils/matchSettings";
+import { activeTeamNumbers, removeHandFromGame, TEAM_KEYS, teamNumberFrom } from "@/utils/matchSettings";
 import { Icon } from "@iconify/react";
 import { ArrowForward } from "@mui/icons-material";
 import {
@@ -23,6 +23,7 @@ function TeamColumn({
   teamNumber,
   teamLabel,
   hands,
+  taken,
   total,
   maxPoints,
   isWinner,
@@ -102,6 +103,7 @@ function TeamColumn({
             handleRemoveDataFromGame={onRemoveHand}
             index={handIndex}
             teamDatas={hands}
+            takenOrder={taken?.[handIndex]}
             teamNumber={teamNumber}
           />
         ))}
@@ -184,20 +186,7 @@ export default function NoteMaker({
   const [currentGame, setCurrentGame] = useRecoilState(currentGameRecoil);
 
   const handleRemoveDataFromGame = (teamNumber, index) => {
-    const newCurrentGame = { ...currentGame };
-    const teamDatasName = `t${teamNumber}Datas`;
-    const teamTotalsName = `t${teamNumber}TotalPoints`;
-
-    const newTeamTotalPoints =
-      newCurrentGame[teamTotalsName] - newCurrentGame[teamDatasName][index];
-
-    const frontPart = newCurrentGame[teamDatasName].slice(0, index);
-    const lastPart = newCurrentGame[teamDatasName].slice(index + 1);
-
-    newCurrentGame[teamTotalsName] = newTeamTotalPoints;
-    newCurrentGame[teamDatasName] = [...frontPart, ...lastPart];
-
-    setCurrentGame(newCurrentGame);
+    setCurrentGame((prev) => removeHandFromGame(prev, teamNumber, index));
   };
 
   const isFreeForAll = gameMode?.label === "Free For All";
@@ -256,6 +245,7 @@ export default function NoteMaker({
             teamNumber={teamNumber}
             teamLabel={teamLabel(teamNumber)}
             hands={currentGame[`t${teamNumber}Datas`]}
+            taken={currentGame[`t${teamNumber}Taken`] ?? []}
             total={currentGame[`t${teamNumber}TotalPoints`]}
             maxPoints={numericMax}
             isWinner={whoWon === `Team ${teamNumber}`}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslation } from "@/i18n/useTranslation";
-import { stripTrailingPadHands } from "@/lib/analytics/hands";
+import { stripTrailingPadHandsPair } from "@/lib/analytics/hands";
 import { FONT_HAND } from "@/muiTheme/typography";
 import { TEAM_KEYS } from "@/utils/matchSettings";
 import { Box, Chip, Stack, Typography } from "@mui/material";
@@ -49,14 +49,14 @@ function Outcome({ isWinner, handCount, t }) {
   return null;
 }
 
-function Note({ hands, isWinner, teamNumber, label }) {
+function Note({ hands, taken, isWinner, teamNumber, label }) {
   const { t, teamName } = useTranslation();
   const teamKey = TEAM_KEYS[teamNumber] ?? "team1";
   const displayLabel = label || teamName(teamNumber);
   // Drop legacy pad hands (≤0 trailing) used to force the column to target.
-  const cleanedHands = useMemo(
-    () => stripTrailingPadHands(hands ?? []),
-    [hands]
+  const { hands: cleanedHands, taken: cleanedTaken } = useMemo(
+    () => stripTrailingPadHandsPair(hands ?? [], taken ?? []),
+    [hands, taken]
   );
 
   return (
@@ -94,6 +94,21 @@ function Note({ hands, isWinner, teamNumber, label }) {
           spacing={0.75}
           sx={{ py: 0.15 }}
         >
+          {cleanedTaken[index] > 0 ? (
+            <Typography
+              component="span"
+              sx={{
+                minWidth: 11,
+                fontSize: 10,
+                lineHeight: 1,
+                fontWeight: 600,
+                color: "text.disabled",
+                textAlign: "right",
+              }}
+            >
+              {cleanedTaken[index]}
+            </Typography>
+          ) : null}
           <Typography
             component="span"
             sx={{

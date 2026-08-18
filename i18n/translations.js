@@ -298,6 +298,8 @@ const en = {
   historyFilterFind: "Find",
   historyCompareMatch: "Compare seating",
   historyGamesWonShort: "Wins",
+  closedMatch: "Closed match",
+  openTable: "Open table",
 
   datasetsTitle: "Data sets",
   datasetsHint:
@@ -1111,6 +1113,8 @@ const es = {
   historyFilterFind: "Buscar",
   historyCompareMatch: "Comparar alineación",
   historyGamesWonShort: "Ganados",
+  closedMatch: "Partida cerrada",
+  openTable: "Mesa abierta",
 
   datasetsTitle: "Conjuntos de datos",
   datasetsHint:

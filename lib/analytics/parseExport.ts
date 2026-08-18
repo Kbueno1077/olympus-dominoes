@@ -69,6 +69,78 @@ function isExportTable(name: string): name is ExportTable {
   return (EXPORT_TABLES as readonly string[]).includes(name);
 }
 
+/** Child-row `id` is SQLite AUTOINCREMENT. FKs use match_id / game_id. */
+const SURROGATE_ID_TABLES: readonly ExportTable[] = [
+  "match_players",
+  "game_players",
+  "game_team_scores",
+];
+
+/** Closed match default — missing `is_closed` on old files. */
+export function defaultMatchIsClosed(value: unknown): number {
+  if (value === null || value === undefined || value === "") return 1;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value === 0 ? 0 : 1;
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n === 0 ? 0 : 1;
+  }
+  return 1;
+}
+
+export function stripSurrogateRowIds(
+  tables: Partial<Record<ExportTable, Record<string, unknown>[]>>
+): Partial<Record<ExportTable, Record<string, unknown>[]>> {
+  const next: Partial<Record<ExportTable, Record<string, unknown>[]>> = {
+    ...tables,
+  };
+  for (const table of SURROGATE_ID_TABLES) {
+    const rows = next[table];
+    if (!rows) continue;
+    next[table] = rows.map((row) => {
+      const copy = { ...row };
+      delete copy.id;
+      return copy;
+    });
+  }
+  return next;
+}
+
+/**
+ * Read `# db_meta.schema_version` without parsing other sections so a newer
+ * file throws `schema_too_new` instead of `unknown_table:…`.
+ */
+export function peekCsvSchemaVersion(contents: string): number {
+  const lines = contents.split(/\r?\n/);
+  let inMeta = false;
+  let columns: string[] | null = null;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    if (!line.trim()) {
+      if (inMeta && columns) break;
+      inMeta = false;
+      columns = null;
+      continue;
+    }
+    if (line.startsWith("# ")) {
+      inMeta = line.slice(2).trim() === "db_meta";
+      columns = null;
+      continue;
+    }
+    if (!inMeta) continue;
+    const cells = parseCsvLine(line);
+    if (!columns) {
+      columns = cells;
+      continue;
+    }
+    const idx = columns.indexOf("schema_version");
+    return parseSchemaVersion(idx >= 0 ? coerceCell(cells[idx] ?? "") : 0);
+  }
+  return 0;
+}
+
 function parseCsv(contents: string): Partial<
   Record<ExportTable, Record<string, unknown>[]>
 > {
@@ -216,11 +288,8 @@ export function parseOlympusExport(
 ): OlympusExportData {
   const normalized = contents.replace(/^\uFEFF/, "");
   assertCsvExport(fileName, normalized);
-  const tables = parseCsv(normalized);
-  const fileVersion = parseSchemaVersion(
-    tables.db_meta?.[0]?.schema_version
-  );
-  assertImportSchemaVersion(fileVersion);
+  assertImportSchemaVersion(peekCsvSchemaVersion(normalized));
+  const tables = stripSurrogateRowIds(parseCsv(normalized));
 
   const withTileSet = (row: Record<string, unknown>) => ({
     ...row,
@@ -228,7 +297,10 @@ export function parseOlympusExport(
   });
   const upgraded = {
     ...tables,
-    matches: (tables.matches ?? []).map(withTileSet),
+    matches: (tables.matches ?? []).map((row) => ({
+      ...withTileSet(row),
+      is_closed: defaultMatchIsClosed(row.is_closed),
+    })),
     player_stats: (tables.player_stats ?? []).map(withTileSet),
     player_h2h: (tables.player_h2h ?? []).map(withTileSet),
   };

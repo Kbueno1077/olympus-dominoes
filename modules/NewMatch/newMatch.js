@@ -24,6 +24,8 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { useMatchTeamLabel } from "@/hooks/useMatchTeamLabel";
 import {
   activeTeamNumbers,
+  addHandToGame,
+  emptyGame,
   tallyPollosZapatos,
   tallyWins,
   TEAM_KEYS,
@@ -34,18 +36,6 @@ import { alpha } from "@mui/material/styles";
 import { useMemo } from "react";
 import { useRecoilState } from "recoil";
 import useToast from "@/hooks/useToast";
-
-const emptyGame = {
-  t1Datas: [],
-  t1TotalPoints: 0,
-  t2Datas: [],
-  t2TotalPoints: 0,
-  t3Datas: [],
-  t3TotalPoints: 0,
-  t4Datas: [],
-  t4TotalPoints: 0,
-  winner: "none",
-};
 
 function MatchStanding({ standings, shutouts }) {
   const { t } = useTranslation();
@@ -216,17 +206,12 @@ export default function NewMatch() {
   const handleUpateScores = (scoreText, teamNumber) => {
     const score = Number(scoreText);
     const teamNumberTotalPoints = `t${teamNumber}TotalPoints`;
-    const teamNumberHands = `t${teamNumber}Datas`;
 
     if (currentGame[teamNumberTotalPoints] + score >= maxPoints) {
       handleWhoWon(`Team ${teamNumber}`);
     }
 
-    setCurrentGame((prev) => ({
-      ...prev,
-      [teamNumberHands]: [...prev[teamNumberHands], score],
-      [teamNumberTotalPoints]: prev[teamNumberTotalPoints] + score,
-    }));
+    setCurrentGame((prev) => addHandToGame(prev, teamNumber, score));
   };
 
   const isFreeForAll = gameMode?.label === "Free For All";

@@ -116,6 +116,7 @@ export default function NotesDone() {
                 >
                   <Note
                     hands={game[`t${teamNumber}Datas`] ?? []}
+                    taken={game[`t${teamNumber}Taken`] ?? []}
                     isWinner={winningTeam === teamNumber}
                     teamNumber={teamNumber}
                     label={teamLabel(teamNumber)}

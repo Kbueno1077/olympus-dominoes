@@ -240,6 +240,42 @@ export function computeMatchStatsDelta(input: MatchSnapshotInput): StatsDelta {
   };
 }
 
+export type GameWithSeats = {
+  game: MatchGame;
+  seats: NamedSeat[];
+};
+
+/**
+ * Closed matches apply one seating to every game. Open tables apply each
+ * game's own seats so sit-outs are not credited.
+ */
+export function computeHistoryMatchStatsDelta(input: {
+  isClosed: boolean;
+  modeLabel: string;
+  playersAmount: number;
+  matchSeats: NamedSeat[];
+  games: GameWithSeats[];
+}): StatsDelta {
+  if (input.isClosed) {
+    return computeMatchStatsDelta({
+      modeLabel: input.modeLabel,
+      playersAmount: input.playersAmount,
+      seats: input.matchSeats,
+      games: input.games.map((row) => row.game),
+    });
+  }
+  return mergeStatsDeltas(
+    input.games.map(({ game, seats }) =>
+      computeMatchStatsDelta({
+        modeLabel: input.modeLabel,
+        playersAmount: input.playersAmount,
+        seats,
+        games: [game],
+      })
+    )
+  );
+}
+
 export function mergeStatsDeltas(deltas: StatsDelta[]): StatsDelta {
   const playerMap = new Map<string, PlayerStatDelta>();
   const h2hMap = new Map<string, H2HDelta>();
