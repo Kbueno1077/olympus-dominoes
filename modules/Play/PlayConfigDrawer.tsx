@@ -148,10 +148,6 @@ export default function PlayConfigDrawer({
     () =>
       [
         {
-          id: "classic" as const,
-          label: t("playBotBrainClassic"),
-        },
-        {
           id: "table_sense" as const,
           label: t("playBotBrainTableSense"),
         },
@@ -365,7 +361,7 @@ export default function PlayConfigDrawer({
                   {t("playConfigBotBrain")}
                 </Typography>
                 <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                  {selectedDifficulty?.label ?? t("playBotBrainClassic")}
+                  {selectedDifficulty?.label ?? t("playBotBrainPimc")}
                 </Typography>
               </Box>
             </AccordionSummary>

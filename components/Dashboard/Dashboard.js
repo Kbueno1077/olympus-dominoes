@@ -42,6 +42,12 @@ const HOW_STEPS = [
   { title: "howStep3Title", body: "howStep3Body" },
 ];
 
+const FOOTER_LINKS = [
+  { href: "/privacy", key: "privacyLink" },
+  { href: "/changelog", key: "changelogLink" },
+  { href: "/how-to-use", key: "howToUseLink" },
+];
+
 const SPLIT_SIDES = [
   {
     title: "homeAppTitle",
@@ -555,40 +561,44 @@ export default function Dashboard({
             >
               {t("madeForTheTable")}
             </Typography>
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <Typography
-                component={Link}
-                href="/privacy"
-                variant="caption"
-                sx={{
-                  color: "text.disabled",
-                  textDecoration: "underline",
-                  textUnderlineOffset: 2,
-                  "&:hover": { color: "text.secondary" },
-                }}
-              >
-                {t("privacyLink")}
-              </Typography>
-              <Typography
-                component="span"
-                variant="caption"
-                sx={{ color: "text.disabled" }}
-              >
-                ·
-              </Typography>
-              <Typography
-                component={Link}
-                href="/changelog"
-                variant="caption"
-                sx={{
-                  color: "text.disabled",
-                  textDecoration: "underline",
-                  textUnderlineOffset: 2,
-                  "&:hover": { color: "text.secondary" },
-                }}
-              >
-                {t("changelogLink")}
-              </Typography>
+            <Stack
+              direction="row"
+              spacing={1.5}
+              alignItems="center"
+              flexWrap="wrap"
+              justifyContent="center"
+            >
+              {FOOTER_LINKS.map(({ href, key }, index) => (
+                <Stack
+                  key={href}
+                  direction="row"
+                  spacing={1.5}
+                  alignItems="center"
+                >
+                  {index > 0 && (
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      sx={{ color: "text.disabled" }}
+                    >
+                      ·
+                    </Typography>
+                  )}
+                  <Typography
+                    component={Link}
+                    href={href}
+                    variant="caption"
+                    sx={{
+                      color: "text.disabled",
+                      textDecoration: "underline",
+                      textUnderlineOffset: 2,
+                      "&:hover": { color: "text.secondary" },
+                    }}
+                  >
+                    {t(key)}
+                  </Typography>
+                </Stack>
+              ))}
             </Stack>
           </Stack>
         </Stack>

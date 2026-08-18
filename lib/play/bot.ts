@@ -395,7 +395,7 @@ function pickBest(
 export function chooseBotMove(
   state: GameSnapshot,
   seatIndex: number,
-  brain: BotBrainId = "classic"
+  brain: BotBrainId = "pimc"
 ): BotDecision {
   if (brain === "pimc") {
     return choosePimcMove(state, seatIndex);
