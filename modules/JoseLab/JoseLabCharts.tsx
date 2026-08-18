@@ -72,6 +72,44 @@ const BREAKDOWN_TIP_LINES = [
   { label: "ΔZap", delta: "dZap", add: "zap" },
 ] as const;
 
+type BreakdownBarKey = "sqrt" | "games" | "datas" | "pts" | "po" | "zap";
+
+type BreakdownBarSpec = {
+  dataKey: BreakdownBarKey;
+  name: string;
+  fill: string;
+};
+
+/** Stack + legend order. Recharts 3 sorts the legend alphabetically unless told not to. */
+function breakdownBars(formula: FormulaId): BreakdownBarSpec[] {
+  const rest: BreakdownBarSpec[] = [
+    {
+      dataKey: "games",
+      name: formula === "C" ? "games" : "games / lead",
+      fill: PART_COLORS.games,
+    },
+    { dataKey: "datas", name: "datas", fill: PART_COLORS.datas },
+    { dataKey: "pts", name: "points", fill: PART_COLORS.pts },
+    { dataKey: "po", name: "pollos", fill: PART_COLORS.po },
+    { dataKey: "zap", name: "zapatos", fill: PART_COLORS.zap },
+  ];
+  if (formula === "C") {
+    return [
+      { dataKey: "sqrt", name: "√(G/2)", fill: PART_COLORS.sqrt },
+      ...rest,
+    ];
+  }
+  return rest;
+}
+
+function breakdownLegendOrder(formula: FormulaId) {
+  const keys = breakdownBars(formula).map((bar) => bar.dataKey);
+  return (item: { dataKey?: string | number }) => {
+    const i = keys.indexOf(String(item.dataKey) as BreakdownBarKey);
+    return i === -1 ? keys.length : i;
+  };
+}
+
 const TIP_MONO =
   'ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace';
 
@@ -597,52 +635,18 @@ export default memo(function JoseLabCharts({
               tick={{ fontSize: 12 }}
             />
             <Tooltip content={(props) => <BreakdownTooltip {...props} formula={formula} />} />
-            <Legend />
+            <Legend itemSorter={breakdownLegendOrder(formula)} />
             <ReferenceLine x={0} stroke={alpha("#241D14", 0.35)} />
-            {formula === "C" ? (
+            {breakdownBars(formula).map((bar) => (
               <Bar
-                dataKey="sqrt"
+                key={bar.dataKey}
+                dataKey={bar.dataKey}
                 stackId="r"
-                name="√(G/2)"
-                fill={PART_COLORS.sqrt}
+                name={bar.name}
+                fill={bar.fill}
                 isAnimationActive={false}
               />
-            ) : null}
-            <Bar
-              dataKey="games"
-              stackId="r"
-              name="games / lead"
-              fill={PART_COLORS.games}
-              isAnimationActive={false}
-            />
-            <Bar
-              dataKey="datas"
-              stackId="r"
-              name="datas"
-              fill={PART_COLORS.datas}
-              isAnimationActive={false}
-            />
-            <Bar
-              dataKey="pts"
-              stackId="r"
-              name="points"
-              fill={PART_COLORS.pts}
-              isAnimationActive={false}
-            />
-            <Bar
-              dataKey="po"
-              stackId="r"
-              name="pollos"
-              fill={PART_COLORS.po}
-              isAnimationActive={false}
-            />
-            <Bar
-              dataKey="zap"
-              stackId="r"
-              name="zapatos"
-              fill={PART_COLORS.zap}
-              isAnimationActive={false}
-            />
+            ))}
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
