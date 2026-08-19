@@ -78,6 +78,7 @@ export type OlympusExportData = {
 export type PlayerStatsView = {
   playerId: number;
   modeLabel: string;
+  tileSet?: "55" | "28";
   gamesPlayed: number;
   gamesWon: number;
   gamesLost: number;

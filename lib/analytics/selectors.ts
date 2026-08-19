@@ -1,10 +1,13 @@
 import { computeJosesCoefficient } from "./joseCoefficient";
+import { normalizeImportedTileSet } from "./schemaVersion";
 import type {
   H2HView,
   LeaderboardRow,
   OlympusExportData,
   PlayerStatsView,
 } from "./types";
+
+export type TileSet = "55" | "28";
 
 function toStatsView(
   row: OlympusExportData["player_stats"][number]
@@ -20,6 +23,7 @@ function toStatsView(
   return {
     playerId: row.player_id,
     modeLabel: row.mode_label,
+    tileSet: normalizeImportedTileSet(row.tile_set),
     gamesPlayed: row.games_played,
     gamesWon: row.games_won,
     gamesLost: row.games_lost,
@@ -51,10 +55,31 @@ function toStatsView(
   };
 }
 
-export function listStatModes(data: OlympusExportData): string[] {
+export function listStatTileSets(data: OlympusExportData): TileSet[] {
+  const sets = new Set<TileSet>();
+  for (const row of data.player_stats) {
+    sets.add(normalizeImportedTileSet(row.tile_set));
+  }
+  for (const row of data.tables?.matches ?? data.matches ?? []) {
+    if (row.tile_set == null || row.tile_set === "") continue;
+    sets.add(normalizeImportedTileSet(row.tile_set));
+  }
+  return (["55", "28"] as const).filter((set) => sets.has(set));
+}
+
+export function listStatModes(
+  data: OlympusExportData,
+  tileSet?: TileSet
+): string[] {
   const modes = new Set<string>();
   for (const row of data.player_stats) {
+    if (tileSet && normalizeImportedTileSet(row.tile_set) !== tileSet) continue;
     if (row.mode_label) modes.add(row.mode_label);
+  }
+  for (const row of data.tables?.matches ?? data.matches ?? []) {
+    if (tileSet && normalizeImportedTileSet(row.tile_set) !== tileSet) continue;
+    const mode = typeof row.mode_label === "string" ? row.mode_label : "";
+    if (mode) modes.add(mode);
   }
   return Array.from(modes).sort((a, b) => a.localeCompare(b));
 }

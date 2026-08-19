@@ -99,6 +99,7 @@ export function buildH2HCompareLaunch(input: {
  */
 export function buildHistoryMatchCompareLaunch(input: {
   modeLabel: string;
+  tileSet?: "55" | "28";
   playersAmount: number;
   seats: readonly {
     seat: number;
@@ -153,6 +154,7 @@ export function buildHistoryMatchCompareLaunch(input: {
 
   return {
     modeLabel: input.modeLabel,
+    tileSet: input.tileSet,
     playerIds,
     teams: matchupMode ? teams : {},
     matchupMode,

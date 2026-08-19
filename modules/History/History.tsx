@@ -4,6 +4,7 @@ import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import HistoryGamesNotes from "@/modules/History/HistoryGamesNotes";
+import OpenTableBoard from "@/modules/History/OpenTableBoard";
 import {
   dashboardMainSx,
   dashboardShellSx,
@@ -15,6 +16,7 @@ import {
   formatMatchScoreline,
   getMatchDetail,
   listMatches,
+  gameSeatNamesFromDetail,
   playerNamesFromDetail,
   resolveMatchHeading,
   seatNamesFromDetail,
@@ -31,6 +33,7 @@ import {
   loadHistoryUiFilters,
   saveHistoryUiFilters,
 } from "@/lib/analytics/historyFilterState";
+import { tallyOpenTablePlayers } from "@/lib/analytics/openTableBoard";
 import {
   formatSignedDiff,
   signedDiffColor,
@@ -45,12 +48,17 @@ import {
 import { ArrowBack } from "@mui/icons-material";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import {
-  Autocomplete,
   Box,
   Button,
   Card,
+  Checkbox,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
   Stack,
   TextField,
   ToggleButton,
@@ -69,8 +77,26 @@ import {
 
 const SIDE_A = "#2F6F9F";
 const SIDE_B = "#B8453A";
+/** Terracotta, same family as mobile `colors.secondary.dark`. */
+const OPEN_TABLE_LABEL = "#8C3E20";
 /** How many filtered matches to render before the next infinite-scroll page. */
 const HISTORY_PAGE_SIZE = 15;
+
+function HistoryKindLabel({ isClosed }: { isClosed: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <Box
+      component="span"
+      sx={
+        isClosed
+          ? undefined
+          : { color: OPEN_TABLE_LABEL, fontWeight: 700 }
+      }
+    >
+      {t(isClosed ? "closedMatch" : "openTable")}
+    </Box>
+  );
+}
 
 function HistoryList({
   items,
@@ -170,7 +196,7 @@ function HistoryList({
                   fontSize: 15,
                 }}
               >
-                {scoreline}
+                {item.isClosed ? scoreline : null}
               </Typography>
             </Stack>
             {showDateSubtitle ? (
@@ -187,7 +213,7 @@ function HistoryList({
               sx={{ color: "text.secondary", mb: 0.75, lineHeight: 1.4 }}
             >
               {modeName(item.modeLabel)} ·{" "}
-              {t(item.isClosed ? "closedMatch" : "openTable")} ·{" "}
+              <HistoryKindLabel isClosed={item.isClosed} /> ·{" "}
               {t("historyGames", { n: item.gameCount })} ·{" "}
               {t("firstTo", { n: item.maxPoints })}
             </Typography>
@@ -244,6 +270,15 @@ function HistoryDetailView({
     return map;
   }, [wins]);
 
+  const playerLines = detail.isClosed
+    ? []
+    : tallyOpenTablePlayers(
+        detail.games,
+        gameSeatNamesFromDetail(detail),
+        detail.playersAmount,
+        detail.modeLabel
+      );
+
   const { heading, showDateSubtitle } = resolveMatchHeading(
     language,
     detail.title,
@@ -294,7 +329,7 @@ function HistoryDetailView({
           sx={{ color: "text.secondary", mb: 0.75, lineHeight: 1.4 }}
         >
           {modeName(detail.modeLabel)} ·{" "}
-          {t(detail.isClosed ? "closedMatch" : "openTable")} ·{" "}
+          <HistoryKindLabel isClosed={detail.isClosed} /> ·{" "}
           {t("playersCount", { n: detail.playersAmount })} ·{" "}
           {t("firstTo", { n: detail.maxPoints })} ·{" "}
           {t("historyGames", { n: detail.games.length })}
@@ -303,86 +338,90 @@ function HistoryDetailView({
           {headerNames.join(" · ")}
         </Typography>
 
-        <Stack direction="row" spacing={1}>
-          {shutouts.map(
-            ({
-              teamNumber,
-              pollosFor,
-              zapatosFor,
-            }: {
-              teamNumber: number;
-              pollosFor: number;
-              zapatosFor: number;
-            }) => {
-              const label = teamLabels[teamNumber] || teamName(teamNumber);
-              const teamKey =
-                (TEAM_KEYS as Record<number, string>)[teamNumber] ?? "team1";
-              const gameWins = winsByTeam.get(teamNumber) ?? 0;
-              const net = 2 * gameWins - totalGames;
-              return (
-                <Box
-                  key={teamNumber}
-                  sx={{
-                    flex: 1,
-                    minWidth: 0,
-                    textAlign: "center",
-                    py: 1.1,
-                    borderRadius: 2,
-                    border: "1px solid",
-                    borderColor: (theme) =>
-                      alpha((theme.palette as any)[teamKey].main, 0.35),
-                    backgroundColor: (theme) =>
-                      alpha((theme.palette as any)[teamKey].main, 0.08),
-                  }}
-                >
-                  <Typography
+        {detail.isClosed ? (
+          <Stack direction="row" spacing={1}>
+            {shutouts.map(
+              ({
+                teamNumber,
+                pollosFor,
+                zapatosFor,
+              }: {
+                teamNumber: number;
+                pollosFor: number;
+                zapatosFor: number;
+              }) => {
+                const label = teamLabels[teamNumber] || teamName(teamNumber);
+                const teamKey =
+                  (TEAM_KEYS as Record<number, string>)[teamNumber] ?? "team1";
+                const gameWins = winsByTeam.get(teamNumber) ?? 0;
+                const net = 2 * gameWins - totalGames;
+                return (
+                  <Box
+                    key={teamNumber}
                     sx={{
-                      fontWeight: 700,
-                      fontSize: 13,
-                      color: (theme) => (theme.palette as any)[teamKey].dark,
+                      flex: 1,
+                      minWidth: 0,
+                      textAlign: "center",
+                      py: 1.1,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: (theme) =>
+                        alpha((theme.palette as any)[teamKey].main, 0.35),
+                      backgroundColor: (theme) =>
+                        alpha((theme.palette as any)[teamKey].main, 0.08),
                     }}
                   >
-                    {label}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      mt: 0.35,
-                      fontWeight: 700,
-                      fontSize: 22,
-                      lineHeight: 1.1,
-                      fontVariantNumeric: "tabular-nums",
-                      color: (theme) => (theme.palette as any)[teamKey].main,
-                    }}
-                  >
-                    {gameWins}
-                    <Box
-                      component="span"
+                    <Typography
                       sx={{
-                        ml: 0.6,
-                        fontSize: 14,
                         fontWeight: 700,
-                        color: signedDiffColor(net) ?? "text.secondary",
+                        fontSize: 13,
+                        color: (theme) => (theme.palette as any)[teamKey].dark,
                       }}
                     >
-                      ({formatSignedDiff(net)})
-                    </Box>
-                  </Typography>
-                  <Typography
-                    sx={{
-                      mt: 0.35,
-                      fontSize: 10,
-                      color: "text.disabled",
-                    }}
-                  >
-                    {t("historyGamesWonShort")} · {pollosFor}
-                    {t("pollo").charAt(0)} · {zapatosFor}
-                    {t("zapato").charAt(0)}
-                  </Typography>
-                </Box>
-              );
-            }
-          )}
-        </Stack>
+                      {label}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        mt: 0.35,
+                        fontWeight: 700,
+                        fontSize: 22,
+                        lineHeight: 1.1,
+                        fontVariantNumeric: "tabular-nums",
+                        color: (theme) => (theme.palette as any)[teamKey].main,
+                      }}
+                    >
+                      {gameWins}
+                      <Box
+                        component="span"
+                        sx={{
+                          ml: 0.6,
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: signedDiffColor(net) ?? "text.secondary",
+                        }}
+                      >
+                        ({formatSignedDiff(net)})
+                      </Box>
+                    </Typography>
+                    <Typography
+                      sx={{
+                        mt: 0.35,
+                        fontSize: 10,
+                        color: "text.disabled",
+                      }}
+                    >
+                      {t("historyGamesWonShort")} · {pollosFor}
+                      {t("pollo").charAt(0)} · {zapatosFor}
+                      {t("zapato").charAt(0)}
+                    </Typography>
+                  </Box>
+                );
+              }
+            )}
+          </Stack>
+        ) : (
+          <OpenTableBoard lines={playerLines} />
+        )}
       </Card>
 
       <HistoryGamesNotes
@@ -412,7 +451,7 @@ export default function History() {
   const [rosterFilter, setRosterFilter] = useState<HistoryFilterPlayer[]>(
     () => loadHistoryUiFilters(datasetId).rosterFilter
   );
-  const [rosterPickerInput, setRosterPickerInput] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [filtersHydratedFor, setFiltersHydratedFor] = useState<string | null>(
     null
   );
@@ -492,14 +531,6 @@ export default function History() {
     if (!modes.includes(modeFilter)) setModeFilter("all");
   }, [modes, modeFilter]);
 
-  const addablePlayers = useMemo(
-    () =>
-      players.filter(
-        (player) => !rosterFilter.some((entry) => entry.playerId === player.id)
-      ),
-    [players, rosterFilter]
-  );
-
   const filteredItems = useMemo(() => {
     const needle = query.trim().toLowerCase();
 
@@ -552,6 +583,15 @@ export default function History() {
     );
   };
 
+  const togglePlayer = (playerId: number) => {
+    setRosterFilter((current) => {
+      if (current.some((entry) => entry.playerId === playerId)) {
+        return current.filter((entry) => entry.playerId !== playerId);
+      }
+      return [...current, { playerId, team: null }];
+    });
+  };
+
   const clearRosterFilter = () => setRosterFilter([]);
 
   const detail = useMemo(() => {
@@ -571,6 +611,7 @@ export default function History() {
     if (!detail || !detail.isClosed) return;
     const launch = buildHistoryMatchCompareLaunch({
       modeLabel: detail.modeLabel,
+      tileSet: detail.tileSet,
       playersAmount: detail.playersAmount,
       seats: detail.seats,
     });
@@ -745,43 +786,8 @@ export default function History() {
                 {t("historyFilterPlayersHint")}
               </Typography>
 
-              <Autocomplete
-                size="small"
-                options={addablePlayers}
-                getOptionLabel={(option) => option.name}
-                value={null}
-                inputValue={rosterPickerInput}
-                onInputChange={(_, value, reason) => {
-                  if (reason === "reset") {
-                    setRosterPickerInput("");
-                    return;
-                  }
-                  setRosterPickerInput(value);
-                }}
-                onChange={(_, value) => {
-                  if (!value) return;
-                  setRosterFilter((current) => [
-                    ...current,
-                    { playerId: value.id, team: null },
-                  ]);
-                  setRosterPickerInput("");
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label={t("historyFilterAddPlayer")}
-                  />
-                )}
-                sx={{
-                  mb: rosterFilter.length > 0 ? 1.25 : 0,
-                  "& .MuiOutlinedInput-root": {
-                    backgroundColor: "background.paper",
-                  },
-                }}
-              />
-
               {rosterFilter.length > 0 ? (
-                <Stack spacing={1}>
+                <Stack spacing={1} sx={{ mb: 1.5 }}>
                   {rosterFilter.map((entry) => {
                     const name =
                       playersById.get(entry.playerId) ??
@@ -895,6 +901,14 @@ export default function History() {
                   })}
                 </Stack>
               ) : null}
+
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => setPickerOpen(true)}
+              >
+                {t("statsComparePick")}
+              </Button>
             </Box>
 
             <Box sx={{ width: "100%", textAlign: "center" }}>
@@ -948,6 +962,53 @@ export default function History() {
           </Stack>
         )}
       </Box>
+
+      <Dialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>{t("statsComparePick")}</DialogTitle>
+        <DialogContent dividers>
+          <Stack>
+            {players.map((player) => {
+              const checked = rosterFilter.some(
+                (entry) => entry.playerId === player.id
+              );
+              return (
+                <FormControlLabel
+                  key={player.id}
+                  control={
+                    <Checkbox
+                      checked={checked}
+                      onChange={() => togglePlayer(player.id)}
+                    />
+                  }
+                  label={
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <span>{player.name}</span>
+                      {player.is_myself ? (
+                        <Typography
+                          variant="overline"
+                          sx={{ color: "primary.main", fontSize: 10 }}
+                        >
+                          {t("youBadge")}
+                        </Typography>
+                      ) : null}
+                    </Stack>
+                  }
+                />
+              );
+            })}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPickerOpen(false)} variant="contained">
+            {t("done")}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <StatsDataDrawer
         open={dataDrawerOpen}

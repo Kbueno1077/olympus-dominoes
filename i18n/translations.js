@@ -151,7 +151,7 @@ const en = {
   analyticsErrorSqlUnsupported:
     "SQL exports are no longer supported. Use a CSV export from the mobile app.",
   analyticsErrorSchemaTooNew:
-    "That file needs a newer Olympus. Update the web app, then import again.",
+    "That file needs a newer Olympus. This web app imports schema {supported}; that file is schema {file}. Update the web app, then import again.",
   analyticsErrorSchemaTooOld: "That file is too old for this web app to import.",
   analyticsErrorUnknownTable: "That file has an unexpected table section.",
   analyticsNav: "Analytics",
@@ -530,7 +530,6 @@ const en = {
   statsComparePlayers: "Players",
   statsCompareHint: "Pick up to 10 players to compare every stat side by side.",
   statsComparePick: "Choose players",
-  statsMatchupPickMax: "Matchup · up to 4 players",
   statsCompareEmpty: "Choose at least one player to compare.",
   statsCompareStat: "Stat",
   statsCompareRemove: "Remove {name}",
@@ -540,11 +539,11 @@ const en = {
   statsCompareChartShutouts: "Shutouts for",
   statsMatchupToggle: "This matchup",
   statsMatchupHint:
-    "Only games where these players sat in the teams you assign. Order within a team does not matter.",
-  statsMatchupAssignHint: "Assign each player to A or B — up to 4.",
+    "Same letter means they were partners. Any means we don't care which team that person sat on — they can sit with anyone else you picked.",
   statsMatchupTeamA: "Team A",
   statsMatchupTeamB: "Team B",
-  statsMatchupNeedBothSides: "Put at least one player on each team.",
+  statsMatchupNeedBothSides:
+    "If everyone has A or B, put at least one player on each team.",
   statsMatchupLoadingTitle: "Calculating matchup…",
   statsMatchupLoadingBody:
     "Scanning match history for this seating. This can take a moment.",
@@ -553,6 +552,7 @@ const en = {
   statsAbbrJoses: "JC",
   statsAbbrGamesPlayed: "Games",
   statsAbbrGamesWon: "GW",
+  statsAbbrWinLoss: "W–L",
   statsAbbrGamesLost: "GL",
   statsAbbrGameDifference: "GameDif",
   statsAbbrWinRate: "Win%",
@@ -581,6 +581,7 @@ const en = {
   setupSubtitle: "Lock this in before the first hand.",
   playersAtTable: "Players at the table",
   format: "Format",
+  tileSetOption: "{n} tiles",
   dominoSet: "Tiles",
   pointsToWin: "Race to",
   target: "Race to",
@@ -964,7 +965,7 @@ const es = {
   analyticsErrorSqlUnsupported:
     "Los exports SQL ya no se admiten. Usa un export CSV de la app móvil.",
   analyticsErrorSchemaTooNew:
-    "Ese archivo necesita una Olympus más nueva. Actualiza la web e importa de nuevo.",
+    "Ese archivo necesita una Olympus más nueva. Esta web importa el esquema {supported}; ese archivo es el esquema {file}. Actualiza la web e importa de nuevo.",
   analyticsErrorSchemaTooOld:
     "Ese archivo es demasiado antiguo para importarlo en esta web.",
   analyticsErrorUnknownTable: "Ese archivo tiene una sección de tabla inesperada.",
@@ -1348,7 +1349,6 @@ const es = {
   statsCompareHint:
     "Elige hasta 10 jugadores para comparar todas las estadísticas.",
   statsComparePick: "Elegir jugadores",
-  statsMatchupPickMax: "Enfrentamiento · hasta 4 jugadores",
   statsCompareEmpty: "Elige al menos un jugador para comparar.",
   statsCompareStat: "Estad.",
   statsCompareRemove: "Quitar a {name}",
@@ -1358,11 +1358,11 @@ const es = {
   statsCompareChartShutouts: "Cerradas a favor",
   statsMatchupToggle: "Este enfrentamiento",
   statsMatchupHint:
-    "Solo partidas donde estos jugadores se sentaron en los equipos que asignes. El orden dentro del equipo no importa.",
-  statsMatchupAssignHint: "Asigna cada jugador a A o B — hasta 4.",
+    "La misma letra significa que eran pareja. Cualq. es que no importa en qué equipo se sentó esa persona — puede sentarse con cualquiera del resto.",
   statsMatchupTeamA: "Equipo A",
   statsMatchupTeamB: "Equipo B",
-  statsMatchupNeedBothSides: "Pon al menos un jugador en cada equipo.",
+  statsMatchupNeedBothSides:
+    "Si todos tienen A o B, pon al menos un jugador en cada equipo.",
   statsMatchupLoadingTitle: "Calculando enfrentamiento…",
   statsMatchupLoadingBody:
     "Revisando el historial con esta alineación. Puede tardar un momento.",
@@ -1372,6 +1372,7 @@ const es = {
   statsAbbrJoses: "CJ",
   statsAbbrGamesPlayed: "Juegos",
   statsAbbrGamesWon: "PG",
+  statsAbbrWinLoss: "G–P",
   statsAbbrGamesLost: "PP",
   statsAbbrGameDifference: "DifJ",
   statsAbbrWinRate: "%V",
@@ -1400,6 +1401,7 @@ const es = {
   setupSubtitle: "Déjalo listo antes de la primera mano.",
   playersAtTable: "Jugadores en la mesa",
   format: "Modo de juego",
+  tileSetOption: "{n} fichas",
   dominoSet: "Fichas",
   pointsToWin: "Hasta",
   target: "Hasta",

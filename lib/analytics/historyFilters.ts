@@ -23,6 +23,20 @@ export function historyFilterActive(filter: HistoryFilter): boolean {
   return filter.players.length > 0;
 }
 
+type MatchSeating = {
+  playersAmount: number;
+  modeLabel: string;
+  seats: HistorySeat[];
+};
+
+function seatedPlayerIds(seats: HistorySeat[]): Set<number> {
+  return new Set(
+    seats
+      .map((s) => s.playerId)
+      .filter((id): id is number => typeof id === "number")
+  );
+}
+
 function teamNumberForPlayer(
   seats: HistorySeat[],
   playersAmount: number,
@@ -47,33 +61,13 @@ function teamNumberForPlayer(
   return null;
 }
 
-/**
- * Team 1 / Team 2 are relative sides: all T1 share a team, all T2 share the
- * other team. Unmarked players only need to appear in the match.
- */
-export function matchPassesHistoryFilter(
-  match: {
-    playersAmount: number;
-    modeLabel: string;
-    seats: HistorySeat[];
-  },
-  filter: HistoryFilter
+/** Relative A/B sides: A's share a team, B's share the other. */
+function assignedSidesAlign(
+  match: MatchSeating,
+  players: HistoryFilterPlayer[]
 ): boolean {
-  if (!historyFilterActive(filter)) return true;
-  if (!match.seats || !Array.isArray(match.seats)) return false;
-
-  const seatedIds = new Set(
-    match.seats
-      .map((s) => s.playerId)
-      .filter((id): id is number => typeof id === "number")
-  );
-
-  for (const entry of filter.players) {
-    if (!seatedIds.has(entry.playerId)) return false;
-  }
-
-  const side1 = filter.players.filter((p) => p.team === 1);
-  const side2 = filter.players.filter((p) => p.team === 2);
+  const side1 = players.filter((p) => p.team === 1);
+  const side2 = players.filter((p) => p.team === 2);
 
   const resolveTeams = (entries: HistoryFilterPlayer[]) =>
     entries.map((p) =>
@@ -115,17 +109,82 @@ export function matchPassesHistoryFilter(
     if (t1 == null || t2 == null || t1 === t2) return false;
   }
 
-  // Full lined-up matchup (every listed player has A/B): no extra linked seats.
+  return true;
+}
+
+function exactAssignedLineup(
+  seatedIds: Set<number>,
+  filter: HistoryFilter,
+  playersAmount: number
+): boolean {
   const allAssigned = filter.players.every(
     (p) => p.team === 1 || p.team === 2
   );
-  if (allAssigned && filter.players.length === match.playersAmount) {
-    const filterIds = new Set(filter.players.map((p) => p.playerId));
-    if (seatedIds.size !== filterIds.size) return false;
-    for (const id of Array.from(seatedIds)) {
-      if (!filterIds.has(id)) return false;
-    }
+  if (!allAssigned || filter.players.length !== playersAmount) return true;
+  const filterIds = new Set(filter.players.map((p) => p.playerId));
+  if (seatedIds.size !== filterIds.size) return false;
+  for (const id of Array.from(seatedIds)) {
+    if (!filterIds.has(id)) return false;
+  }
+  return true;
+}
+
+/**
+ * Team 1 / Team 2 are relative sides: all T1 share a team, all T2 share the
+ * other team. Unmarked players only need to appear in the match.
+ */
+export function matchPassesHistoryFilter(
+  match: MatchSeating,
+  filter: HistoryFilter
+): boolean {
+  if (!historyFilterActive(filter)) return true;
+  if (!match.seats || !Array.isArray(match.seats)) return false;
+
+  const seatedIds = seatedPlayerIds(match.seats);
+
+  for (const entry of filter.players) {
+    if (!seatedIds.has(entry.playerId)) return false;
   }
 
+  if (!assignedSidesAlign(match, filter.players)) return false;
+
+  return exactAssignedLineup(seatedIds, filter, match.playersAmount);
+}
+
+/**
+ * Compare "This matchup": same letter = partners on that side. Any = we do
+ * not care which team that person sat on. Extra people on Any can sit with
+ * anyone else in the selected group — A/B only constrain those who actually
+ * sat that game. When the pool fills a table, outsiders do not count.
+ */
+export function matchPassesMatchupFilter(
+  match: MatchSeating,
+  filter: HistoryFilter
+): boolean {
+  if (!historyFilterActive(filter)) return true;
+  if (!match.seats || !Array.isArray(match.seats)) return false;
+
+  const seatedIds = seatedPlayerIds(match.seats);
+  const floaters = filter.players.filter((p) => p.team == null);
+  const poolIds = new Set(filter.players.map((p) => p.playerId));
+
+  if (filter.players.length >= match.playersAmount) {
+    for (const seat of match.seats) {
+      if (seat.seat < 1 || seat.seat > match.playersAmount) continue;
+      if (seat.playerId == null || !poolIds.has(seat.playerId)) return false;
+    }
+    return assignedSidesAlign(
+      match,
+      filter.players.filter((p) => seatedIds.has(p.playerId))
+    );
+  }
+
+  for (const entry of filter.players) {
+    if (!seatedIds.has(entry.playerId)) return false;
+  }
+  if (!assignedSidesAlign(match, filter.players)) return false;
+  if (floaters.length === 0) {
+    return exactAssignedLineup(seatedIds, filter, match.playersAmount);
+  }
   return true;
 }

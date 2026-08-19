@@ -20,6 +20,7 @@ export type DatasetRegistry = {
 
 export type CompareLaunch = {
   modeLabel: string | null;
+  tileSet?: "55" | "28";
   playerIds: number[];
   teams: Record<number, 1 | 2 | null>;
   matchupMode: boolean;

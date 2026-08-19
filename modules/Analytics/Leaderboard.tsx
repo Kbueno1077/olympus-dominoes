@@ -8,6 +8,7 @@ import {
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
 import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
+import { importErrorMessage } from "@/lib/analytics/importError";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import { listLeaderboard, listStatModes } from "@/lib/analytics/selectors";
@@ -49,17 +50,7 @@ export default function Leaderboard() {
     [data, activeMode]
   );
 
-  const errorMessage = (() => {
-    const code = error;
-    if (!code) return null;
-    if (code.startsWith("unknown_table:")) return t("analyticsErrorUnknownTable");
-    if (code === "empty_export") return t("analyticsErrorEmpty");
-    if (code === "unknown_format") return t("analyticsErrorFormat");
-    if (code === "sql_unsupported") return t("analyticsErrorSqlUnsupported");
-    if (code === "schema_too_new") return t("analyticsErrorSchemaTooNew");
-    if (code === "schema_too_old") return t("analyticsErrorSchemaTooOld");
-    return t("analyticsErrorGeneric");
-  })();
+  const errorMessage = error ? importErrorMessage(t, error) : null;
 
   const openPlayerStats = (playerId: number) => {
     if (!activeMode) return;

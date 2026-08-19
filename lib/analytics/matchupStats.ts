@@ -1,8 +1,9 @@
+import { normalizeImportedTileSet } from "./schemaVersion";
 import { normalizeNameKey } from "@/utils/teams";
 import { computeJosesCoefficient } from "./joseCoefficient";
 import { stripTrailingPadHands } from "./hands";
 import {
-  matchPassesHistoryFilter,
+  matchPassesMatchupFilter,
   type HistoryFilter,
   type HistorySeat,
 } from "./historyFilters";
@@ -144,21 +145,24 @@ export type MatchupStatsResult = {
 };
 
 /**
- * Recompute per-player stats from exported matches that include the given
- * players in the given relative team alignment.
+ * Recompute per-player stats from exported matches for this seating.
+ * A/B are partners on that side; Any is either team.
  */
 export function computeMatchupStats(args: {
   data: OlympusExportData;
   filter: HistoryFilter;
   modeLabel: string;
+  tileSet?: "55" | "28";
   playerIds: number[];
 }): MatchupStatsResult {
   const { data, filter, modeLabel, playerIds } = args;
+  const tileSet = args.tileSet ?? null;
   const tables = data.tables;
 
   const matches = (tables.matches ?? []).map((row) => ({
     id: asNumber(row.id),
     mode_label: asString(row.mode_label),
+    tile_set: normalizeImportedTileSet(row.tile_set),
     players_amount: asNumber(row.players_amount),
     is_closed: row.is_closed === 0 || row.is_closed === "0" ? 0 : 1,
   }));
@@ -264,12 +268,13 @@ export function computeMatchupStats(args: {
 
   for (const match of matches) {
     if (match.mode_label !== modeLabel) continue;
+    if (tileSet && match.tile_set !== tileSet) continue;
     const isClosed = match.is_closed !== 0;
     const matchGames = gamesByMatch.get(match.id) ?? [];
 
     if (isClosed) {
       if (
-        !matchPassesHistoryFilter(
+        !matchPassesMatchupFilter(
           {
             playersAmount: match.players_amount,
             modeLabel: match.mode_label,
@@ -298,7 +303,7 @@ export function computeMatchupStats(args: {
     }
 
     const matchingGames = matchGames.filter((entry) =>
-      matchPassesHistoryFilter(
+      matchPassesMatchupFilter(
         {
           playersAmount: match.players_amount,
           modeLabel: match.mode_label,

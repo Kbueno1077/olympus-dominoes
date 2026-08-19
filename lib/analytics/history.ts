@@ -4,6 +4,7 @@ import {
   parseHandsTakenJson,
   stripTrailingPadHandsPair,
 } from "./hands";
+import { normalizeImportedTileSet } from "./schemaVersion";
 import type { OlympusExportData } from "./types";
 
 export type HistorySeat = {
@@ -51,6 +52,7 @@ export type MatchDetail = {
   endedAt: string;
   playersAmount: number;
   modeLabel: string;
+  tileSet: "55" | "28";
   maxPoints: number;
   isClosed: boolean;
   seats: HistorySeat[];
@@ -415,6 +417,7 @@ export function getMatchDetail(
     endedAt: asString(matchRow.ended_at),
     playersAmount: asNumber(matchRow.players_amount),
     modeLabel: asString(matchRow.mode_label),
+    tileSet: normalizeImportedTileSet(matchRow.tile_set),
     maxPoints: asNumber(matchRow.max_points),
     isClosed,
     seats: matchSeats,
@@ -430,6 +433,10 @@ export function seatNamesFromSeats(seats: HistorySeat[]): string[] {
     }
   }
   return names;
+}
+
+export function gameSeatNamesFromDetail(detail: MatchDetail): string[][] {
+  return detail.games.map((game) => seatNamesFromSeats(game.seats));
 }
 
 export function seatNamesFromDetail(detail: MatchDetail): string[] {

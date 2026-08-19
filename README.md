@@ -116,134 +116,120 @@ player’s saved stats (per mode) into a single number for leaderboards.
 **Keep in sync** with the mobile app README and
 `olympus-dominoes-app/src/domain/joseCoefficient.ts`.
 Web source of truth: `lib/analytics/joseCoefficient.ts`
-(`computeJosesCoefficient`, `josesGamesTerm`, `josesSecondaryDenom`,
-`JOSES_COEFFICIENT_WEIGHTS`, `JOSES_SECONDARY_MIN_GAMES = 25`).
+(`computeJosesCoefficient`, `josesLeadTerm`, `josesSecondaryTerm`,
+`JOSES_COEFFICIENT_WEIGHTS`). Schema **23** is this formula (no new columns
+vs 22).
 
 **Design goals**
 
-- **Games won are principal** — closing the partida is the sport; absolute
-  `(W−L)` is linear `3n` (not tanh-capped, not divided by `G`).
-- **Small nets stay catchable** — +1 / +2 can still lose to loud secondaries.
-  On this formula an **ugly +4 can lose** to a loud +2 (Luis) or a 0-net farm.
-- **Secondaries are rates, volume-floored** — datas / points / pollos /
-  zapatos use `max(G, 25)` so an 8-game heater cannot out-rate a real season.
-- **Never** put a top cap on denom (that lets point stocks eat `n`).
+- **Games won are principal** — closing the partida is the sport; lead is
+  linear `3 × ΔG` (`ΔG = W − L`). No curve, no cap.
+- **Secondaries are stocks, not rates** — datas, points, pollos, and zapatos
+  add the same amount whether they came from 8 games or 80. There is **no**
+  `/ max(G, 25)`.
 - **Do not** put sample reliability on the lead term (`G/(G+G0)` was tried and
-  rejected). Tanh lead (lab A) is previous, not current.
+  rejected).
 
-### Inputs
+### Inputs (app fields)
 
-| Symbol | Meaning | Export / view field |
-|--------|---------|---------------------|
+| Symbol | Meaning | `player_stats` / delta field |
+|--------|---------|------------------------------|
 | `G` | Games played | `gamesPlayed` |
-| `W`, `L` | Games won / lost | `gamesWon`, `gamesLost` |
-| `n` | `W − L` | |
-| `DW`, `DL` | Datas scored / conceded | `handsFor` / `handsAgainst` |
-| `PF`, `PA` | Points for / against | `pointsFor`, `pointsAgainst` |
-| `PolF`, `PolA` | Pollos given / received | `pollosFor` / `pollosAgainst` |
-| `ZapF`, `ZapA` | Zapatos given / received | `zapatosFor` / `zapatosAgainst` |
+| `ΔG` | Net games `W − L` | `gamesWon − gamesLost` |
+| `ΔDW` | Datas scored − conceded | `handsFor − handsAgainst` |
+| `ΔPF` | Points for − against | `pointsFor − pointsAgainst` |
+| `ΔPo` | Pollos given − received | `pollosFor − pollosAgainst` |
+| `ΔZap` | Zapatos given − received | `zapatosFor − zapatosAgainst` |
 
-A **pollo** is a win where the loser scored **0** hands; a **zapato** is a
-win where the loser scored exactly **1** hand.
-**Manos** = all datas played = MG + MP.
+Definitions match the app: a **pollo** is a win where the loser scored
+**0** hands; a **zapato** is a win where the loser scored exactly **1** hand.
+**Manos (M / `hands_played`)** = all datas played = **MG + MP**.
 If `G = 0`, the coefficient is **null** (no ranking yet).
 
-### Lead term (absolute `W − L`)
+### Lead (`3 × ΔG`)
 
-Linear: `3n`. No soft cap — a +18 is +54 from games alone.
+| |ΔG| | Lead |
+|-------|------|
+| +1 | 3 |
+| +2 | 6 |
+| +4 | 12 |
+| +5 | 15 |
+| +18 | 54 |
 
-| |n| | Meaning | `3n` |
-|-------|---------|------|
-| 1–4 | Normal / contestable | 3–12 |
-| 5–10 | Quite a lead | 15–30 |
-| 10–20 | Huge | 30–60 |
-| >20 | Keeps growing | 3n |
-
-```text
-kn             = 3 × (W − L)
-2nds           = R − kn
-denom          = max(G, 25)
-```
-
-Lead depends **only** on net wins. Secondaries use `denom = max(G, 25)`.
+Lead depends **only** on net wins. A parked +2 stays at **6** as `G` grows.
 
 ### Formula
 
 ```text
-denom = max(G, 25)
+ΔG = W − L
 
-R =
-  3 × (W − L)
-+ 6.25 × (DW − DL) / denom
-+ 0.15 × (PF − PA) / denom
-+  15  × (PolF − PolA) / denom
-+   6  × (ZapF − ZapA) / denom
+R = 3 × ΔG
+  + ΔDW / 4 + ΔPF / 165
+  + 3 × (ΔPo / 5 + 0.4 × ΔZap / 5)
 ```
-
-Cesar (CSV) at stock: kn +15.0, datas +4.1, pts +3.2, pollos +2.1, zap −0.2
-→ **R ≈ +24.1**. Randy is Cesar’s mirror (−24.1).
 
 ### Persistence & UI (web)
 
-- Import may include `player_stats.joses_coefficient`; the UI **recomputes**
-  Jose in selectors (`toStatsView`) so leaderboards stay correct even when
-  the column is missing or stale
-- **Sync Jose's Coefficient** on Stats recalculates and writes back into the
+- Import and schema-22→23 hydrate recompute `player_stats.joses_coefficient`
+  (same idea as mobile `needs_joses_recompute` on 23)
+- The UI also recomputes Jose in selectors so leaderboards stay current
+- **Sync Jose's Coefficient** on Stats writes the formula back into the
   active dataset
 - Leaderboard: sort by `R` desc; show `—` when null
 - Modes never mix — leaderboard / compare always filter one `mode_label`
 
 ### Calibration rule (humans + agents)
 
-- Must hold at defaults: Cesar R ≈ +24.1; Cesar kn ≈ 3.7× datas and datas >
-  points; Ugly+4 can lose to Luis; test Ugly+4 loses to loud EvenBlow;
-  no denom cap.
+- Must hold: Cesar/Ariel 2nds > HotWeekend 2nds; Cesar > HotWeekend on `R`;
+  Solid+4 > Luis; Pedro elite on +18. Same extras score the same R at any `G`.
 - After formula changes: update `joseCoefficient.ts` here **and** the mobile
   app, then Sync Jose on imported datasets.
-- Do **not** reintroduce lead × `G/(G+G0)` or tanh unless product asks again.
+- Do **not** reintroduce lead × `G/(G+G0)`, `tanh`, or `/ max(G, 25)` unless
+  product asks again.
 
 ### Why these multipliers
 
 | Constant | On what | Why that size |
 |----------|---------|----------------|
-| **3 × n** | Absolute `W−L` | Cesar +5 → +15 games; extras stay a minority. |
-| **denom = max(G, 25)** | All secondary rates | Short heater cannot out-rate a longer season on extras alone. |
-| **6.25** | `(DW−DL)/denom` | Datas still the main secondary; Cesar datas ~+4.1. At G=25, 1 ΔG = 12 datas. |
-| **0.15** | `(PF−PA)/denom` | Points tie-break; Cesar pts ~+3.2, still under datas. At G=25, 1 ΔG = 500 pts. |
-| **15** | Pollo net / denom | 5 pollos = 1 ΔG at the floor. Cesar pollos ~+2.1. |
-| **6** | Zapato net / denom | Pollos stay 2.5× zapatos (15 / 6). At G=25, 1 ΔG = 12.5 zapatos. |
+| **3 × ΔG** | Net games | Closing is the ranking. No curve. A parked +2 stays at **6**. |
+| **ΔDW / 4** | Net datas | Four extra datas = 1 R. |
+| **ΔPF / 165** | Net points | 165 net points = 1 R. |
+| **3 × (ΔPo / 5)** | Net pollos | Five pollos = 3 R. |
+| **0.4 × ΔZap / 5** | Net zapatos | A zapato is 0.4 of a pollo in that term. |
 
-Cuban scoring context: games to **150**, typical win ~**170**, ~**30–40**
-pts/hand; ΔPF/net often ~100–130 (like the CSV export).
+Cuban scoring context for invented examples: games to **150**, typical win
+~**170**, ~**30–40** pts/hand; ΔPF/net often ~100–130 (like the CSV export).
 
 ### Worked examples (20 scenarios)
 
-Same calibration set as the lab. Sorted by **R**. kn = `3n`. 2nds = `R − kn`.
+CSV rows are real export data. Others are realistic invented seasons.
+Sorted by **R**. Columns: **Lead**, **2nds**, **R**, then deltas.
 
-| # | Player | Record | Net | kn | 2nds | R | ΔDW | ΔPF | ΔPo | ΔZap |
-|---|--------|--------|-----|----|------|---|-----|-----|-----|------|
-| 1 | Pedro | 24–6–30 | +18 | 54.0 | +23.4 | **77.4** | +56 | +2010 | +3 | +1 |
-| 2 | DominantPair | 18–7–25 | +11 | 33.0 | +20.3 | **53.3** | +39 | +1375 | +3 | +2 |
-| 3 | Cesar (CSV) | 17–12–29 | +5 | 15.0 | +9.1 | **24.1** | +19 | +609 | +4 | −1 |
-| 4 | Ariel (CSV) | 17–12–29 | +5 | 15.0 | +9.1 | **24.1** | +19 | +609 | +4 | −1 |
-| 5 | Ana | 18–12–30 | +6 | 18.0 | +4.0 | **22.0** | +9 | +330 | +1 | 0 |
-| 6 | HotWeekend | 6–2–8 | +4 | 12.0 | +7.0 | **19.0** | +13 | +490 | +1 | +1 |
-| 7 | Solid40 | 22–18–40 | +4 | 12.0 | +3.4 | **15.4** | +10 | +380 | +1 | 0 |
-| 8 | Maya50 | 27–23–50 | +4 | 12.0 | +2.7 | **14.7** | +10 | +380 | +1 | 0 |
-| 9 | Grinder100 | 52–48–100 | +4 | 12.0 | +1.4 | **13.4** | +11 | +380 | +1 | 0 |
-| 10 | Luis | 16–14–30 | +2 | 6.0 | +4.4 | **10.4** | +8 | +260 | +2 | +2 |
-| 11 | Eliecer (CSV) | 6–4–10 | +2 | 6.0 | +3.0 | **9.0** | +7 | +268 | −1 | +1 |
-| 12 | Omar80loud | 41–39–80 | +2 | 6.0 | +2.6 | **8.6** | +13 | +455 | +3 | +2 |
-| 13 | Omar80 | 41–39–80 | +2 | 6.0 | +0.9 | **6.9** | +5 | +190 | +1 | 0 |
-| 14 | Quiet+2 | 16–14–30 | +2 | 6.0 | +0.4 | **6.4** | +1 | +40 | 0 | 0 |
-| 15 | Ugly+4 | 17–13–30 | +4 | 12.0 | −7.7 | **4.3** | −17 | −600 | −2 | −1 |
-| 16 | NearEven | 23–22–45 | +1 | 3.0 | +0.6 | **3.6** | +2 | +95 | 0 | 0 |
-| 17 | EvenBlow | 15–15–30 | 0 | 0.0 | +0.7 | **0.7** | 0 | 0 | +1 | +1 |
-| 18 | Comeback | 16–19–35 | −3 | −9.0 | +3.6 | **−5.4** | +12 | +445 | −1 | 0 |
-| 19 | Randy (CSV) | 12–17–29 | −5 | −15.0 | −9.1 | **−24.1** | −19 | −609 | −4 | +1 |
+| # | Player | Record | Net | Lead | 2nds | R | ΔDW | ΔPF | ΔPo | ΔZap |
+|---|--------|--------|-----|------|------|---|-----|-----|-----|------|
+| 1 | Pedro | 24–6–30 | +18 | 54.0 | +28.2 | **82.2** | +56 | +2010 | +3 | +1 |
+| 2 | DominantPair | 18–7–25 | +11 | 33.0 | +20.4 | **53.4** | +39 | +1375 | +3 | +2 |
+| 3 | Cesar (CSV) | 17–12–29 | +5 | 15.0 | +10.6 | **25.6** | +19 | +609 | +4 | −1 |
+| 4 | Ariel (CSV) | 17–12–29 | +5 | 15.0 | +10.6 | **25.6** | +19 | +609 | +4 | −1 |
+| 5 | Ana | 18–12–30 | +6 | 18.0 | +4.9 | **22.9** | +9 | +330 | +1 | 0 |
+| 6 | HotWeekend | 6–2–8 | +4 | 12.0 | +7.1 | **19.1** | +13 | +490 | +1 | +1 |
+| 7 | Grinder100 | 52–48–100 | +4 | 12.0 | +5.7 | **17.7** | +11 | +380 | +1 | 0 |
+| 8 | Solid40 | 22–18–40 | +4 | 12.0 | +5.4 | **17.4** | +10 | +380 | +1 | 0 |
+| 9 | Maya50 | 27–23–50 | +4 | 12.0 | +5.4 | **17.4** | +10 | +380 | +1 | 0 |
+| 10 | Omar80loud | 41–39–80 | +2 | 6.0 | +8.3 | **14.3** | +13 | +455 | +3 | +2 |
+| 11 | Luis | 16–14–30 | +2 | 6.0 | +5.3 | **11.3** | +8 | +260 | +2 | +2 |
+| 12 | Eliecer (CSV) | 6–4–10 | +2 | 6.0 | +3.0 | **9.0** | +7 | +268 | −1 | +1 |
+| 13 | Omar80 | 41–39–80 | +2 | 6.0 | +3.0 | **9.0** | +5 | +190 | +1 | 0 |
+| 14 | Quiet+2 | 16–14–30 | +2 | 6.0 | +0.5 | **6.5** | +1 | +40 | 0 | 0 |
+| 15 | NearEven | 23–22–45 | +1 | 3.0 | +1.1 | **4.1** | +2 | +95 | 0 | 0 |
+| 16 | Ugly+4 | 17–13–30 | +4 | 12.0 | −9.3 | **2.7** | −17 | −600 | −2 | −1 |
+| 17 | EvenBlow | 15–15–30 | 0 | 0.0 | +0.8 | **0.8** | 0 | 0 | +1 | +1 |
+| 18 | Comeback | 16–19–35 | −3 | −9.0 | +5.1 | **−3.9** | +12 | +445 | −1 | 0 |
+| 19 | Randy (CSV) | 12–17–29 | −5 | −15.0 | −10.6 | **−25.6** | −19 | −609 | −4 | +1 |
 | 20 | Guillermo (CSV) | 6–13–19 | −7 | −21.0 | −13.6 | **−34.6** | −26 | −877 | −3 | 0 |
 
-Checks: Cesar R ≈ +24.1; Ugly+4 < Luis; Solid40 > Luis; Randy = −Cesar.
+Checks: Cesar 2nds > HotWeekend 2nds; Ugly+4 > EvenBlow; Solid40 > Luis.
+Same extras score the same R at any `G` (Solid40 = Maya50).
 
 ### Agents / implementers
 
@@ -253,7 +239,7 @@ Checks: Cesar R ≈ +24.1; Ugly+4 < Luis; Solid40 > Luis; Randy = −Cesar.
 - Do not reinvent pollo/zapato; reuse export / match delta rules (0 / 1
   opponent hands).
 - DW/DL = datas scored/conceded (`hands_for` / `hands_against`).
-- Never add a top cap on `denom`.
+- Never divide secondaries by `G` or `max(G, 25)` unless product asks.
 
 ## Imports & datasets
 
@@ -261,7 +247,7 @@ The mobile app can export SQLite tables as CSV. The web parser
 expects Olympus sectioned tables (mobile `EXPORT_TABLES` order):
 
 `db_meta`, `players`, `app_settings`, `matches`, `match_players`, `games`,
-`game_team_scores`, `player_stats`, `player_h2h`
+`game_players`, `game_team_scores`, `player_stats`, `player_h2h`
 
 See `lib/analytics/parseExport.ts`, `lib/analytics/dbMeta.ts`, and
 `lib/analytics/types.ts`.
@@ -273,7 +259,7 @@ See `lib/analytics/parseExport.ts`, `lib/analytics/dbMeta.ts`, and
 | `id` | Always `1` |
 | `db_identifier` | Stable **16-char** alphanumeric league identity |
 | `created_at` / `updated_at` | ISO-8601; `updated_at` bumps only on meaningful writes |
-| `schema_version` | Current schema (`17`) |
+| `schema_version` | Current schema (`23`) |
 | `app_version` | Last writer (e.g. `4.5.0`) |
 | `label` | Optional display name (often the data-set name) |
 | `origin` | `local` \| `imported` \| `web` |

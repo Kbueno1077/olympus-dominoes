@@ -23,7 +23,12 @@ import {
   matchupFilterFromTeams,
 } from "@/lib/analytics/matchup";
 import { computeMatchupStats } from "@/lib/analytics/matchupStats";
-import { getPlayerStats } from "@/lib/analytics/selectors";
+import {
+  getPlayerStats,
+  listStatModes,
+  listStatTileSets,
+  type TileSet,
+} from "@/lib/analytics/selectors";
 import type { CompareLaunch } from "@/lib/analytics/datasets";
 import type { OlympusExportData, PlayerStatsView } from "@/lib/analytics/types";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -50,24 +55,24 @@ import { alpha } from "@mui/material/styles";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const MAX_COMPARE = 10;
-const MAX_MATCHUP = 4;
 const SIDE_A = "#2F6F9F";
 const SIDE_B = "#B8453A";
+const SIDE_ANY = "rgba(95, 83, 65, 0.45)";
 
-type TeamSide = 1 | 2;
+type TeamSide = 1 | 2 | null;
 
 const cellValue = formatBreakdownValue;
 const cellColor = breakdownValueColor;
 
-function defaultTeamForNew(
-  assignments: Record<number, TeamSide | null>
-): TeamSide {
-  const values = Object.values(assignments);
-  const hasA = values.includes(1);
-  const hasB = values.includes(2);
-  if (!hasA) return 1;
-  if (!hasB) return 2;
-  return 1;
+function seedMatchupTeams(
+  selectedIds: number[],
+  current: Record<number, TeamSide>
+): Record<number, TeamSide> {
+  const next = { ...current };
+  for (const id of selectedIds) {
+    if (next[id] === undefined) next[id] = null;
+  }
+  return next;
 }
 
 type Props = {
@@ -97,29 +102,51 @@ export default function AnalyticsCompare({
     [data.players]
   );
 
+  const tileSets = useMemo(() => listStatTileSets(data), [data]);
+
   const stored = useMemo(
-    () => loadCompareUiFilters(datasetId, playerIds, modes),
+    () => loadCompareUiFilters(datasetId, playerIds, modes, tileSets),
     // Seed once per dataset; sanitize against players separately.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [datasetId]
   );
 
+  const [tileSet, setTileSet] = useState<TileSet>(() => {
+    if (
+      initialLaunch?.tileSet &&
+      tileSets.includes(initialLaunch.tileSet)
+    ) {
+      return initialLaunch.tileSet;
+    }
+    if (stored.tileSet && tileSets.includes(stored.tileSet)) {
+      return stored.tileSet;
+    }
+    return tileSets[0] ?? "55";
+  });
+  const modesForSet = useMemo(
+    () => (tileSets.length > 0 ? listStatModes(data, tileSet) : modes),
+    [data, tileSet, tileSets, modes]
+  );
+
   const [modeLabel, setModeLabel] = useState<string | null>(() => {
-    if (initialLaunch?.modeLabel && modes.includes(initialLaunch.modeLabel)) {
+    if (
+      initialLaunch?.modeLabel &&
+      modesForSet.includes(initialLaunch.modeLabel)
+    ) {
       return initialLaunch.modeLabel;
     }
-    if (stored.modeLabel && modes.includes(stored.modeLabel)) {
+    if (stored.modeLabel && modesForSet.includes(stored.modeLabel)) {
       return stored.modeLabel;
     }
-    if (initialMode && modes.includes(initialMode)) return initialMode;
-    return modes[0] ?? null;
+    if (initialMode && modesForSet.includes(initialMode)) return initialMode;
+    return modesForSet[0] ?? null;
   });
   const [selectedIds, setSelectedIds] = useState<number[]>(() =>
     initialLaunch?.playerIds?.length
       ? [...initialLaunch.playerIds]
       : stored.selectedIds
   );
-  const [teams, setTeams] = useState<Record<number, TeamSide | null>>(() =>
+  const [teams, setTeams] = useState<Record<number, TeamSide>>(() =>
     initialLaunch?.teams ? { ...initialLaunch.teams } : { ...stored.teams }
   );
   const [matchupMode, setMatchupMode] = useState(() =>
@@ -148,11 +175,22 @@ export default function AnalyticsCompare({
       setFiltersHydratedFor(datasetId);
       return;
     }
-    const loaded = loadCompareUiFilters(datasetId, playerIds, modes);
+    const loaded = loadCompareUiFilters(
+      datasetId,
+      playerIds,
+      undefined,
+      tileSets
+    );
+    const nextTile =
+      loaded.tileSet && tileSets.includes(loaded.tileSet)
+        ? loaded.tileSet
+        : (tileSets[0] ?? "55");
+    const nextModes = listStatModes(data, nextTile);
+    setTileSet(nextTile);
     setModeLabel(
-      loaded.modeLabel && modes.includes(loaded.modeLabel)
+      loaded.modeLabel && nextModes.includes(loaded.modeLabel)
         ? loaded.modeLabel
-        : (modes[0] ?? null)
+        : (nextModes[0] ?? null)
     );
     setSelectedIds(loaded.selectedIds);
     setTeams(loaded.teams);
@@ -167,6 +205,7 @@ export default function AnalyticsCompare({
     saveCompareUiFilters({
       datasetId,
       modeLabel,
+      tileSet,
       selectedIds,
       teams,
       matchupMode,
@@ -174,6 +213,7 @@ export default function AnalyticsCompare({
   }, [
     datasetId,
     modeLabel,
+    tileSet,
     selectedIds,
     teams,
     matchupMode,
@@ -190,7 +230,7 @@ export default function AnalyticsCompare({
     });
     setTeams((current) => {
       let changed = false;
-      const next: Record<number, TeamSide | null> = {};
+      const next: Record<number, TeamSide> = {};
       for (const [key, value] of Object.entries(current)) {
         const id = Number(key);
         if (!validIds.has(id)) {
@@ -212,16 +252,25 @@ export default function AnalyticsCompare({
     setSelectedIds(ids);
     setTeams(initialLaunch.teams ?? {});
     setMatchupMode(Boolean(initialLaunch.matchupMode));
-    if (initialLaunch.modeLabel && modes.includes(initialLaunch.modeLabel)) {
+    if (
+      initialLaunch.tileSet &&
+      tileSets.includes(initialLaunch.tileSet)
+    ) {
+      setTileSet(initialLaunch.tileSet);
+    }
+    if (
+      initialLaunch.modeLabel &&
+      modesForSet.includes(initialLaunch.modeLabel)
+    ) {
       setModeLabel(initialLaunch.modeLabel);
     }
     setFiltersHydratedFor(datasetId);
-  }, [initialLaunch, modes, players, datasetId]);
+  }, [initialLaunch, modesForSet, tileSets, players, datasetId]);
 
   useEffect(() => {
-    if (modeLabel && modes.includes(modeLabel)) return;
-    setModeLabel(modes[0] ?? null);
-  }, [modes, modeLabel]);
+    if (modeLabel && modesForSet.includes(modeLabel)) return;
+    setModeLabel(modesForSet[0] ?? null);
+  }, [modesForSet, modeLabel]);
 
   useEffect(() => {
     if (!matchupMode) {
@@ -246,6 +295,7 @@ export default function AnalyticsCompare({
           data,
           filter,
           modeLabel,
+          tileSet,
           playerIds: selectedIds,
         });
         setMatchupByPlayer(result.byPlayerId);
@@ -262,7 +312,7 @@ export default function AnalyticsCompare({
     }, 0);
 
     return () => window.clearTimeout(handle);
-  }, [matchupMode, alignmentReady, modeLabel, selectedIds, teams, data]);
+  }, [matchupMode, alignmentReady, modeLabel, tileSet, selectedIds, teams, data]);
 
   const selectedPlayers = useMemo(
     () =>
@@ -282,26 +332,6 @@ export default function AnalyticsCompare({
     [t]
   );
 
-  const maxPlayers = matchupMode ? MAX_MATCHUP : MAX_COMPARE;
-
-  // Matchup is 2v2 / FFA-of-4 at most — trim if someone had more from free compare.
-  useEffect(() => {
-    if (!matchupMode) return;
-    setSelectedIds((current) => {
-      if (current.length <= MAX_MATCHUP) return current;
-      const kept = current.slice(0, MAX_MATCHUP);
-      const dropped = new Set(current.slice(MAX_MATCHUP));
-      setTeams((prev) => {
-        const next = { ...prev };
-        dropped.forEach((id) => {
-          delete next[id];
-        });
-        return next;
-      });
-      return kept;
-    });
-  }, [matchupMode]);
-
   const togglePlayer = (playerId: number) => {
     setSelectedIds((current) => {
       if (current.includes(playerId)) {
@@ -312,10 +342,10 @@ export default function AnalyticsCompare({
         });
         return current.filter((id) => id !== playerId);
       }
-      if (current.length >= maxPlayers) return current;
+      if (!matchupMode && current.length >= MAX_COMPARE) return current;
       setTeams((prev) => ({
         ...prev,
-        [playerId]: defaultTeamForNew(prev),
+        [playerId]: null,
       }));
       return [...current, playerId];
     });
@@ -331,7 +361,9 @@ export default function AnalyticsCompare({
     }
     if (!modeLabel) return null;
     return (
-      getPlayerStats(data, playerId).find((s) => s.modeLabel === modeLabel) ??
+      getPlayerStats(data, playerId).find(
+        (s) => s.modeLabel === modeLabel && s.tileSet === tileSet
+      ) ??
       null
     );
   };
@@ -377,11 +409,56 @@ export default function AnalyticsCompare({
             pb: 2,
           }}
         >
+        {tileSets.length > 0 ? (
+          <ControlSection label={t("dominoSet")}>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              fullWidth
+              value={tileSet}
+              onChange={(_, value: TileSet | null) => {
+                if (value) setTileSet(value);
+              }}
+              sx={{ flexWrap: "wrap" }}
+            >
+              {tileSets.map((set) => (
+                <ToggleButton
+                  key={set}
+                  value={set}
+                  sx={{ flex: 1 }}
+                  aria-label={t("tileSetOption", { n: set })}
+                >
+                  {t("tileSetOption", { n: set })}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </ControlSection>
+        ) : null}
+
+        {modesForSet.length > 0 ? (
+          <ControlSection label={t("format")}>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              fullWidth
+              value={modeLabel}
+              onChange={(_, value) => {
+                if (value) setModeLabel(value);
+              }}
+              sx={{ flexWrap: "wrap" }}
+            >
+              {modesForSet.map((mode) => (
+                <ToggleButton key={mode} value={mode} sx={{ flex: 1 }}>
+                  {modeName(mode)}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </ControlSection>
+        ) : null}
+
         <ControlSection
           label={t("statsComparePlayers")}
-          hint={
-            matchupMode ? t("statsMatchupAssignHint") : t("statsCompareHint")
-          }
+          hint={matchupMode ? undefined : t("statsCompareHint")}
         >
           {selectedPlayers.length === 0 ? null : matchupMode ? (
             <Stack spacing={1} sx={{ mb: 1.5 }}>
@@ -432,32 +509,38 @@ export default function AnalyticsCompare({
                     {(
                       [
                         {
-                          value: 1 as const,
+                          value: null as TeamSide,
+                          label: t("historyFilterAnySide"),
+                          activeBorder: SIDE_ANY,
+                          activeBg: "rgba(95, 83, 65, 0.1)",
+                          activeColor: "text.primary",
+                          ariaKey: "historyFilterAnySide" as const,
+                        },
+                        {
+                          value: 1 as TeamSide,
                           label: t("historyFilterSideA"),
                           activeBorder: SIDE_A,
                           activeBg: alpha(SIDE_A, 0.14),
                           activeColor: SIDE_A,
+                          ariaKey: "statsMatchupTeamA" as const,
                         },
                         {
-                          value: 2 as const,
+                          value: 2 as TeamSide,
                           label: t("historyFilterSideB"),
                           activeBorder: SIDE_B,
                           activeBg: alpha(SIDE_B, 0.14),
                           activeColor: SIDE_B,
+                          ariaKey: "statsMatchupTeamB" as const,
                         },
                       ] as const
                     ).map((option) => {
-                      const selected = teams[player.id] === option.value;
+                      const selected = (teams[player.id] ?? null) === option.value;
                       return (
                         <Button
-                          key={option.value}
+                          key={String(option.value)}
                           size="small"
                           variant="outlined"
-                          aria-label={
-                            option.value === 1
-                              ? t("statsMatchupTeamA")
-                              : t("statsMatchupTeamB")
-                          }
+                          aria-label={t(option.ariaKey)}
                           aria-pressed={selected}
                           onClick={() =>
                             setPlayerTeam(player.id, option.value)
@@ -538,34 +621,18 @@ export default function AnalyticsCompare({
           ) : null}
         </ControlSection>
 
-        {modes.length > 0 ? (
-          <ControlSection label={t("format")}>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              fullWidth
-              value={modeLabel}
-              onChange={(_, value) => {
-                if (value) setModeLabel(value);
-              }}
-              sx={{ flexWrap: "wrap" }}
-            >
-              {modes.map((mode) => (
-                <ToggleButton key={mode} value={mode} sx={{ flex: 1 }}>
-                  {modeName(mode)}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </ControlSection>
-        ) : null}
-
         <ControlSection
           label={t("statsMatchupToggle")}
           hint={t("statsMatchupHint")}
           trailing={
             <Switch
               checked={matchupMode}
-              onChange={(_, checked) => setMatchupMode(checked)}
+              onChange={(_, checked) => {
+                setMatchupMode(checked);
+                if (checked) {
+                  setTeams((prev) => seedMatchupTeams(selectedIds, prev));
+                }
+              }}
               color="primary"
             />
           }
@@ -746,18 +813,13 @@ export default function AnalyticsCompare({
       >
         <DialogTitle>{t("statsComparePick")}</DialogTitle>
         <DialogContent dividers>
-          {matchupMode ? (
-            <Typography
-              variant="body2"
-              sx={{ color: "text.secondary", mb: 1.25 }}
-            >
-              {t("statsMatchupPickMax")}
-            </Typography>
-          ) : null}
           <Stack>
             {players.map((player) => {
               const checked = selectedIds.includes(player.id);
-              const disabled = !checked && selectedIds.length >= maxPlayers;
+              const disabled =
+                !checked &&
+                !matchupMode &&
+                selectedIds.length >= MAX_COMPARE;
               return (
                 <FormControlLabel
                   key={player.id}

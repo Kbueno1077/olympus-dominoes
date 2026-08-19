@@ -3,6 +3,7 @@ export const COMPARE_FILTERS_KEY = "olympus-web-compare-filters-v1";
 export type CompareUiFilters = {
   datasetId: string;
   modeLabel: string | null;
+  tileSet: "55" | "28" | null;
   selectedIds: number[];
   teams: Record<number, 1 | 2 | null>;
   matchupMode: boolean;
@@ -10,6 +11,7 @@ export type CompareUiFilters = {
 
 const DEFAULT_FILTERS: Omit<CompareUiFilters, "datasetId"> = {
   modeLabel: null,
+  tileSet: null,
   selectedIds: [],
   teams: {},
   matchupMode: false,
@@ -60,7 +62,8 @@ export function defaultCompareUiFilters(datasetId: string): CompareUiFilters {
 export function loadCompareUiFilters(
   datasetId: string,
   validPlayerIds?: ReadonlySet<number>,
-  validModes?: readonly string[]
+  validModes?: readonly string[],
+  validTileSets?: readonly string[]
 ): CompareUiFilters {
   const fromMemory =
     memory && memory.datasetId === datasetId ? memory : null;
@@ -75,9 +78,16 @@ export function loadCompareUiFilters(
     modeLabel = validModes[0] ?? null;
   }
 
+  let tileSet: "55" | "28" | null =
+    source.tileSet === "28" || source.tileSet === "55" ? source.tileSet : null;
+  if (tileSet && validTileSets && !validTileSets.includes(tileSet)) {
+    tileSet = (validTileSets[0] as "55" | "28") ?? null;
+  }
+
   const next: CompareUiFilters = {
     datasetId,
     modeLabel,
+    tileSet,
     selectedIds,
     teams: sanitizeTeams(source.teams, selectedIds),
     matchupMode: Boolean(source.matchupMode),
@@ -102,6 +112,10 @@ function readStored(datasetId: string): CompareUiFilters | null {
       selectedIds: Array.isArray(parsed.selectedIds)
         ? parsed.selectedIds.map(Number)
         : [],
+      tileSet:
+        parsed.tileSet === "28" || parsed.tileSet === "55"
+          ? parsed.tileSet
+          : null,
       teams:
         parsed.teams && typeof parsed.teams === "object"
           ? (parsed.teams as Record<number, 1 | 2 | null>)
