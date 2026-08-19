@@ -104,7 +104,7 @@ export function tallyOpenTablePlayers(
     ensureLine(map, name);
   }
 
-  return [...map.values()].sort((a, b) => {
+  return Array.from(map.values()).sort((a, b) => {
     if (b.gamesWon !== a.gamesWon) return b.gamesWon - a.gamesWon;
     if (a.gamesLost !== b.gamesLost) return a.gamesLost - b.gamesLost;
     if (b.pollosFor !== a.pollosFor) return b.pollosFor - a.pollosFor;
