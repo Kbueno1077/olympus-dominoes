@@ -1,5 +1,6 @@
 "use client";
 
+import { importErrorMessage } from "@/lib/analytics/importError";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import type { DbMetaRow } from "@/lib/analytics/dbMeta";
 import { withEnsuredDbMeta } from "@/lib/analytics/dbMetaState";
@@ -102,15 +103,7 @@ export default function DatasetsPanel({
       if (code === "empty_name") setLocalError(t("datasetsEmptyName"));
       else if (code === "duplicate_name")
         setLocalError(t("datasetsDuplicateName"));
-      else if (code === "sql_unsupported")
-        setLocalError(t("analyticsErrorSqlUnsupported"));
-      else if (code === "unknown_format")
-        setLocalError(t("analyticsErrorFormat"));
-      else if (code === "schema_too_new")
-        setLocalError(t("analyticsErrorSchemaTooNew"));
-      else if (code === "schema_too_old")
-        setLocalError(t("analyticsErrorSchemaTooOld"));
-      else setLocalError(t("analyticsErrorGeneric"));
+      else setLocalError(importErrorMessage(t, code));
     } finally {
       setBusy(false);
     }

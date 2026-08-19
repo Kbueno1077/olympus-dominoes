@@ -11,6 +11,7 @@ import {
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
+import { importErrorMessage } from "@/lib/analytics/importError";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { buildH2HCompareLaunch } from "@/lib/analytics/compareLaunch";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
@@ -31,9 +32,7 @@ import {
   peekStatsLaunch,
 } from "@/lib/analytics/statsLaunch";
 import { useTranslation } from "@/i18n/useTranslation";
-import useToast from "@/hooks/useToast";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
-import SyncIcon from "@mui/icons-material/Sync";
 import {
   Box,
   Card,
@@ -102,17 +101,14 @@ function StatLine({
 
 export default function Analytics() {
   const { t, modeName } = useTranslation();
-  const displayToast = useToast();
   const router = useRouter();
   const {
     data,
     error,
     loading,
-    syncJosesCoefficients,
     setPendingCompare,
     activeDataset,
   } = useAnalytics();
-  const [syncingCoef, setSyncingCoef] = useState(false);
   const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
   const [modeLabel, setModeLabel] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<number | null>(null);
@@ -167,19 +163,6 @@ export default function Analytics() {
     return getPlayerH2H(data, selectedPlayerId, activeMode);
   }, [data, selectedPlayerId, activeMode]);
 
-  const handleSyncJoses = () => {
-    setSyncingCoef(true);
-    try {
-      syncJosesCoefficients();
-      displayToast(t("toastJosesSynced"), "success");
-    } catch (err) {
-      console.error("syncJosesCoefficients failed", err);
-      displayToast(t("toastJosesSyncFailed"), "error");
-    } finally {
-      setSyncingCoef(false);
-    }
-  };
-
   const openH2HCompare = (opponentId: number) => {
     if (selectedPlayerId == null || !activeMode) return;
     setPendingCompare(
@@ -196,17 +179,7 @@ export default function Analytics() {
     startTransition(() => setPlayerId(id));
   };
 
-  const errorMessage = (() => {
-    const code = error;
-    if (!code) return null;
-    if (code.startsWith("unknown_table:")) return t("analyticsErrorUnknownTable");
-    if (code === "empty_export") return t("analyticsErrorEmpty");
-    if (code === "unknown_format") return t("analyticsErrorFormat");
-    if (code === "sql_unsupported") return t("analyticsErrorSqlUnsupported");
-    if (code === "schema_too_new") return t("analyticsErrorSchemaTooNew");
-    if (code === "schema_too_old") return t("analyticsErrorSchemaTooOld");
-    return t("analyticsErrorGeneric");
-  })();
+  const errorMessage = error ? importErrorMessage(t, error) : null;
 
   if (loading) {
     return (
@@ -230,25 +203,14 @@ export default function Analytics() {
         title={t("statsTitle")}
         filtersLabel={t("statsComparePlayers")}
         toolbar={
-          <>
-            <Chip
-              size="small"
-              icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-              label={t("statsManageData")}
-              onClick={() => setDataDrawerOpen(true)}
-              variant="outlined"
-              clickable
-            />
-            <Chip
-              size="small"
-              icon={<SyncIcon sx={{ fontSize: 16 }} />}
-              label={t("syncJosesCoefficientShort")}
-              onClick={handleSyncJoses}
-              disabled={syncingCoef}
-              variant="outlined"
-              clickable
-            />
-          </>
+          <Chip
+            size="small"
+            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
+            label={t("statsManageData")}
+            onClick={() => setDataDrawerOpen(true)}
+            variant="outlined"
+            clickable
+          />
         }
       >
         {modes.length > 0 ? (

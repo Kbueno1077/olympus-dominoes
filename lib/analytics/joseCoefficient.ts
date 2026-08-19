@@ -1,26 +1,14 @@
 import type { OlympusExportData, PlayerStatsView } from "./types";
 
 /**
- * Jose's Coefficient — linear kn (lab formula B).
+ * Jose's Coefficient — ranking score from aggregated player_stats.
  * Keep in sync with the mobile app:
  * olympus-dominoes-app/src/domain/joseCoefficient.ts
  * and README § Jose's Coefficient.
  *
- * Previous shipped formula was tanh lead (lab A). Do not bring tanh back
- * unless product asks. Never put a top cap on denom.
+ * R = 3 × ΔG + ΔDW / 4 + ΔPF / 165 + 3 × (ΔPo / 5 + 0.4 × ΔZap / 5)
+ * null when G = 0. Secondaries are stocks, not rates — no / max(G, 25).
  */
-
-/** Floor for secondary-stat rates — short heaters cannot inflate extras. */
-export const JOSES_SECONDARY_MIN_GAMES = 25;
-
-export const JOSES_COEFFICIENT_WEIGHTS = {
-  /** `kGames × (W−L)`. Linear, not divided by G, not tanh-capped. */
-  games: 3,
-  datas: 6.25,
-  points: 0.15,
-  pollos: 15,
-  zapatos: 6,
-} as const;
 
 export type JosesCoefficientInput = Pick<
   PlayerStatsView,
@@ -37,44 +25,78 @@ export type JosesCoefficientInput = Pick<
   | "zapatosAgainst"
 >;
 
-/** Lead term: `kGames × (W−L)`. */
-export function josesGamesTerm(netGames: number): number {
+/** Weights for Jose's Coefficient (see README). */
+export const JOSES_COEFFICIENT_WEIGHTS = {
+  /** Multiplier on net games ΔG = W − L. */
+  games: 3,
+  /** ΔDW / 4 — four net datas = 1 R. */
+  datasDivisor: 4,
+  /** ΔPF / 165 — 165 net points = 1 R. */
+  pointsDivisor: 165,
+  /** 3 × (ΔPo / 5 + 0.4 × ΔZap / 5). */
+  shutoutScale: 3,
+  pollosDivisor: 5,
+  /** Zapato share inside the shutout term (a pollo is 2.5× a zapato). */
+  zapatoWeight: 0.4,
+} as const;
+
+/** Lead term: `3 × ΔG`. */
+export function josesLeadTerm(netGames: number): number {
   return JOSES_COEFFICIENT_WEIGHTS.games * netGames;
 }
 
-export function josesSecondaryDenom(gamesPlayed: number): number {
-  return Math.max(gamesPlayed, JOSES_SECONDARY_MIN_GAMES);
+/**
+ * Datas, points, pollos, zapatos — not divided by games.
+ * `ΔDW / 4 + ΔPF / 165 + 3 × (ΔPo / 5 + 0.4 × ΔZap / 5)`
+ */
+export function josesSecondaryTerm(
+  deltaDW: number,
+  deltaPF: number,
+  deltaPo: number,
+  deltaZap: number
+): number {
+  const {
+    datasDivisor,
+    pointsDivisor,
+    shutoutScale,
+    pollosDivisor,
+    zapatoWeight,
+  } = JOSES_COEFFICIENT_WEIGHTS;
+
+  return (
+    deltaDW / datasDivisor +
+    deltaPF / pointsDivisor +
+    shutoutScale *
+      (deltaPo / pollosDivisor + (zapatoWeight * deltaZap) / pollosDivisor)
+  );
 }
 
 /**
- * R = 3×(W−L) + (6.25·ΔDW + 0.15·ΔPF + 15·ΔPo + 6·ΔZap) / max(G, 25)
- * null when G = 0
+ * Returns the coefficient for one (player, mode) aggregate row.
+ * `null` when there are no games yet (undefined ranking).
+ *
+ * R = 3 × ΔG
+ *   + ΔDW / 4 + ΔPF / 165
+ *   + 3 × (ΔPo / 5 + 0.4 × ΔZap / 5)
  */
 export function computeJosesCoefficient(
   stats: JosesCoefficientInput
 ): number | null {
-  const G = stats.gamesPlayed;
-  if (G <= 0) return null;
+  if (stats.gamesPlayed <= 0) return null;
 
-  const {
-    datas: wDatas,
-    points: wPoints,
-    pollos: wPollos,
-    zapatos: wZapatos,
-  } = JOSES_COEFFICIENT_WEIGHTS;
-
-  const net = stats.gamesWon - stats.gamesLost;
-  const denom = josesSecondaryDenom(G);
+  const deltaG = stats.gamesWon - stats.gamesLost;
+  const deltaDW = stats.handsFor - stats.handsAgainst;
+  const deltaPF = stats.pointsFor - stats.pointsAgainst;
+  const deltaPo = stats.pollosFor - stats.pollosAgainst;
+  const deltaZap = stats.zapatosFor - stats.zapatosAgainst;
 
   return (
-    josesGamesTerm(net) +
-    (wDatas * (stats.handsFor - stats.handsAgainst)) / denom +
-    (wPoints * (stats.pointsFor - stats.pointsAgainst)) / denom +
-    (wPollos * (stats.pollosFor - stats.pollosAgainst)) / denom +
-    (wZapatos * (stats.zapatosFor - stats.zapatosAgainst)) / denom
+    josesLeadTerm(deltaG) +
+    josesSecondaryTerm(deltaDW, deltaPF, deltaPo, deltaZap)
   );
 }
 
+/** Display helper — one decimal, or em dash when unranked. */
 export function formatJosesCoefficient(
   value: number | null | undefined
 ): string {

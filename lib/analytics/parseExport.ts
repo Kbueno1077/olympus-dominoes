@@ -109,7 +109,7 @@ export function stripSurrogateRowIds(
 
 /**
  * Read `# db_meta.schema_version` without parsing other sections so a newer
- * file throws `schema_too_new` instead of `unknown_table:…`.
+ * file throws `schema_too_new:<n>` instead of `unknown_table:…`.
  */
 export function peekCsvSchemaVersion(contents: string): number {
   const lines = contents.split(/\r?\n/);

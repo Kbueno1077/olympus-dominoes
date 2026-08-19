@@ -31,7 +31,11 @@ import {
   type DatasetRegistry,
 } from "./datasets";
 import { parseOlympusExport } from "./parseExport";
-import { normalizeImportedTileSet } from "./schemaVersion";
+import {
+  needsJosesRecompute,
+  normalizeImportedTileSet,
+  schemaVersionFromExport,
+} from "./schemaVersion";
 import {
   withDbMetaLabel,
   withEnsuredDbMeta,
@@ -133,9 +137,12 @@ function hydrateDatasetData(
   const withMatches = withEnsuredMatchPublicIds(withSeats);
   const withTiles = withEnsuredTileSets(withMatches);
   const withStats = withStatsFilledFromMatches(withTiles);
-  const ensured = withEnsuredDbMeta(withStats, {
+  const withJoses = needsJosesRecompute(schemaVersionFromExport(data))
+    ? recalculateAllJosesCoefficients(withStats)
+    : withStats;
+  const ensured = withEnsuredDbMeta(withJoses, {
     origin: "web",
-    label: label ?? withStats.db_meta?.label,
+    label: label ?? withJoses.db_meta?.label,
   });
   if (ensured !== data) {
     saveDatasetData(id, ensured);
