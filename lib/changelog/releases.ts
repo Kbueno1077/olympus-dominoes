@@ -18,8 +18,8 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
-    version: "4.8.0",
-    date: "2026-08-18",
+    version: "unreleased",
+    date: null,
     summary: "Jose’s Coefficient matches the phone app, and schema 23 imports.",
     highlights: [
       "Jose’s Coefficient no longer divides extras by games. Same formula as the app: 3×ΔG, then datas / 4, points / 165, and pollos / zapatos.",

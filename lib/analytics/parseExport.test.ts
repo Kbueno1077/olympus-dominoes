@@ -120,7 +120,7 @@ describe("schema 23 round-trip", () => {
     const contents = csv(`
 # db_meta
 id,db_identifier,created_at,updated_at,schema_version,app_version,label,origin
-1,Wgpr0j8jv6WzvMbq,2026-08-16T17:48:46.829Z,2026-08-16T17:48:46.829Z,23,4.8.0,Panteon,imported
+1,Wgpr0j8jv6WzvMbq,2026-08-16T17:48:46.829Z,2026-08-16T17:48:46.829Z,23,4.7.0,Panteon,imported
 
 # players
 id,name,name_key,public_id,created_at,is_myself
