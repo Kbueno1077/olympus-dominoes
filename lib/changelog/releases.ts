@@ -18,16 +18,6 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
-    version: "unreleased",
-    date: null,
-    summary: "Jose’s Coefficient matches the phone app, and schema 23 imports.",
-    highlights: [
-      "Jose’s Coefficient no longer divides extras by games. Same formula as the app: 3×ΔG, then datas / 4, points / 165, and pollos / zapatos.",
-      "Phone-app schema 23 exports import here. A web export writes schema 23.",
-      "Compare → This matchup: A and B are partners on that side. Any means either team, so you can pick more than four people and still count those games.",
-    ],
-  },
-  {
     version: "4.7.0",
     date: "2026-08-17",
     summary:
