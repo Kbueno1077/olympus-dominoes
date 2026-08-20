@@ -111,12 +111,12 @@ export default function StatsDashboardCharts({
     if (!activeStats) return [];
     return [
       {
-        name: t("statsGamesWon"),
+        name: t("statsWon"),
         value: activeStats.gamesWon,
         fill: COLORS.primary,
       },
       {
-        name: t("statsGamesLost"),
+        name: t("statsLost"),
         value: activeStats.gamesLost,
         fill: COLORS.secondary,
       },
@@ -318,7 +318,14 @@ export default function StatsDashboardCharts({
             ) : (
               <ChartContainer
                 config={{
-                  value: { label: t("statsGamesPlayed"), color: COLORS.info },
+                  [t("statsWon")]: {
+                    label: t("statsWon"),
+                    color: COLORS.primary,
+                  },
+                  [t("statsLost")]: {
+                    label: t("statsLost"),
+                    color: COLORS.secondary,
+                  },
                 }}
                 className="h-[150px] w-full"
               >
