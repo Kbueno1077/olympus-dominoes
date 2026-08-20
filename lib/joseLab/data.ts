@@ -82,8 +82,9 @@ type TestRow = {
 const README_ROWS: ReadmeRow[] = [
   { id: "pedro", name: "Pedro", W: 24, L: 6, G: 30, dDW: 56, dPF: 2010, dPo: 3, dZap: 1, pin: true },
   { id: "dominant-pair", name: "DominantPair", W: 18, L: 7, G: 25, dDW: 39, dPF: 1375, dPo: 3, dZap: 2, pin: false },
-  { id: "cesar", name: "Cesar (CSV)", W: 17, L: 12, G: 29, dDW: 19, dPF: 609, dPo: 4, dZap: -1, pin: true },
-  { id: "ariel", name: "Ariel (CSV)", W: 17, L: 12, G: 29, dDW: 19, dPF: 609, dPo: 4, dZap: -1, pin: false },
+  // PanteonV2.csv · 2 vs 2 · 55 · Cesar+Ariel vs Randy (Eliecer 10, Guillermo 65)
+  { id: "cesar", name: "Cesar (CSV)", W: 41, L: 34, G: 75, dDW: 11, dPF: 601, dPo: 3, dZap: -2, pin: true, HF: 239, HA: 228, PF: 9317, PA: 8716, PoF: 9, PoA: 6, ZapF: 6, ZapA: 8 },
+  { id: "ariel", name: "Ariel (CSV)", W: 41, L: 34, G: 75, dDW: 11, dPF: 601, dPo: 3, dZap: -2, pin: false, HF: 239, HA: 228, PF: 9317, PA: 8716, PoF: 9, PoA: 6, ZapF: 6, ZapA: 8 },
   { id: "ana", name: "Ana", W: 18, L: 12, G: 30, dDW: 9, dPF: 330, dPo: 1, dZap: 0, pin: true },
   { id: "hot-weekend", name: "HotWeekend", W: 6, L: 2, G: 8, dDW: 13, dPF: 490, dPo: 1, dZap: 1, pin: true },
   { id: "solid40", name: "Solid40", W: 22, L: 18, G: 40, dDW: 10, dPF: 380, dPo: 1, dZap: 0, pin: true },
@@ -98,8 +99,8 @@ const README_ROWS: ReadmeRow[] = [
   { id: "near-even", name: "NearEven", W: 23, L: 22, G: 45, dDW: 2, dPF: 95, dPo: 0, dZap: 0, pin: false },
   { id: "even-blow", name: "EvenBlow", W: 15, L: 15, G: 30, dDW: 0, dPF: 0, dPo: 1, dZap: 1, pin: true },
   { id: "comeback", name: "Comeback", W: 16, L: 19, G: 35, dDW: 12, dPF: 445, dPo: -1, dZap: 0, pin: false },
-  { id: "randy", name: "Randy (CSV)", W: 12, L: 17, G: 29, dDW: -19, dPF: -609, dPo: -4, dZap: 1, pin: true },
-  { id: "guillermo", name: "Guillermo (CSV)", W: 6, L: 13, G: 19, dDW: -26, dPF: -877, dPo: -3, dZap: 0, pin: false },
+  { id: "randy", name: "Randy (CSV)", W: 34, L: 41, G: 75, dDW: -11, dPF: -601, dPo: -3, dZap: 2, pin: true, HF: 228, HA: 239, PF: 8716, PA: 9317, PoF: 6, PoA: 9, ZapF: 8, ZapA: 6 },
+  { id: "guillermo", name: "Guillermo (CSV)", W: 28, L: 37, G: 65, dDW: -18, dPF: -869, dPo: -2, dZap: 1, pin: false, HF: 195, HA: 213, PF: 7508, PA: 8377, PoF: 5, PoA: 7, ZapF: 7, ZapA: 6 },
   // Valhalla.csv · 2 vs 2 · 55 · 21 games (Kevin+Jose vs Raulito+Rudelys)
   { id: "kevin", name: "Kevin (CSV)", W: 11, L: 10, G: 21, dDW: 9, dPF: 388, dPo: 5, dZap: -1, pin: true, HF: 70, HA: 61, PF: 2765, PA: 2377, PoF: 5, PoA: 0, ZapF: 1, ZapA: 2 },
   { id: "jose", name: "Jose (CSV)", W: 11, L: 10, G: 21, dDW: 9, dPF: 388, dPo: 5, dZap: -1, pin: false, HF: 70, HA: 61, PF: 2765, PA: 2377, PoF: 5, PoA: 0, ZapF: 1, ZapA: 2 },
