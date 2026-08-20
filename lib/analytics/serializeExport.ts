@@ -235,19 +235,17 @@ export function serializeOlympusExport(
   ).join("\n");
 }
 
+/** File name stem: the data set's name, safe for a download. */
 export function exportBasenameForDataset(displayName: string): string {
-  const slug =
-    displayName
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 40) || "dataset";
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `olympus-${slug}-${yyyy}-${mm}-${dd}`;
+  const cleaned = displayName
+    .trim()
+    .replace(/\.(csv|sql)$/i, "")
+    .replace(/[\\/:*?"<>|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\.+$/g, "")
+    .trim()
+    .slice(0, 80);
+  return cleaned || "dataset";
 }
 
 export function downloadOlympusCsv(basename: string, csv: string): void {

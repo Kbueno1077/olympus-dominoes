@@ -126,9 +126,18 @@ export function ChartTooltipContent({
       ) : null}
       <div className="grid gap-1.5">
         {payload.map((item) => {
+          const innerName =
+            typeof item.payload?.name === "string"
+              ? item.payload.name
+              : undefined;
           const key = String(item.dataKey ?? item.name ?? "value");
           const itemConfig = config[key];
-          const displayName = itemConfig?.label ?? item.name ?? key;
+          // Pie (and other single-`value` series) share dataKey "value". Prefer
+          // the slice/bar category name so tooltips are not "Games played".
+          const displayName =
+            key === "value" && innerName
+              ? innerName
+              : (itemConfig?.label ?? innerName ?? item.name ?? key);
           const value =
             formatter && item.value != null
               ? formatter(item.value, String(displayName))
