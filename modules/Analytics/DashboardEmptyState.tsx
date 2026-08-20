@@ -1,16 +1,17 @@
 "use client";
 
 import DashboardAside from "@/modules/Analytics/DashboardAside";
-import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import {
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
 import { useTranslation } from "@/i18n/useTranslation";
+import { statsDataDrawerOpenRecoil } from "@/recoil/recoilState";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
-import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useState, type ReactNode } from "react";
+import { useSetRecoilState } from "recoil";
+import { type ReactNode } from "react";
 
 export function DashboardChromeShell({
   title,
@@ -79,7 +80,7 @@ export default function DashboardEmptyState({
   errorMessage = null,
 }: Props) {
   const { t } = useTranslation();
-  const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
+  const openDataDrawer = useSetRecoilState(statsDataDrawerOpenRecoil);
 
   const title = (() => {
     switch (page) {
@@ -120,22 +121,11 @@ export default function DashboardEmptyState({
   })();
 
   return (
-    <>
-      <DashboardChromeShell
-        centerMain
-        title={title}
-        subtitle={t("dashboardEmptyNoData")}
-        toolbar={
-          <Chip
-            size="small"
-            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-            label={t("statsManageData")}
-            onClick={() => setDataDrawerOpen(true)}
-            variant="outlined"
-            clickable
-          />
-        }
-      >
+    <DashboardChromeShell
+      centerMain
+      title={title}
+      subtitle={t("dashboardEmptyNoData")}
+    >
         <Stack
           spacing={2.5}
           alignItems="center"
@@ -173,7 +163,7 @@ export default function DashboardEmptyState({
             variant="contained"
             size="large"
             startIcon={<FolderOpenIcon />}
-            onClick={() => setDataDrawerOpen(true)}
+            onClick={() => openDataDrawer(true)}
             sx={{ px: 2.5, py: 1.1 }}
           >
             {t("statsManageData")}
@@ -192,12 +182,6 @@ export default function DashboardEmptyState({
             </Typography>
           ) : null}
         </Stack>
-      </DashboardChromeShell>
-
-      <StatsDataDrawer
-        open={dataDrawerOpen}
-        onClose={() => setDataDrawerOpen(false)}
-      />
-    </>
+    </DashboardChromeShell>
   );
 }

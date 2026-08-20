@@ -7,7 +7,6 @@ import {
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
-import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import { importErrorMessage } from "@/lib/analytics/importError";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import {
@@ -19,11 +18,9 @@ import {
 import { listLeaderboard, listStatModes } from "@/lib/analytics/selectors";
 import { useTranslation } from "@/i18n/useTranslation";
 import { usePodiumPunchlines } from "@/hooks/usePodiumPunchlines";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import {
   Box,
-  Chip,
   CircularProgress,
   Stack,
   ToggleButton,
@@ -207,7 +204,6 @@ export default function Podium() {
   const { data, error, loading, activeDataset } = useAnalytics();
   const { ready: punchlinesReady, punchlineKey } = usePodiumPunchlines();
   const [modeLabel, setModeLabel] = useState<string | null>(null);
-  const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
 
   const modes = useMemo(() => (data ? listStatModes(data) : []), [data]);
 
@@ -257,16 +253,6 @@ export default function Podium() {
         title={t("podiumTitle")}
         subtitle={t("podiumSubtitle")}
         filtersLabel={t("format")}
-        toolbar={
-          <Chip
-            size="small"
-            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-            label={t("statsManageData")}
-            onClick={() => setDataDrawerOpen(true)}
-            variant="outlined"
-            clickable
-          />
-        }
       >
         {modes.length > 0 ? (
           <Box sx={{ px: 2, pb: 1.5 }}>
@@ -354,11 +340,6 @@ export default function Podium() {
           </Stack>
         )}
       </Box>
-
-      <StatsDataDrawer
-        open={dataDrawerOpen}
-        onClose={() => setDataDrawerOpen(false)}
-      />
     </Box>
   );
 }

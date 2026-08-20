@@ -1,12 +1,15 @@
 "use client";
 
-import LanguageSwitch from "@/components/Header/LanguageSwitch";
 import NavMenu from "@/components/Header/NavMenu";
 import { useTranslation } from "@/i18n/useTranslation";
+import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
+import { statsDataDrawerOpenRecoil } from "@/recoil/recoilState";
+import FolderOpenOutlined from "@mui/icons-material/FolderOpenOutlined";
 import {
   AppBar,
   Box,
   Container,
+  IconButton,
   Stack,
   Toolbar,
   Typography,
@@ -15,6 +18,7 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRecoilState } from "recoil";
 
 const HEADER_PX = 64;
 const APP_ICON_SRC = "/app-icon.png";
@@ -27,6 +31,9 @@ export default function Header() {
   const theme = useTheme();
   const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [dataDrawerOpen, setDataDrawerOpen] = useRecoilState(
+    statsDataDrawerOpenRecoil
+  );
 
   useEffect(() => {
     // Document scroll is locked; AppShell section owns scroll on mobile.
@@ -55,7 +62,8 @@ export default function Header() {
   }, []);
 
   return (
-    <AppBar
+    <>
+      <AppBar
       position="fixed"
       elevation={0}
       color="inherit"
@@ -104,6 +112,7 @@ export default function Header() {
               <Stack
                 component={Link}
                 href="/"
+                aria-label="Olympus Dominoes"
                 direction="row"
                 alignItems="center"
                 spacing={{ xs: 1, sm: 1.5 }}
@@ -130,7 +139,7 @@ export default function Header() {
                       `0 0 0 1px ${alpha(muiTheme.palette.grey[600], 0.14)}`,
                   }}
                 />
-                <Box sx={{ minWidth: 0 }}>
+                <Box sx={{ display: { xs: "none", sm: "block" }, minWidth: 0 }}>
                   <Typography
                     component="p"
                     noWrap
@@ -174,10 +183,33 @@ export default function Header() {
             }}
           >
             <NavMenu />
-            <LanguageSwitch />
+            <IconButton
+              size="small"
+              color="inherit"
+              aria-label={t("statsManageData")}
+              onClick={() => setDataDrawerOpen(true)}
+              sx={{
+                color: "text.primary",
+                border: "1px solid",
+                borderColor: "transparent",
+                borderRadius: 1.5,
+                "&:hover": {
+                  backgroundColor: (muiTheme) =>
+                    alpha(muiTheme.palette.grey[700], 0.08),
+                  borderColor: "divider",
+                },
+              }}
+            >
+              <FolderOpenOutlined sx={{ fontSize: 20 }} />
+            </IconButton>
           </Stack>
         </Toolbar>
       </Container>
     </AppBar>
+      <StatsDataDrawer
+        open={dataDrawerOpen}
+        onClose={() => setDataDrawerOpen(false)}
+      />
+    </>
   );
 }

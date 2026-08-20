@@ -4,6 +4,7 @@ export const DATASETS_REGISTRY_KEY = "olympus-web-datasets-v1";
 export const DATASET_DATA_PREFIX = "olympus-web-dataset-data-";
 /** Legacy single-slot key — migrated into the default data set on first load. */
 export const LEGACY_EXPORT_KEY = "olympus-web-analytics-export-v1";
+/** Only used when migrating the pre-registry single-slot export. */
 export const DEFAULT_DATASET_ID = "default";
 
 export type DatasetMeta = {
@@ -16,6 +17,12 @@ export type DatasetMeta = {
 export type DatasetRegistry = {
   activeDatasetId: string;
   datasets: DatasetMeta[];
+};
+
+/** No import yet — web does not keep an empty Local save. */
+export const EMPTY_REGISTRY: DatasetRegistry = {
+  activeDatasetId: "",
+  datasets: [],
 };
 
 export type CompareLaunch = {
@@ -34,19 +41,63 @@ function newId(): string {
   return `ds_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function defaultRegistry(): DatasetRegistry {
-  const updatedAt = nowIso();
-  return {
+/**
+ * Drop data-set rows that have no stored payload (the old empty "Local" slot).
+ */
+export function pruneDatasetsWithoutPayload(
+  registry: DatasetRegistry,
+  hasPayload: (id: string) => boolean
+): DatasetRegistry {
+  const datasets = registry.datasets.filter((d) => hasPayload(d.id));
+  if (datasets.length === 0) return EMPTY_REGISTRY;
+  const activeDatasetId = datasets.some((d) => d.id === registry.activeDatasetId)
+    ? registry.activeDatasetId
+    : datasets[0].id;
+  return { activeDatasetId, datasets };
+}
+
+function migrateLegacyIfPresent(): DatasetRegistry | null {
+  const legacy = readJson<OlympusExportData>(LEGACY_EXPORT_KEY);
+  if (!legacy) return null;
+  const displayName = legacy.fileName
+    ? suggestedDatasetNameFromFile(legacy.fileName)
+    : "Imported";
+  const registry: DatasetRegistry = {
     activeDatasetId: DEFAULT_DATASET_ID,
     datasets: [
       {
         id: DEFAULT_DATASET_ID,
-        displayName: "Local",
-        fileName: "",
-        updatedAt,
+        displayName,
+        fileName: legacy.fileName ?? "",
+        updatedAt: legacy.importedAt ?? nowIso(),
       },
     ],
   };
+  writeJson(dataKeyFor(DEFAULT_DATASET_ID), legacy);
+  removeKey(LEGACY_EXPORT_KEY);
+  writeJson(DATASETS_REGISTRY_KEY, registry);
+  return registry;
+}
+
+export function loadDatasetRegistry(): DatasetRegistry {
+  const stored = readJson<DatasetRegistry>(DATASETS_REGISTRY_KEY);
+  if (stored && Array.isArray(stored.datasets)) {
+    const pruned = pruneDatasetsWithoutPayload(stored, (id) =>
+      Boolean(loadDatasetData(id))
+    );
+    if (
+      pruned.datasets.length !== stored.datasets.length ||
+      pruned.activeDatasetId !== stored.activeDatasetId
+    ) {
+      writeJson(DATASETS_REGISTRY_KEY, pruned);
+    }
+    if (pruned.datasets.length > 0) return pruned;
+  }
+
+  const migrated = migrateLegacyIfPresent();
+  if (migrated) return migrated;
+
+  return EMPTY_REGISTRY;
 }
 
 function readJson<T>(key: string): T | null {
@@ -80,34 +131,6 @@ function removeKey(key: string) {
 
 export function dataKeyFor(id: string): string {
   return `${DATASET_DATA_PREFIX}${id}`;
-}
-
-export function loadDatasetRegistry(): DatasetRegistry {
-  const stored = readJson<DatasetRegistry>(DATASETS_REGISTRY_KEY);
-  if (
-    stored?.activeDatasetId &&
-    Array.isArray(stored.datasets) &&
-    stored.datasets.length > 0
-  ) {
-    return stored;
-  }
-
-  const registry = defaultRegistry();
-  const legacy = readJson<OlympusExportData>(LEGACY_EXPORT_KEY);
-  if (legacy) {
-    registry.datasets[0] = {
-      ...registry.datasets[0],
-      displayName: legacy.fileName
-        ? suggestedDatasetNameFromFile(legacy.fileName)
-        : "Local",
-      fileName: legacy.fileName ?? "",
-      updatedAt: legacy.importedAt ?? nowIso(),
-    };
-    writeJson(dataKeyFor(DEFAULT_DATASET_ID), legacy);
-    removeKey(LEGACY_EXPORT_KEY);
-  }
-  writeJson(DATASETS_REGISTRY_KEY, registry);
-  return registry;
 }
 
 export function saveDatasetRegistry(registry: DatasetRegistry) {
@@ -228,10 +251,7 @@ export function removeDatasetFromRegistryLocal(
     throw new Error("not_found");
   }
   const datasets = registry.datasets.filter((d) => d.id !== id);
-  // Web is view-only — deleting the last set is fine; leave an empty Local slot.
-  if (datasets.length === 0) {
-    return defaultRegistry();
-  }
+  if (datasets.length === 0) return EMPTY_REGISTRY;
   let activeDatasetId = registry.activeDatasetId;
   if (activeDatasetId === id) {
     activeDatasetId = datasets[0].id;

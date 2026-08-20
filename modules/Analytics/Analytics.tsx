@@ -1,7 +1,6 @@
 "use client";
 
 import StatsDashboardCharts from "@/modules/Analytics/StatsDashboardCharts";
-import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import {
@@ -32,11 +31,9 @@ import {
   peekStatsLaunch,
 } from "@/lib/analytics/statsLaunch";
 import { useTranslation } from "@/i18n/useTranslation";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import {
   Box,
   Card,
-  Chip,
   CircularProgress,
   Stack,
   ToggleButton,
@@ -109,7 +106,6 @@ export default function Analytics() {
     setPendingCompare,
     activeDataset,
   } = useAnalytics();
-  const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
   const [modeLabel, setModeLabel] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<number | null>(null);
 
@@ -202,16 +198,6 @@ export default function Analytics() {
       <DashboardAside
         title={t("statsTitle")}
         filtersLabel={t("statsComparePlayers")}
-        toolbar={
-          <Chip
-            size="small"
-            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-            label={t("statsManageData")}
-            onClick={() => setDataDrawerOpen(true)}
-            variant="outlined"
-            clickable
-          />
-        }
       >
         {modes.length > 0 ? (
           <Box sx={{ px: 2, pb: 1.5 }}>
@@ -556,11 +542,6 @@ export default function Analytics() {
           </Stack>
         )}
       </Box>
-
-      <StatsDataDrawer
-        open={dataDrawerOpen}
-        onClose={() => setDataDrawerOpen(false)}
-      />
     </Box>
   );
 }

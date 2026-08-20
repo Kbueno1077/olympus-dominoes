@@ -15,7 +15,7 @@ import {
   stashCompareLaunch,
 } from "./compareLaunch";
 import {
-  DEFAULT_DATASET_ID,
+  EMPTY_REGISTRY,
   loadDatasetData,
   loadDatasetRegistry,
   registerNewDatasetInRegistry,
@@ -172,10 +172,7 @@ function prepareImportedData(
 }
 
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
-  const [registry, setRegistry] = useState<DatasetRegistry>({
-    activeDatasetId: DEFAULT_DATASET_ID,
-    datasets: [],
-  });
+  const [registry, setRegistry] = useState<DatasetRegistry>(EMPTY_REGISTRY);
   const [data, setData] = useState<OlympusExportData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -184,13 +181,17 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     const next = loadDatasetRegistry();
     setRegistry(next);
     const active = next.datasets.find((d) => d.id === next.activeDatasetId);
-    setData(
-      hydrateDatasetData(
-        next.activeDatasetId,
-        loadDatasetData(next.activeDatasetId),
-        active?.displayName
-      )
-    );
+    if (!active) {
+      setData(null);
+    } else {
+      setData(
+        hydrateDatasetData(
+          next.activeDatasetId,
+          loadDatasetData(next.activeDatasetId),
+          active.displayName
+        )
+      );
+    }
     setLoading(false);
   }, []);
 
@@ -214,7 +215,22 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       const active = current.datasets.find(
         (d) => d.id === current.activeDatasetId
       );
-      const prepared = prepareImportedData(parsed, active?.displayName);
+      if (!active) {
+        const name =
+          suggestedDatasetNameFromFile(parsed.fileName) || "Imported";
+        const prepared = prepareImportedData(parsed, name);
+        const { registry: next, dataset } = registerNewDatasetInRegistry(
+          current,
+          name,
+          prepared.fileName
+        );
+        saveDatasetData(dataset.id, prepared);
+        persistRegistry(next);
+        setData(prepared);
+        setError(null);
+        return;
+      }
+      const prepared = prepareImportedData(parsed, active.displayName);
       const touched = touchDatasetInRegistry(
         current,
         current.activeDatasetId,
@@ -355,24 +371,21 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   const deleteDataset = useCallback(
     (id: string) => {
-      const wasLast = registry.datasets.length <= 1;
       const next = removeDatasetFromRegistryLocal(registry, id);
       saveDatasetData(id, null);
-      // Fresh empty Local slot after deleting the only set — no leftover payload.
-      if (wasLast) {
-        saveDatasetData(next.activeDatasetId, null);
-      }
       persistRegistry(next);
-      const active = next.datasets.find((d) => d.id === next.activeDatasetId);
-      setData(
-        wasLast
-          ? null
-          : hydrateDatasetData(
-              next.activeDatasetId,
-              loadDatasetData(next.activeDatasetId),
-              active?.displayName
-            )
-      );
+      if (next.datasets.length === 0) {
+        setData(null);
+      } else {
+        const active = next.datasets.find((d) => d.id === next.activeDatasetId);
+        setData(
+          hydrateDatasetData(
+            next.activeDatasetId,
+            loadDatasetData(next.activeDatasetId),
+            active?.displayName
+          )
+        );
+      }
       setError(null);
     },
     [persistRegistry, registry]
@@ -380,6 +393,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 
   const persistActiveData = useCallback(
     (next: OlympusExportData) => {
+      if (!registry.activeDatasetId) throw new Error("no_data");
       const touchedMeta = withTouchedDbMeta(next, {
         label: next.db_meta?.label,
       });

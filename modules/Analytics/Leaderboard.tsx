@@ -7,14 +7,12 @@ import {
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
-import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import { importErrorMessage } from "@/lib/analytics/importError";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import { listLeaderboard, listStatModes } from "@/lib/analytics/selectors";
 import { stashStatsLaunch } from "@/lib/analytics/statsLaunch";
 import { useTranslation } from "@/i18n/useTranslation";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import {
   Box,
   Chip,
@@ -35,7 +33,6 @@ export default function Leaderboard() {
   const { t, modeName } = useTranslation();
   const router = useRouter();
   const { data, error, loading, activeDataset } = useAnalytics();
-  const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
   const [modeLabel, setModeLabel] = useState<string | null>(null);
 
   const modes = useMemo(() => (data ? listStatModes(data) : []), [data]);
@@ -75,22 +72,11 @@ export default function Leaderboard() {
   const datasetLabel = activeDataset?.displayName || data.fileName;
 
   return (
-    <>
-      <Box sx={dashboardShellSx}>
+    <Box sx={dashboardShellSx}>
         <DashboardAside
           title={t("leaderboardTitle")}
           subtitle={t("leaderboardSubtitle")}
           filtersLabel={t("format")}
-          toolbar={
-            <Chip
-              size="small"
-              icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-              label={t("statsManageData")}
-              onClick={() => setDataDrawerOpen(true)}
-              variant="outlined"
-              clickable
-            />
-          }
         >
           {modes.length > 0 ? (
             <Box sx={{ px: 2, pb: 1.5 }}>
@@ -257,11 +243,5 @@ export default function Leaderboard() {
           )}
         </Box>
       </Box>
-
-      <StatsDataDrawer
-        open={dataDrawerOpen}
-        onClose={() => setDataDrawerOpen(false)}
-      />
-    </>
   );
 }
