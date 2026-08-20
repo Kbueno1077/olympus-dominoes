@@ -1,6 +1,5 @@
 "use client";
 
-import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import HistoryGamesNotes from "@/modules/History/HistoryGamesNotes";
@@ -46,13 +45,11 @@ import {
   TEAM_KEYS,
 } from "@/utils/matchSettings";
 import { ArrowBack } from "@mui/icons-material";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import {
   Box,
   Button,
   Card,
   Checkbox,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -440,7 +437,6 @@ export default function History() {
   const params = useParams();
   const { data, loading, activeDataset, registry, setPendingCompare } =
     useAnalytics();
-  const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
 
   const datasetId = activeDataset?.id ?? registry.activeDatasetId;
 
@@ -646,16 +642,6 @@ export default function History() {
     <Box sx={dashboardShellSx}>
       <DashboardAside
         title={t("historyTitle")}
-        toolbar={
-          <Chip
-            size="small"
-            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-            label={t("statsManageData")}
-            onClick={() => setDataDrawerOpen(true)}
-            variant="outlined"
-            clickable
-          />
-        }
       >
           <Box
             sx={{
@@ -1009,11 +995,6 @@ export default function History() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <StatsDataDrawer
-        open={dataDrawerOpen}
-        onClose={() => setDataDrawerOpen(false)}
-      />
     </Box>
   );
 }

@@ -80,6 +80,12 @@ export const playTableActiveRecoil = atom({
     key: "playTableActive",
     default: false,
 });
+
+/** Manage data drawer — navbar and empty-state CTAs share this. */
+export const statsDataDrawerOpenRecoil = atom({
+    key: "statsDataDrawerOpen",
+    default: false,
+});
 export const whoWonRecoil = atom({
     key: "whoWon",
     default: "",

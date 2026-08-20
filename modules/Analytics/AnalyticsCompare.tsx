@@ -2,7 +2,6 @@
 
 import AnalyticsCompareCharts from "@/modules/Analytics/AnalyticsCompareCharts";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
-import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import {
   ControlSection,
   dashboardMainSx,
@@ -32,7 +31,6 @@ import {
 import type { CompareLaunch } from "@/lib/analytics/datasets";
 import type { OlympusExportData, PlayerStatsView } from "@/lib/analytics/types";
 import { useTranslation } from "@/i18n/useTranslation";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import {
   Box,
   Button,
@@ -156,7 +154,6 @@ export default function AnalyticsCompare({
     null
   );
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
   const [matchupByPlayer, setMatchupByPlayer] = useState<
     Record<number, PlayerStatsView>
   >({});
@@ -377,16 +374,6 @@ export default function AnalyticsCompare({
       <DashboardAside
         title={t("statsCompare")}
         filtersLabel={t("statsComparePlayers")}
-        toolbar={
-          <Chip
-            size="small"
-            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-            label={t("statsManageData")}
-            onClick={() => setDataDrawerOpen(true)}
-            variant="outlined"
-            clickable
-          />
-        }
       >
         <Stack
           spacing={0}
@@ -854,11 +841,6 @@ export default function AnalyticsCompare({
           </Button>
         </DialogActions>
       </Dialog>
-
-      <StatsDataDrawer
-        open={dataDrawerOpen}
-        onClose={() => setDataDrawerOpen(false)}
-      />
     </Box>
   );
 }

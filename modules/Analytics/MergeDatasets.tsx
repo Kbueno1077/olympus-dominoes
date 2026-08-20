@@ -5,7 +5,6 @@ import {
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
-import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { loadDatasetData } from "@/lib/analytics/datasets";
 import {
@@ -30,6 +29,7 @@ import { withEnsuredDbMeta } from "@/lib/analytics/dbMetaState";
 import { withEnsuredMatchPublicIds } from "@/lib/analytics/matchIdentity";
 import { withEnsuredPlayerPublicIds } from "@/lib/analytics/playerIdentity";
 import { useTranslation } from "@/i18n/useTranslation";
+import { statsDataDrawerOpenRecoil } from "@/recoil/recoilState";
 import useToast from "@/hooks/useToast";
 import {
   activeTeamNumbers,
@@ -62,6 +62,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { useSetRecoilState } from "recoil";
 
 const GIT_OURS = "#1a7f37";
 const GIT_THEIRS = "#cf222e";
@@ -114,6 +115,7 @@ export default function MergeDatasets() {
   const router = useRouter();
   const displayToast = useToast();
   const { registry, createMergedDataset, loading } = useAnalytics();
+  const openDataDrawer = useSetRecoilState(statsDataDrawerOpenRecoil);
 
   const [step, setStep] = useState<Step>("select");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -124,7 +126,6 @@ export default function MergeDatasets() {
   const [mergeName, setMergeName] = useState("");
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [dataDrawerOpen, setDataDrawerOpen] = useState(false);
   const [cleanOpen, setCleanOpen] = useState(false);
   const [gamesOpenId, setGamesOpenId] = useState<string | null>(null);
   const [detailOpenKeys, setDetailOpenKeys] = useState<Set<string>>(
@@ -304,16 +305,6 @@ export default function MergeDatasets() {
         title={t("mergeNav")}
         subtitle={t("mergeHintShort")}
         filtersLabel={t("mergeSteps")}
-        toolbar={
-          <Chip
-            icon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-            label={t("statsManageData")}
-            onClick={() => setDataDrawerOpen(true)}
-            clickable
-            size="small"
-            variant="outlined"
-          />
-        }
       >
         <Stack
           spacing={1.5}
@@ -670,7 +661,7 @@ export default function MergeDatasets() {
                     size="small"
                     sx={{ mt: 1 }}
                     startIcon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => setDataDrawerOpen(true)}
+                    onClick={() => openDataDrawer(true)}
                   >
                     {t("statsManageData")}
                   </Button>
@@ -1253,11 +1244,6 @@ export default function MergeDatasets() {
           ) : null}
         </Stack>
       </Box>
-
-      <StatsDataDrawer
-        open={dataDrawerOpen}
-        onClose={() => setDataDrawerOpen(false)}
-      />
 
       <Dialog
         open={pendingDelete != null}

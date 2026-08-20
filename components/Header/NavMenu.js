@@ -1,6 +1,7 @@
 "use client";
 
 import { useHasMounted } from "@/hooks/useHasMounted";
+import { LANGUAGES } from "@/i18n/translations";
 import { useTranslation } from "@/i18n/useTranslation";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
 import BarChartOutlined from "@mui/icons-material/BarChartOutlined";
@@ -18,8 +19,10 @@ import SmartToyOutlined from "@mui/icons-material/SmartToyOutlined";
 import {
   Box,
   Button,
+  Divider,
   ListItemIcon,
   ListItemText,
+  ListSubheader,
   Menu,
   MenuItem,
 } from "@mui/material";
@@ -34,13 +37,15 @@ import { useRecoilValue } from "recoil";
  * `dense` hides the label (icon-only) so /play landscape keeps chrome tiny.
  */
 export default function NavMenu({ dense = false }) {
-  const { t } = useTranslation();
+  const { t, language, setLanguage } = useTranslation();
   const pathname = usePathname();
   const hasMounted = useHasMounted();
   const isGameStarted = useRecoilValue(isGameStartedRecoil);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const matchInProgress = hasMounted && isGameStarted;
+  const currentLanguage =
+    LANGUAGES.find((entry) => entry.code === language) ?? LANGUAGES[0];
 
   const items = useMemo(
     () => [
@@ -119,7 +124,7 @@ export default function NavMenu({ dense = false }) {
       <Button
         size="small"
         color="inherit"
-        aria-label={t("navMenuAria")}
+        aria-label={`${activeItem.label}. ${t("language")}: ${currentLanguage.name}`}
         aria-haspopup="menu"
         aria-expanded={open ? "true" : undefined}
         onClick={(e) => setAnchorEl(e.currentTarget)}
@@ -152,7 +157,7 @@ export default function NavMenu({ dense = false }) {
             borderColor: "divider",
           },
           "& .MuiButton-startIcon": {
-            mr: dense ? 0 : { xs: 0, sm: 0.75 },
+            mr: dense ? 0 : 0.75,
             ml: 0,
           },
           "& .MuiButton-endIcon": {
@@ -162,9 +167,38 @@ export default function NavMenu({ dense = false }) {
       >
         <Box
           component="span"
-          sx={{ display: dense ? "none" : { xs: "none", sm: "inline" } }}
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.65,
+            minWidth: 0,
+          }}
         >
-          {activeItem.label}
+          {dense ? null : (
+            <Box
+              component="span"
+              sx={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {activeItem.label}
+            </Box>
+          )}
+          {dense ? null : (
+            <Box component="span" sx={{ color: "text.disabled" }}>
+              ·
+            </Box>
+          )}
+          <Box
+            component="span"
+            aria-hidden
+            sx={{ fontSize: dense ? 14 : 16, lineHeight: 1 }}
+          >
+            {currentLanguage.flag}
+          </Box>
+          <Box component="span">{currentLanguage.short}</Box>
         </Box>
       </Button>
 
@@ -243,6 +277,52 @@ export default function NavMenu({ dense = false }) {
                   sx={{ fontSize: 16, color: "text.secondary", ml: 0.5 }}
                 />
               ) : null}
+            </MenuItem>
+          );
+        })}
+        <Divider sx={{ my: 0.5 }} />
+        <ListSubheader
+          disableSticky
+          sx={{
+            lineHeight: 2,
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "text.secondary",
+          }}
+        >
+          {t("language")}
+        </ListSubheader>
+        {LANGUAGES.map((entry) => {
+          const selected = entry.code === language;
+          return (
+            <MenuItem
+              key={entry.code}
+              selected={selected}
+              onClick={() => setLanguage(entry.code)}
+              sx={{
+                py: 1.1,
+                px: 1.75,
+                gap: 0.5,
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 34, fontSize: 18 }}>
+                <Box component="span" aria-hidden>
+                  {entry.flag}
+                </Box>
+              </ListItemIcon>
+              <ListItemText
+                primary={entry.name}
+                secondary={entry.region}
+                primaryTypographyProps={{
+                  fontWeight: selected ? 700 : 500,
+                  fontSize: 14,
+                }}
+                secondaryTypographyProps={{
+                  fontSize: 11,
+                  color: "text.secondary",
+                }}
+              />
             </MenuItem>
           );
         })}
