@@ -1,11 +1,9 @@
 "use client";
 
+import { IOS_APP_URL } from "@/lib/appLinks";
 import { APP_UI_SIGNATURE } from "@/lib/analytics/dbMeta";
 import { useTranslation } from "@/i18n/useTranslation";
 import Link from "next/link";
-
-const APP_STORE_URL =
-  "https://apps.apple.com/us/app/olympus-dominoes/id6799737142";
 
 const HOW_STEPS = [
   { title: "howStep1Title", body: "howStep1Body" },
@@ -83,7 +81,7 @@ export default function HowToUse() {
           </p>
           <p>
             <a
-              href={APP_STORE_URL}
+              href={IOS_APP_URL}
               target="_blank"
               rel="noopener noreferrer"
               className={linkClass}
