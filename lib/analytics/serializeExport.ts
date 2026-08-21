@@ -15,6 +15,7 @@ const PLAYER_COLUMNS = [
   "public_id",
   "created_at",
   "is_myself",
+  "is_hidden",
 ] as const;
 
 const APP_SETTINGS_COLUMNS = ["key", "value"] as const;
@@ -133,6 +134,7 @@ function playerToRow(player: PlayerRow): Record<string, unknown> {
     public_id: player.public_id,
     created_at: player.created_at ?? "",
     is_myself: player.is_myself ?? 0,
+    is_hidden: player.is_hidden ?? 0,
   };
 }
 

@@ -1,4 +1,5 @@
 import { computeJosesCoefficient } from "./joseCoefficient";
+import { hiddenPlayerIds, isPlayerHidden } from "./playerVisibility";
 import { normalizeImportedTileSet } from "./schemaVersion";
 import type {
   H2HView,
@@ -56,8 +57,10 @@ function toStatsView(
 }
 
 export function listStatTileSets(data: OlympusExportData): TileSet[] {
+  const hidden = hiddenPlayerIds(data);
   const sets = new Set<TileSet>();
   for (const row of data.player_stats) {
+    if (hidden.has(row.player_id)) continue;
     sets.add(normalizeImportedTileSet(row.tile_set));
   }
   for (const row of data.tables?.matches ?? data.matches ?? []) {
@@ -71,8 +74,10 @@ export function listStatModes(
   data: OlympusExportData,
   tileSet?: TileSet
 ): string[] {
+  const hidden = hiddenPlayerIds(data);
   const modes = new Set<string>();
   for (const row of data.player_stats) {
+    if (hidden.has(row.player_id)) continue;
     if (tileSet && normalizeImportedTileSet(row.tile_set) !== tileSet) continue;
     if (row.mode_label) modes.add(row.mode_label);
   }
@@ -91,7 +96,10 @@ export function listLeaderboard(
   const playersById = new Map(data.players.map((p) => [p.id, p]));
 
   return data.player_stats
-    .filter((row) => row.mode_label === modeLabel && row.games_played > 0)
+    .filter((row) => {
+      if (row.mode_label !== modeLabel || row.games_played <= 0) return false;
+      return !isPlayerHidden(playersById.get(row.player_id));
+    })
     .map((row) => {
       const stats = toStatsView(row);
       const player = playersById.get(row.player_id);
@@ -126,9 +134,12 @@ export function getPlayerH2H(
   const playersById = new Map(data.players.map((p) => [p.id, p]));
 
   return data.player_h2h
-    .filter(
-      (row) => row.player_id === playerId && row.mode_label === modeLabel
-    )
+    .filter((row) => {
+      if (row.player_id !== playerId || row.mode_label !== modeLabel) {
+        return false;
+      }
+      return !isPlayerHidden(playersById.get(row.opponent_id));
+    })
     .map((row) => {
       const total = row.wins + row.losses;
       return {

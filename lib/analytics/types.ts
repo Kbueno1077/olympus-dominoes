@@ -25,6 +25,8 @@ export type PlayerRow = {
   name_key: string;
   created_at?: string | null;
   is_myself?: number | null;
+  /** 1 = omitted from roster / leaderboard; row and stats stay. Missing → 0. */
+  is_hidden?: number | null;
 };
 
 export type PlayerStatsRow = {

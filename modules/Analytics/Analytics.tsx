@@ -12,7 +12,10 @@ import {
 } from "@/modules/Analytics/dashboardChrome";
 import { importErrorMessage } from "@/lib/analytics/importError";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
-import { buildH2HCompareLaunch } from "@/lib/analytics/compareLaunch";
+import {
+  buildH2HCompareLaunch,
+  compareLaunchToSearchParams,
+} from "@/lib/analytics/compareLaunch";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import {
   BREAKDOWN_STAT_DEFS,
@@ -20,6 +23,7 @@ import {
   formatBreakdownValue,
 } from "@/lib/analytics/statBreakdown";
 import { formatSignedDiff } from "@/lib/analytics/signedDiff";
+import { listVisiblePlayers } from "@/lib/analytics/playerVisibility";
 import {
   getPlayerH2H,
   getPlayerStats,
@@ -161,14 +165,14 @@ export default function Analytics() {
 
   const openH2HCompare = (opponentId: number) => {
     if (selectedPlayerId == null || !activeMode) return;
-    setPendingCompare(
-      buildH2HCompareLaunch({
-        modeLabel: activeMode,
-        playerId: selectedPlayerId,
-        opponentId,
-      })
-    );
-    router.push("/compare");
+    const launch = buildH2HCompareLaunch({
+      modeLabel: activeMode,
+      playerId: selectedPlayerId,
+      opponentId,
+      tileSet: activeStats?.tileSet,
+    });
+    setPendingCompare(launch);
+    router.push(`/compare?${compareLaunchToSearchParams(launch).toString()}`);
   };
 
   const selectPlayer = (id: number) => {
@@ -380,7 +384,7 @@ export default function Analytics() {
                       {modeName(activeMode ?? "")} ·{" "}
                       {t("analyticsLoadedMeta", {
                         name: datasetLabel,
-                        players: data.players.length,
+                        players: listVisiblePlayers(data.players).length,
                         matches: data.matches.length,
                       })}
                     </Typography>

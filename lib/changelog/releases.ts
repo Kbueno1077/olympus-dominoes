@@ -10,6 +10,8 @@ export type ChangelogRelease = {
   version: string;
   /** ISO date (YYYY-MM-DD) when the version landed, if known. */
   date: string | null;
+  /** CSV schema this release treated as current, when known. */
+  schema?: number;
   /** One-line summary. */
   summary: string;
   /** Bullet highlights shown on the changelog page. */
@@ -18,21 +20,25 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
-    version: "4.8.0",
-    date: "2026-08-18",
-    summary: "Jose’s Coefficient matches the phone app, and schema 23 imports.",
+    version: "unreleased",
+    date: null,
+    schema: 24,
+    summary: "Hidden players from the phone can be restored here.",
     highlights: [
-      "Jose’s Coefficient no longer divides extras by games. Same formula as the app: 3×ΔG, then datas / 4, points / 165, and pollos / zapatos.",
-      "Phone-app schema 23 exports import here. A web export writes schema 23.",
-      "Compare → This matchup: A and B are partners on that side. Any means either team, so you can pick more than four people and still count those games.",
+      "Phone-app schema 24 exports import here. A web export writes schema 24.",
+      "Players you removed on the phone who still have games stay in the file as hidden. Restore them from Manage data so they show on the roster and leaderboard again.",
     ],
   },
   {
     version: "4.7.0",
-    date: "2026-08-17",
+    date: "2026-08-18",
+    schema: 23,
     summary:
-      "Open tables from the phone app, a How to use page, and clearer bots.",
+      "Jose matches the phone app, schema 23 imports, open tables, and How to use.",
     highlights: [
+      "Jose’s Coefficient matches the phone app.",
+      "Phone-app schema 23 exports import here. A web export writes schema 23.",
+      "Compare → This matchup: A and B are partners on that side. Any means either team, so you can pick more than four people and still count those games.",
       "Import rotating / open-table matches from the app. Every game stays under one History match, and each game shows who sat.",
       "History labels Closed match vs Open table. Compare seating stays on closed matches, where the lineup does not change.",
       "Added: How to use — a short companion-site guide from the home footer.",

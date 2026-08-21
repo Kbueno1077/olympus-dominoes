@@ -1,76 +1,57 @@
 import type { LabPlayer } from "./data";
 
-export type FormulaId = "A" | "B" | "C" | "K2";
-
-export type WeightsA = {
-  leadCap: number;
-  leadScale: number;
-  leadMix: number;
-  wDatas: number;
-  wPoints: number;
-  wPollos: number;
-  wZapatos: number;
-  floor: number;
-};
-
-export type WeightsB = {
-  kGames: number;
-  wDatas: number;
-  wPoints: number;
-  wPollos: number;
-  wZapatos: number;
-  floor: number;
-};
+export type FormulaId = "K" | "C" | "KJ";
 
 export type SharedWeights = {
   wDatas: number;
   wPoints: number;
   wPollos: number;
   wZapatos: number;
-  floor: number;
 };
 
-export const DEFAULT_A: WeightsA = {
-  leadCap: 20,
-  leadScale: 8,
-  leadMix: 1.7,
-  wDatas: 3,
-  wPoints: 0.1,
-  wPollos: 10,
-  wZapatos: 4,
-  floor: 25,
-};
-
-export const DEFAULT_B: WeightsB = {
-  kGames: 3,
-  // Same extras as the shipped product formula.
-  // At G=25, 1 ΔG (+3) = 12 datas, 500 pts, 5 pollos, 12.5 zapatos.
-  // Pollos stay 2.5× zapatos (15 / 6).
-  wDatas: 6.25,
-  wPoints: 0.15,
-  wPollos: 15,
-  wZapatos: 6,
-  floor: 25,
-};
-
-/** Playground: no /G. kGames scales ΔG, pollos, and zapatos. Datas/points stay raw. */
-export type WeightsK2 = {
+/** Playground: no /G. Each term is multiplier × (delta / divisor). */
+export type WeightsK = {
+  /** In front of ΔG. */
   kGames: number;
-  /** Datas that add +1 on R. */
+  /** In front of ΔDW / dwPerGame. */
+  kDatas: number;
+  /** In front of ΔPF / pfPerGame. */
+  kPoints: number;
+  /** In front of ΔPo / pollosPerGame. */
+  kPollos: number;
+  /** In front of (zapPerPollo × ΔZap / pollosPerGame). */
+  kZapatos: number;
+  /** Datas that sit in the ΔDW term. */
   dwPerGame: number;
-  /** Points that add +1 on R. */
+  /** Points that sit in the ΔPF term. */
   pfPerGame: number;
-  /** Pollos that equal one win (same R as kGames × ΔG). */
+  /** Pollos that sit in the ΔPo (and zapato) term. */
   pollosPerGame: number;
-  /** One zapato as a fraction of one pollo (2/5). */
+  /** One zapato as a fraction of one pollo. */
   zapPerPollo: number;
 };
 
-export const DEFAULT_K2: WeightsK2 = {
+export const DEFAULT_K: WeightsK = {
   kGames: 3,
+  kDatas: 1,
+  kPoints: 1,
+  kPollos: 3,
+  kZapatos: 3,
   dwPerGame: 4,
   pfPerGame: 165,
   pollosPerGame: 5,
+  zapPerPollo: 0.4,
+};
+
+export const DEFAULT_KJ: WeightsK = {
+  kGames: 2.5,
+  kDatas: 1,
+  kPoints: 1,
+  kPollos: 2.5,
+  kZapatos: 2.5,
+  dwPerGame: 3.5,
+  pfPerGame: 150,
+  pollosPerGame: 4,
   zapPerPollo: 0.4,
 };
 
@@ -107,82 +88,25 @@ export type Breakdown = {
   seconds: number;
 };
 
-function denomFor(
-  G: number,
-  floor: number,
-  denomCap: number | null
-): number {
-  const floorOnly = Math.max(G, floor);
-  if (denomCap == null) return floorOnly;
-  return Math.min(floorOnly, denomCap);
-}
-
-function secondaryParts(
-  p: LabPlayer,
-  w: SharedWeights,
-  denom: number
-): Pick<Breakdown, "datas" | "pts" | "po" | "zap"> {
-  return {
-    datas: (w.wDatas * p.dDW) / denom,
-    pts: (w.wPoints * p.dPF) / denom,
-    po: (w.wPollos * p.dPo) / denom,
-    zap: (w.wZapatos * p.dZap) / denom,
-  };
-}
-
-export function leadTermA(n: number, w: WeightsA): number {
-  if (w.leadScale === 0) return 0;
-  return w.leadMix * w.leadCap * Math.tanh(n / w.leadScale);
-}
-
 export function leadTermB(n: number, w: { kGames: number }): number {
   return w.kGames * n;
 }
 
-export function computeA(
-  p: LabPlayer,
-  w: WeightsA,
-  denomCap: number | null = null
-): Breakdown | null {
-  if (p.G <= 0) return null;
-  const n = p.W - p.L;
-  const denom = denomFor(p.G, w.floor, denomCap);
-  const games = leadTermA(n, w);
-  const seconds = secondaryParts(p, w, denom);
-  const r = games + seconds.datas + seconds.pts + seconds.po + seconds.zap;
-  return { n, denom, sqrt: 0, games, ...seconds, r, seconds: r - games };
-}
-
-export function computeB(
-  p: LabPlayer,
-  w: WeightsB,
-  denomCap: number | null = null
-): Breakdown | null {
-  if (p.G <= 0) return null;
-  const n = p.W - p.L;
-  const denom = denomFor(p.G, w.floor, denomCap);
-  const games = leadTermB(n, w);
-  const seconds = secondaryParts(p, w, denom);
-  const r = games + seconds.datas + seconds.pts + seconds.po + seconds.zap;
-  return { n, denom, sqrt: 0, games, ...seconds, r, seconds: r - games };
-}
-
-/** 4 datas / 165 pts = +1 R. 5 pollos = 1 win. Zapato = 2/5 of a pollo. */
-export function k2ExtraWeights(
-  w: WeightsK2
+/** Each extra is multiplier × delta / divisor (no /G). */
+export function kExtraWeights(
+  w: WeightsK
 ): Pick<SharedWeights, "wDatas" | "wPoints" | "wPollos" | "wZapatos"> {
-  const unit = (count: number) => (count === 0 ? 0 : 1 / count);
-  const wPollos = w.pollosPerGame === 0 ? 0 : w.kGames / w.pollosPerGame;
+  const unit = (k: number, div: number) => (div === 0 ? 0 : k / div);
   return {
-    wDatas: unit(w.dwPerGame),
-    wPoints: unit(w.pfPerGame),
-    wPollos,
-    wZapatos: wPollos * w.zapPerPollo,
+    wDatas: unit(w.kDatas, w.dwPerGame),
+    wPoints: unit(w.kPoints, w.pfPerGame),
+    wPollos: unit(w.kPollos, w.pollosPerGame),
+    wZapatos: unit(w.kZapatos * w.zapPerPollo, w.pollosPerGame),
   };
 }
 
-function k2Seconds(p: LabPlayer, w: WeightsK2) {
-  const weights = k2ExtraWeights(w);
+function kSeconds(p: LabPlayer, w: WeightsK) {
+  const weights = kExtraWeights(w);
   return {
     datas: weights.wDatas * p.dDW,
     pts: weights.wPoints * p.dPF,
@@ -192,14 +116,13 @@ function k2Seconds(p: LabPlayer, w: WeightsK2) {
 }
 
 /**
- * K2: no /G. kGames scales ΔG, pollos, and zapatos so +5 pollos = +1 game.
- * Datas and points stay raw (ΔDW/4, ΔPF/165). A zapato is 2/5 of a pollo.
+ * K / KJ: no /G. Each section is its own multiplier times (delta / divisor).
  */
-export function computeK2(p: LabPlayer, w: WeightsK2): Breakdown | null {
+export function computeK(p: LabPlayer, w: WeightsK): Breakdown | null {
   if (p.G <= 0) return null;
   const n = p.W - p.L;
   const games = leadTermB(n, w);
-  const seconds = k2Seconds(p, w);
+  const seconds = kSeconds(p, w);
   const r = games + seconds.datas + seconds.pts + seconds.po + seconds.zap;
   return { n, denom: 1, sqrt: 0, games, ...seconds, r, seconds: r - games };
 }
@@ -218,7 +141,7 @@ function ogDatasPts(
   };
 }
 
-/** Effective extra weights so Worth tables can reuse A/B exchange math. */
+/** Effective extra weights so Worth tables can reuse extra-exchange math. */
 export function ogExtraWeights(
   c: {
     dwPerGame: number;
@@ -261,21 +184,17 @@ export function computeC(p: LabPlayer, w: WeightsC): Breakdown | null {
 export function computePlayer(
   p: LabPlayer,
   formula: FormulaId,
-  weightsA: WeightsA,
-  weightsB: WeightsB,
+  weightsK: WeightsK,
   weightsC: WeightsC,
-  weightsK2: WeightsK2,
-  denomCap: number | null
+  weightsKJ: WeightsK
 ): Breakdown | null {
   switch (formula) {
-    case "A":
-      return computeA(p, weightsA, denomCap);
-    case "B":
-      return computeB(p, weightsB, denomCap);
+    case "K":
+      return computeK(p, weightsK);
     case "C":
       return computeC(p, weightsC);
-    case "K2":
-      return computeK2(p, weightsK2);
+    case "KJ":
+      return computeK(p, weightsKJ);
     default: {
       const _never: never = formula;
       return _never;
@@ -283,35 +202,21 @@ export function computePlayer(
   }
 }
 
-export function extrasAtG(
-  p: LabPlayer,
-  w: SharedWeights,
-  G: number,
-  denomCap: number | null
-): number {
-  if (G <= 0) return 0;
-  const denom = denomFor(G, w.floor, denomCap);
-  const s = secondaryParts(p, w, denom);
-  return s.datas + s.pts + s.po + s.zap;
-}
-
 export function volumeAtG(
   p: LabPlayer,
   formula: FormulaId,
-  weightsA: WeightsA,
-  weightsB: WeightsB,
+  weightsK: WeightsK,
   weightsC: WeightsC,
-  weightsK2: WeightsK2,
-  G: number,
-  denomCap: number | null
+  weightsKJ: WeightsK,
+  G: number
 ): number {
   switch (formula) {
-    case "A":
-      return extrasAtG(p, weightsA, G, denomCap);
-    case "B":
-      return extrasAtG(p, weightsB, G, denomCap);
-    case "K2": {
-      const seconds = k2Seconds(p, weightsK2);
+    case "K": {
+      const seconds = kSeconds(p, weightsK);
+      return seconds.datas + seconds.pts + seconds.po + seconds.zap;
+    }
+    case "KJ": {
+      const seconds = kSeconds(p, weightsKJ);
       return seconds.datas + seconds.pts + seconds.po + seconds.zap;
     }
     case "C": {
@@ -388,25 +293,18 @@ function gameVsExtras(
   };
 }
 
-/**
- * How many extras equal +1 ΔG at the formula's own denom.
- * A/B use max(floor, floor) (= floor) unless a demo cap is on. C has no denom.
- */
+/** How many extras equal +1 ΔG. Remaining formulas have no /G denom. */
 export function gameExchange(
   formula: FormulaId,
-  a: WeightsA,
-  b: WeightsB,
+  k: WeightsK,
   c: WeightsC,
-  k2: WeightsK2,
-  denomCap: number | null
+  kj: WeightsK
 ): GameExchange {
   switch (formula) {
-    case "A":
-      return gameVsExtras(denomFor(a.floor, a.floor, denomCap), leadTermA(1, a), a);
-    case "B":
-      return gameVsExtras(denomFor(b.floor, b.floor, denomCap), leadTermB(1, b), b);
-    case "K2":
-      return gameVsExtras(1, leadTermB(1, k2), k2ExtraWeights(k2));
+    case "K":
+      return gameVsExtras(1, leadTermB(1, k), kExtraWeights(k));
+    case "KJ":
+      return gameVsExtras(1, leadTermB(1, kj), kExtraWeights(kj));
     case "C":
       return gameVsExtras(1, leadTermC(1, c), ogExtraWeights(c));
     default: {
@@ -424,20 +322,6 @@ export type CheckResult = {
   pass: boolean;
 };
 
-export type RuleTargetsB = {
-  cesarR: number;
-  cesarRTol: number;
-  datasMix: number;
-  datasMixTol: number;
-};
-
-export const DEFAULT_RULE_TARGETS_B: RuleTargetsB = {
-  cesarR: 24.1,
-  cesarRTol: 0.35,
-  datasMix: 3,
-  datasMixTol: 1.2,
-};
-
 function signedFmt(n: number): string {
   const text = n.toFixed(1);
   return n > 0 ? `+${text}` : text;
@@ -449,132 +333,6 @@ function byId(players: LabPlayer[], id: string): LabPlayer {
     throw new Error(`Missing lab player ${id}`);
   }
   return found;
-}
-
-function fmt(n: number): string {
-  return n.toFixed(1);
-}
-
-export function runChecksA(
-  readme: LabPlayer[],
-  test: LabPlayer[],
-  w: WeightsA,
-  denomCap: number | null
-): CheckResult[] {
-  const cesar = computeA(byId(readme, "cesar"), w, denomCap)!;
-  const hot = computeA(byId(readme, "hot-weekend"), w, denomCap)!;
-  const solid = computeA(byId(readme, "solid40"), w, denomCap)!;
-  const luis = computeA(byId(readme, "luis"), w, denomCap)!;
-  const ugly = computeA(byId(readme, "ugly-plus4"), w, denomCap)!;
-  const even = computeA(byId(readme, "even-blow"), w, denomCap)!;
-  const evenTest = computeA(byId(test, "test-even-blow"), w, denomCap)!;
-  const ranked = [...readme]
-    .map((p) => ({ p, r: computeA(p, w, denomCap)?.r ?? Number.NEGATIVE_INFINITY }))
-    .sort((a, b) => b.r - a.r);
-  const pedroTop = ranked[0]?.p.id === "pedro";
-
-  return [
-    {
-      id: "cesar-2nds-hot",
-      title: "Volume beats a heater",
-      rule: "Cesar's extras (datas/pts/pollos/zap) should outrank HotWeekend's. A short hot streak must not bury a real season.",
-      live: `Cesar extras ${signedFmt(cesar.seconds)} vs HotWeekend ${signedFmt(hot.seconds)}`,
-      pass: cesar.seconds > hot.seconds,
-    },
-    {
-      id: "cesar-r-hot",
-      title: "Cesar over HotWeekend",
-      rule: "Full R should still rank Cesar above HotWeekend once lead and extras are added.",
-      live: `Cesar R ${signedFmt(cesar.r)} vs HotWeekend ${signedFmt(hot.r)}`,
-      pass: cesar.r > hot.r,
-    },
-    {
-      id: "solid-luis",
-      title: "Quiet volume over loud +2",
-      rule: "Solid40 (many even-ish games) should beat Luis. Reliability should not lose to a small loud lead.",
-      live: `Solid40 R ${signedFmt(solid.r)} vs Luis ${signedFmt(luis.r)}`,
-      pass: solid.r > luis.r,
-    },
-    {
-      id: "ugly-even",
-      title: "Ugly +4 beats 0-net",
-      rule: "A real +4 with ugly extras should still beat EvenBlow (README or the loud test clone).",
-      live: `Ugly+4 ${signedFmt(ugly.r)} · EvenBlow ${signedFmt(even.r)} · loud test ${signedFmt(evenTest.r)}`,
-      pass: ugly.r > even.r || ugly.r > evenTest.r,
-    },
-    {
-      id: "pedro-elite",
-      title: "Pedro stays #1",
-      rule: "On a +18 lead with huge extras, Pedro should sit at the top of the README table.",
-      live: ranked[0]
-        ? `Now #1 is ${ranked[0].p.name.replace(" (CSV)", "")} at ${signedFmt(ranked[0].r)}`
-        : "—",
-      pass: pedroTop,
-    },
-  ];
-}
-
-export function runChecksB(
-  readme: LabPlayer[],
-  test: LabPlayer[],
-  w: WeightsB,
-  denomCap: number | null,
-  targets: RuleTargetsB = DEFAULT_RULE_TARGETS_B
-): CheckResult[] {
-  const cesar = computeB(byId(readme, "cesar"), w, denomCap)!;
-  const luis = computeB(byId(readme, "luis"), w, denomCap)!;
-  const ugly = computeB(byId(readme, "ugly-plus4"), w, denomCap)!;
-  const uglyTest = computeB(byId(test, "test-ugly"), w, denomCap)!;
-  const evenTest = computeB(byId(test, "test-even-blow"), w, denomCap)!;
-  const h2hA = computeB(byId(test, "test-h2h-a"), w, denomCap)!;
-  const h2hB = computeB(byId(test, "test-h2h-b"), w, denomCap)!;
-  const wantDatas = targets.datasMix * cesar.datas;
-  const mixOff = Math.abs(cesar.games - wantDatas);
-
-  return [
-    {
-      id: "cesar-anchor",
-      title: "Cesar calibration",
-      rule: "CSV Cesar is the north star. At stock season he should land near the target R — bumping G/W/nets will move him, and the rule follows live.",
-      live: `Cesar R ${signedFmt(cesar.r)} · want ${signedFmt(targets.cesarR)} ± ${targets.cesarRTol} · off ${fmt(Math.abs(cesar.r - targets.cesarR))}`,
-      pass: Math.abs(cesar.r - targets.cesarR) < targets.cesarRTol,
-    },
-    {
-      id: "cesar-weights",
-      title: "Lead vs datas mix",
-      rule: "Cesar's lead term (k·ΔG) should sit about datasMix × his datas term, and datas should beat points. If G grows and extras dilute, this is the first thing to break.",
-      live: `lead ${signedFmt(cesar.games)} · ${targets.datasMix}×datas ${signedFmt(wantDatas)} (off ${fmt(mixOff)}) · datas ${signedFmt(cesar.datas)} vs pts ${signedFmt(cesar.pts)}`,
-      pass: mixOff < targets.datasMixTol && cesar.datas > cesar.pts,
-    },
-    {
-      id: "ugly-luis",
-      title: "Ugly +4 can lose to Luis",
-      rule: "Ugly extras on a +4 should not automatically beat a quieter +2. Luis is allowed to rank above Ugly+4.",
-      live: `Ugly+4 ${signedFmt(ugly.r)} vs Luis ${signedFmt(luis.r)}`,
-      pass: ugly.r < luis.r,
-    },
-    {
-      id: "ugly-even-test",
-      title: "Loud 0-net can beat ugly +4",
-      rule: "On the test fixtures, loud EvenBlow should outrank Ugly+4. Volume of extras at 0-net is allowed to win.",
-      live: `Ugly+4 test ${signedFmt(uglyTest.r)} vs loud EvenBlow ${signedFmt(evenTest.r)}`,
-      pass: uglyTest.r < evenTest.r,
-    },
-    {
-      id: "no-cap",
-      title: "No denom cap",
-      rule: "Reliability is max(G, floor), not a ceiling on denom. A cap lets point stocks eat the lead as G grows.",
-      live: denomCap == null ? "floor only · cap off" : `cap is on at ${denomCap}`,
-      pass: denomCap == null,
-    },
-    {
-      id: "h2h-mirror",
-      title: "Head-to-head mirrors",
-      rule: "Two people who only played each other should sum to ~0. B is odd in the extras, so A = −B.",
-      live: `H2H A ${signedFmt(h2hA.r)} + H2H B ${signedFmt(h2hB.r)} = ${signedFmt(h2hA.r + h2hB.r)}`,
-      pass: Math.abs(h2hA.r + h2hB.r) < 1e-9,
-    },
-  ];
 }
 
 export function runChecksC(
@@ -604,17 +362,6 @@ export function runChecksC(
 }
 
 const CHECK_FAIL_PLAYER_IDS: Record<string, readonly string[]> = {
-  "cesar-2nds-hot": ["cesar", "hot-weekend"],
-  "cesar-r-hot": ["cesar", "hot-weekend"],
-  "solid-luis": ["solid40", "luis"],
-  "ugly-even": ["ugly-plus4", "even-blow"],
-  "pedro-elite": ["pedro"],
-  "cesar-anchor": ["cesar"],
-  "cesar-weights": ["cesar"],
-  "ugly-luis": ["ugly-plus4", "luis"],
-  "ugly-even-test": ["test-ugly", "test-even-blow"],
-  "no-cap": [],
-  "h2h-mirror": ["test-h2h-a", "test-h2h-b"],
   "c-points": ["cesar"],
   "c-h2h": ["test-h2h-a", "test-h2h-b"],
 };
@@ -634,35 +381,64 @@ export function failingPlayerIds(checks: CheckResult[]): Set<string> {
   return ids;
 }
 
-export function recordTGP(p: LabPlayer): string {
-  return `${p.G}–${p.W}–${p.L}`;
+export type UnitRWorth = {
+  unit: string;
+  /** ΔR for +1 of this unit. */
+  r: number | null;
+};
+
+/**
+ * What +1 of each stat adds to R (and therefore what 1 R costs in that unit).
+ */
+export function rWorthPerUnit(
+  formula: FormulaId,
+  k: WeightsK,
+  c: WeightsC,
+  kj: WeightsK
+): UnitRWorth[] {
+  const extras = (
+    gameR: number,
+    w: Pick<SharedWeights, "wDatas" | "wPoints" | "wPollos" | "wZapatos">,
+    denom: number
+  ): UnitRWorth[] => [
+    { unit: "ΔG", r: gameR },
+    { unit: "ΔDW", r: denom === 0 ? null : w.wDatas / denom },
+    { unit: "ΔPF", r: denom === 0 ? null : w.wPoints / denom },
+    { unit: "ΔPo", r: denom === 0 ? null : w.wPollos / denom },
+    { unit: "ΔZap", r: denom === 0 ? null : w.wZapatos / denom },
+  ];
+  switch (formula) {
+    case "K":
+      return extras(leadTermB(1, k), kExtraWeights(k), 1);
+    case "KJ":
+      return extras(leadTermB(1, kj), kExtraWeights(kj), 1);
+    case "C":
+      return extras(leadTermC(1, c), ogExtraWeights(c), 1);
+    default: {
+      const _never: never = formula;
+      return _never;
+    }
+  }
 }
 
 export function equationLines(
   formula: FormulaId,
-  a: WeightsA,
-  b: WeightsB,
+  k: WeightsK,
   c: WeightsC,
-  k2: WeightsK2,
-  denomCap: number | null
+  kj: WeightsK
 ): string[] {
-  const cap = denomCap == null ? "" : `, cap ${denomCap}`;
-  const extras = (w: SharedWeights) =>
-    `(${w.wDatas}·ΔDW + ${w.wPoints}·ΔPF + ${w.wPollos}·ΔPo + ${w.wZapatos}·ΔZap) / max(G, ${w.floor}${cap})`;
+  const unitLines = (w: WeightsK) => [
+    `R = ${w.kGames} × ΔG`,
+    `  + ${w.kDatas} × ΔDW / ${w.dwPerGame}`,
+    `  + ${w.kPoints} × ΔPF / ${w.pfPerGame}`,
+    `  + ${w.kPollos} × ΔPo / ${w.pollosPerGame}`,
+    `  + ${w.kZapatos} × (${w.zapPerPollo} × ΔZap / ${w.pollosPerGame})`,
+  ];
   switch (formula) {
-    case "A":
-      return [
-        `R = ${a.leadMix} × ${a.leadCap} × tanh(ΔG / ${a.leadScale})`,
-        `+ ${extras(a)}`,
-      ];
-    case "B":
-      return [`R = ${b.kGames} × ΔG`, `+ ${extras(b)}`];
-    case "K2":
-      return [
-        `R = ${k2.kGames} × ΔG`,
-        `+ ΔDW / ${k2.dwPerGame} + ΔPF / ${k2.pfPerGame}`,
-        `+ ${k2.kGames} × (ΔPo / ${k2.pollosPerGame} + ${k2.zapPerPollo} × ΔZap / ${k2.pollosPerGame})`,
-      ];
+    case "K":
+      return unitLines(k);
+    case "KJ":
+      return unitLines(kj);
     case "C":
       return [
         `R = ${c.kSqrt} × √(G / 2) + ${c.kGames} × ΔG`,

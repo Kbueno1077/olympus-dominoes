@@ -1,29 +1,26 @@
 "use client";
 
 import {
-  DEFAULT_A,
-  DEFAULT_B,
   DEFAULT_C,
-  DEFAULT_K2,
+  DEFAULT_K,
+  DEFAULT_KJ,
   computePlayer,
   equationLines,
   extraExchange,
   gameExchange,
-  k2ExtraWeights,
+  kExtraWeights,
   ogExtraWeights,
+  rWorthPerUnit,
   type Breakdown,
   type FormulaId,
-  type WeightsA,
-  type WeightsB,
   type WeightsC,
-  type WeightsK2,
+  type WeightsK,
 } from "@/lib/joseLab/compute";
 import {
   DEFAULT_CSV_PINS,
   DEFAULT_MOCK_PINS,
   README_PLAYERS,
   TEST_PLAYERS,
-  isCsvPlayer,
   type LabPlayer,
 } from "@/lib/joseLab/data";
 import {
@@ -45,16 +42,13 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  Alert,
   Box,
   Button,
   Card,
   Chip,
-  FormControlLabel,
   IconButton,
   Slider,
   Stack,
-  Switch,
   Table,
   TableBody,
   TableCell,
@@ -77,12 +71,9 @@ import {
   type ReactNode,
 } from "react";
 
-const JOSE_A = "#6B4F8A";
-const JOSE_B = "rgb(31, 107, 88)";
+const JOSE_K = "rgb(180, 110, 30)";
 const JOSE_C = "rgb(61, 108, 140)";
-const JOSE_K2 = "rgb(180, 110, 30)";
-
-const DENOM_CAP_DEMO = 40;
+const JOSE_KJ = "rgb(31, 107, 88)";
 
 const cellSx = {
   py: 0.4,
@@ -106,10 +97,9 @@ const headSx = {
 type ScoredRow = {
   player: LabPlayer;
   stock: LabPlayer;
-  a: Breakdown | null;
-  b: Breakdown | null;
+  k: Breakdown | null;
   c: Breakdown | null;
-  k2: Breakdown | null;
+  kj: Breakdown | null;
   br: Breakdown | null;
 };
 
@@ -117,65 +107,30 @@ function scoreRows(
   stocks: LabPlayer[],
   extras: ExtraMap,
   formula: FormulaId,
-  weightsA: WeightsA,
-  weightsB: WeightsB,
+  weightsK: WeightsK,
   weightsC: WeightsC,
-  weightsK2: WeightsK2,
-  denomCap: number | null
+  weightsKJ: WeightsK
 ): ScoredRow[] {
   return stocks.map((stock) => {
     const player = applyExtras(stock, extras[stock.id]);
-    const br = computePlayer(
-      player,
-      formula,
-      weightsA,
-      weightsB,
-      weightsC,
-      weightsK2,
-      denomCap
-    );
+    const br = computePlayer(player, formula, weightsK, weightsC, weightsKJ);
     return {
       player,
       stock,
-      a: formula === "A" ? br : null,
-      b: formula === "B" ? br : null,
+      k: formula === "K" ? br : null,
       c: formula === "C" ? br : null,
-      k2: formula === "K2" ? br : null,
+      kj: formula === "KJ" ? br : null,
       br,
     };
   });
 }
 
-function floorOf(
-  formula: FormulaId,
-  a: WeightsA,
-  b: WeightsB,
-  _k2: WeightsK2
-): number | null {
-  switch (formula) {
-    case "A":
-      return a.floor;
-    case "B":
-      return b.floor;
-    case "K2":
-      return null;
-    case "C":
-      return null;
-    default: {
-      const _never: never = formula;
-      return _never;
-    }
-  }
-}
-
 function scoreOf(row: ScoredRow, formula: FormulaId): number {
   switch (formula) {
-    case "A":
-      return row.a?.r ?? Number.NEGATIVE_INFINITY;
-    case "B":
-      return row.b?.r ?? Number.NEGATIVE_INFINITY;
-    case "K2":
-      return row.k2?.r ?? Number.NEGATIVE_INFINITY;
+    case "K":
+      return row.k?.r ?? Number.NEGATIVE_INFINITY;
+    case "KJ":
+      return row.kj?.r ?? Number.NEGATIVE_INFINITY;
     case "C":
       return row.c?.r ?? Number.NEGATIVE_INFINITY;
     default: {
@@ -187,20 +142,16 @@ function scoreOf(row: ScoredRow, formula: FormulaId): number {
 
 function resetWeights(
   formula: FormulaId,
-  setA: (w: WeightsA) => void,
-  setB: (w: WeightsB) => void,
+  setK: (w: WeightsK) => void,
   setC: (w: WeightsC) => void,
-  setK2: (w: WeightsK2) => void
+  setKJ: (w: WeightsK) => void
 ) {
   switch (formula) {
-    case "A":
-      setA(DEFAULT_A);
+    case "K":
+      setK(DEFAULT_K);
       return;
-    case "B":
-      setB(DEFAULT_B);
-      return;
-    case "K2":
-      setK2(DEFAULT_K2);
+    case "KJ":
+      setKJ(DEFAULT_KJ);
       return;
     case "C":
       setC(DEFAULT_C);
@@ -214,12 +165,10 @@ function resetWeights(
 
 function formulaShortName(formula: FormulaId): string {
   switch (formula) {
-    case "A":
-      return "Tangent (x)";
-    case "B":
+    case "K":
       return "K(x)";
-    case "K2":
-      return "K2(x)";
+    case "KJ":
+      return "KJ(x)";
     case "C":
       return "OG";
     default: {
@@ -227,68 +176,6 @@ function formulaShortName(formula: FormulaId): string {
       return _never;
     }
   }
-}
-
-function knSliderSpecs<W extends WeightsB>(
-  weights: W,
-  setWeights: (updater: (w: W) => W) => void
-): SliderSpec[] {
-  return [
-    {
-      id: "kGames",
-      label: "kGames",
-      min: 0,
-      max: 8,
-      step: 0.1,
-      value: weights.kGames,
-      onChange: (kGames) => setWeights((w) => ({ ...w, kGames })),
-    },
-    {
-      id: "wDatas",
-      label: "wDatas",
-      min: 0,
-      max: 15,
-      step: 0.05,
-      value: weights.wDatas,
-      onChange: (wDatas) => setWeights((w) => ({ ...w, wDatas })),
-    },
-    {
-      id: "wPoints",
-      label: "wPoints",
-      min: 0,
-      max: 0.5,
-      step: 0.01,
-      value: weights.wPoints,
-      onChange: (wPoints) => setWeights((w) => ({ ...w, wPoints })),
-    },
-    {
-      id: "wPollos",
-      label: "wPollos",
-      min: 0,
-      max: 30,
-      step: 0.25,
-      value: weights.wPollos,
-      onChange: (wPollos) => setWeights((w) => ({ ...w, wPollos })),
-    },
-    {
-      id: "wZapatos",
-      label: "wZapatos",
-      min: 0,
-      max: 12,
-      step: 0.25,
-      value: weights.wZapatos,
-      onChange: (wZapatos) => setWeights((w) => ({ ...w, wZapatos })),
-    },
-    {
-      id: "floor",
-      label: "floor",
-      min: 1,
-      max: 80,
-      step: 1,
-      value: weights.floor,
-      onChange: (floor) => setWeights((w) => ({ ...w, floor })),
-    },
-  ];
 }
 
 type SliderSpec = {
@@ -300,6 +187,190 @@ type SliderSpec = {
   value: number;
   onChange: (value: number) => void;
 };
+
+type SliderGroup = {
+  id: string;
+  title: string | null;
+  hint?: string;
+  specs: SliderSpec[];
+};
+
+type TermColumn = {
+  id: string;
+  term: string;
+  multiplier: SliderSpec;
+  divisor: SliderSpec | null;
+};
+
+function unitTermColumns(
+  weights: WeightsK,
+  setWeights: (updater: (w: WeightsK) => WeightsK) => void
+): TermColumn[] {
+  return [
+    {
+      id: "dG",
+      term: "ΔG",
+      multiplier: {
+        id: "kGames",
+        label: "× kG",
+        min: 0,
+        max: 8,
+        step: 0.1,
+        value: weights.kGames,
+        onChange: (kGames) => setWeights((w) => ({ ...w, kGames })),
+      },
+      divisor: null,
+    },
+    {
+      id: "dDW",
+      term: "ΔDW",
+      multiplier: {
+        id: "kDatas",
+        label: "× kDW",
+        min: 0,
+        max: 8,
+        step: 0.1,
+        value: weights.kDatas,
+        onChange: (kDatas) => setWeights((w) => ({ ...w, kDatas })),
+      },
+      divisor: {
+        id: "dwPerGame",
+        label: "÷",
+        min: 1,
+        max: 12,
+        step: 0.1,
+        value: weights.dwPerGame,
+        onChange: (dwPerGame) => setWeights((w) => ({ ...w, dwPerGame })),
+      },
+    },
+    {
+      id: "dPF",
+      term: "ΔPF",
+      multiplier: {
+        id: "kPoints",
+        label: "× kPF",
+        min: 0,
+        max: 8,
+        step: 0.1,
+        value: weights.kPoints,
+        onChange: (kPoints) => setWeights((w) => ({ ...w, kPoints })),
+      },
+      divisor: {
+        id: "pfPerGame",
+        label: "÷",
+        min: 40,
+        max: 600,
+        step: 5,
+        value: weights.pfPerGame,
+        onChange: (pfPerGame) => setWeights((w) => ({ ...w, pfPerGame })),
+      },
+    },
+    {
+      id: "dPo",
+      term: "ΔPo",
+      multiplier: {
+        id: "kPollos",
+        label: "× kPo",
+        min: 0,
+        max: 8,
+        step: 0.1,
+        value: weights.kPollos,
+        onChange: (kPollos) => setWeights((w) => ({ ...w, kPollos })),
+      },
+      divisor: {
+        id: "pollosPerGame",
+        label: "÷",
+        min: 1,
+        max: 12,
+        step: 0.5,
+        value: weights.pollosPerGame,
+        onChange: (pollosPerGame) =>
+          setWeights((w) => ({ ...w, pollosPerGame })),
+      },
+    },
+    {
+      id: "dZap",
+      term: "ΔZap",
+      multiplier: {
+        id: "kZapatos",
+        label: "× kZap",
+        min: 0,
+        max: 8,
+        step: 0.1,
+        value: weights.kZapatos,
+        onChange: (kZapatos) => setWeights((w) => ({ ...w, kZapatos })),
+      },
+      divisor: {
+        id: "zapPerPollo",
+        label: "zapatos / pollo",
+        min: 0,
+        max: 1,
+        step: 0.05,
+        value: weights.zapPerPollo,
+        onChange: (zapPerPollo) =>
+          setWeights((w) => ({ ...w, zapPerPollo })),
+      },
+    },
+  ];
+}
+
+function UnitTermControls({ columns }: { columns: TermColumn[] }) {
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+        Same term in a column: multiplier on top, divisor under it. ΔG has no
+        divisor.
+      </Typography>
+      <Box
+        sx={{
+          display: "grid",
+          gap: { xs: 1, md: 1.25 },
+          gridTemplateColumns: {
+            xs: "1fr 1fr",
+            sm: "repeat(3, minmax(0, 1fr))",
+            md: "repeat(5, minmax(0, 1fr))",
+          },
+        }}
+      >
+        {columns.map((column) => (
+          <Box
+            key={column.id}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 0.75,
+              minWidth: 0,
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{ fontWeight: 800, letterSpacing: "0.04em" }}
+            >
+              {column.term}
+            </Typography>
+            <LabSlider spec={column.multiplier} />
+            {column.divisor ? (
+              <LabSlider spec={column.divisor} />
+            ) : (
+              <Box
+                sx={{
+                  flex: 1,
+                  minHeight: 52,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Typography variant="caption" color="text.disabled">
+                  no ÷
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
 function signedInt(n: number): string {
   if (n > 0) return `+${n}`;
@@ -437,36 +508,38 @@ function LabAccordion({
 
 function fmtQty(n: number | null, digits = 1): string {
   if (n == null || !Number.isFinite(n)) return "—";
-  const rounded = Math.round(n * 100) / 100;
-  if (Math.abs(rounded - Math.round(rounded)) < 0.049) {
+  const abs = Math.abs(n);
+  const places = abs >= 10 ? digits : abs >= 1 ? 2 : abs >= 0.01 ? 3 : 4;
+  const rounded = Math.round(n * 10 ** places) / 10 ** places;
+  if (Math.abs(rounded - Math.round(rounded)) < 0.5 / 10 ** places) {
     return String(Math.round(rounded));
   }
-  return rounded.toFixed(digits);
+  return rounded.toFixed(places);
+}
+
+function signedQty(n: number | null): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  const text = fmtQty(n);
+  return n > 0 ? `+${text}` : text;
 }
 
 function ExchangeTable({
   formula,
-  weightsA,
-  weightsB,
+  weightsK,
   weightsC,
-  weightsK2,
-  denomCap,
+  weightsKJ,
 }: {
   formula: FormulaId;
-  weightsA: WeightsA;
-  weightsB: WeightsB;
+  weightsK: WeightsK;
   weightsC: WeightsC;
-  weightsK2: WeightsK2;
-  denomCap: number | null;
+  weightsKJ: WeightsK;
 }) {
+  const unitWeights = formula === "K" ? weightsK : weightsKJ;
   const extras = (() => {
     switch (formula) {
-      case "A":
-        return extraExchange(weightsA);
-      case "B":
-        return extraExchange(weightsB);
-      case "K2":
-        return extraExchange(k2ExtraWeights(weightsK2));
+      case "K":
+      case "KJ":
+        return extraExchange(kExtraWeights(unitWeights));
       case "C":
         return extraExchange(ogExtraWeights(weightsC));
       default: {
@@ -475,14 +548,8 @@ function ExchangeTable({
       }
     }
   })();
-  const vsGame = gameExchange(
-    formula,
-    weightsA,
-    weightsB,
-    weightsC,
-    weightsK2,
-    denomCap
-  );
+  const vsGame = gameExchange(formula, weightsK, weightsC, weightsKJ);
+  const rWorth = rWorthPerUnit(formula, weightsK, weightsC, weightsKJ);
   const among = [
     { left: "1 ΔPo", right: `${fmtQty(extras.poPerZap, 2)} ΔZap` },
     { left: "1 ΔPo", right: `${fmtQty(extras.poPerDw, 2)} ΔDW` },
@@ -505,26 +572,65 @@ function ExchangeTable({
     borderColor: "divider",
   };
 
+  const blurb = (() => {
+    switch (formula) {
+      case "C":
+        return `OG has no /G. Read the first table as “+1 of this stat adds this much to R.” √(G/2) is unsigned and is not in these exchanges.`;
+      case "K":
+      case "KJ":
+        return `${formulaShortName(formula)} has no /G. First table: what +1 of each stat adds to R, and how many of that stat make +1 R. Then: how many extras equal one win, and how extras trade with each other.`;
+      default: {
+        const _never: never = formula;
+        return _never;
+      }
+    }
+  })();
+
   return (
-    <Stack gap={1.5}>
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-        {formula === "C"
-          ? `OG F(x) has no G floor. Datas and points are typical-game units (ΔDW / ${weightsC.dwPerGame}, ΔPF / ${weightsC.pfPerGame}). Pollos and zapatos still add as raw weights. √(G/2) is unsigned, so it is not in this table.`
-          : formula === "K2"
-            ? `K2 has no /G. 1 win and ${weightsK2.pollosPerGame} pollos are both ${fmtQty(vsGame.gameR, 2)} on R. Datas and points stay raw (ΔDW / ${weightsK2.dwPerGame}, ΔPF / ${weightsK2.pfPerGame}). A zapato is ${weightsK2.zapPerPollo} of a pollo.`
-            : `Live from the sliders. Extras share a denom, so pollos vs zapatos vs datas never depends on G. Matching a game does: 1 ΔG is worth ${fmtQty(vsGame.gameR, 2)} on R at denom ${fmtQty(vsGame.denom)} (the floor). Past that, you need more extras per win.`}
+    <Stack gap={1.75}>
+      <Typography variant="body2" color="text.secondary" sx={{ display: "block" }}>
+        {blurb}
       </Typography>
       <Box
         sx={{
           display: "grid",
           gap: 1.5,
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
         }}
       >
-        <Box>
-          <Typography variant="caption" sx={{ fontWeight: 800, display: "block", mb: 0.5 }}>
-            1 ΔG equals
-          </Typography>
+        <WorthPane title="+1 of this → R">
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={cellSx}>Unit</TableCell>
+                <TableCell align="right" sx={cellSx}>
+                  Adds to R
+                </TableCell>
+                <TableCell align="right" sx={cellSx}>
+                  For +1 R
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rWorth.map((row) => (
+                <TableRow key={row.unit}>
+                  <TableCell sx={cellSx}>1 {row.unit}</TableCell>
+                  <TableCell align="right" sx={{ ...cellSx, fontWeight: 700 }}>
+                    {signedQty(row.r)}
+                  </TableCell>
+                  <TableCell align="right" sx={cellSx}>
+                    {row.r == null || row.r === 0
+                      ? "—"
+                      : fmtQty(1 / row.r, 2)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </WorthPane>
+        <WorthPane
+          title={`1 win (ΔG) = ${fmtQty(vsGame.gameR, 2)} R`}
+        >
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -545,11 +651,8 @@ function ExchangeTable({
               ))}
             </TableBody>
           </Table>
-        </Box>
-        <Box>
-          <Typography variant="caption" sx={{ fontWeight: 800, display: "block", mb: 0.5 }}>
-            Among extras
-          </Typography>
+        </WorthPane>
+        <WorthPane title="Extras vs extras">
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -570,9 +673,29 @@ function ExchangeTable({
               ))}
             </TableBody>
           </Table>
-        </Box>
+        </WorthPane>
       </Box>
     </Stack>
+  );
+}
+
+function WorthPane({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <Box>
+      <Typography
+        variant="caption"
+        sx={{ fontWeight: 800, display: "block", mb: 0.5 }}
+      >
+        {title}
+      </Typography>
+      {children}
+    </Box>
   );
 }
 
@@ -659,21 +782,15 @@ function formulaChrome(formula: FormulaId): {
   cols: string[];
 } {
   switch (formula) {
-    case "A":
+    case "K":
       return {
-        color: JOSE_A,
-        label: "Adds to R",
-        cols: ["Lead", "ΔDW", "ΔPF", "ΔPo", "ΔZap", "R"],
-      };
-    case "B":
-      return {
-        color: JOSE_B,
+        color: JOSE_K,
         label: "Adds to R",
         cols: ["ΔG", "ΔDW", "ΔPF", "ΔPo", "ΔZap", "R"],
       };
-    case "K2":
+    case "KJ":
       return {
-        color: JOSE_K2,
+        color: JOSE_KJ,
         label: "Adds to R",
         cols: ["ΔG", "ΔDW", "ΔPF", "ΔPo", "ΔZap", "R"],
       };
@@ -692,12 +809,10 @@ function formulaChrome(formula: FormulaId): {
 
 function breakdownOf(row: ScoredRow, formula: FormulaId): Breakdown | null {
   switch (formula) {
-    case "A":
-      return row.a;
-    case "B":
-      return row.b;
-    case "K2":
-      return row.k2;
+    case "K":
+      return row.k;
+    case "KJ":
+      return row.kj;
     case "C":
       return row.c;
     default: {
@@ -745,9 +860,8 @@ function ResultCells({
     </>
   );
   switch (formula) {
-    case "A":
-    case "B":
-    case "K2":
+    case "K":
+    case "KJ":
       return (
         <>
           {contribCell(br?.games)}
@@ -786,8 +900,6 @@ function ReadmeTable({
   pinnedIds,
   onTogglePin,
   extras,
-  floor,
-  denomCap,
   onBump,
   onResetField,
   onResetPerson,
@@ -800,8 +912,6 @@ function ReadmeTable({
   pinnedIds: string[];
   onTogglePin: (id: string) => void;
   extras: ExtraMap;
-  floor: number | null;
-  denomCap: number | null;
   onBump: (id: string, stock: LabPlayer, key: BumpKey, delta: number) => void;
   onResetField: (id: string, key: BumpKey) => void;
   onResetPerson: (id: string) => void;
@@ -876,7 +986,7 @@ function ReadmeTable({
                     player={row.player}
                     stock={row.stock}
                     extra={extras[row.player.id]}
-                    denom={{ formula, floor, denomCap }}
+                    denom={{ formula }}
                     onBump={(key, delta) => onBump(row.player.id, row.stock, key, delta)}
                     onResetField={(key) => onResetField(row.player.id, key)}
                     onResetPerson={() => onResetPerson(row.player.id)}
@@ -918,8 +1028,6 @@ function TestTable({
   pinnedIds,
   onTogglePin,
   extras,
-  floor,
-  denomCap,
   onBump,
   onResetField,
   onResetPerson,
@@ -932,8 +1040,6 @@ function TestTable({
   pinnedIds: string[];
   onTogglePin: (id: string) => void;
   extras: ExtraMap;
-  floor: number | null;
-  denomCap: number | null;
   onBump: (id: string, stock: LabPlayer, key: BumpKey, delta: number) => void;
   onResetField: (id: string, key: BumpKey) => void;
   onResetPerson: (id: string) => void;
@@ -1020,7 +1126,7 @@ function TestTable({
                     player={p}
                     stock={row.stock}
                     extra={extras[p.id]}
-                    denom={{ formula, floor, denomCap }}
+                    denom={{ formula }}
                     onBump={(key, delta) => onBump(p.id, row.stock, key, delta)}
                     onResetField={(key) => onResetField(p.id, key)}
                     onResetPerson={() => onResetPerson(p.id)}
@@ -1057,32 +1163,23 @@ function TestTable({
 }
 
 export default function JoseLab() {
-  const [formula, setFormula] = useState<FormulaId>("B");
-  const [weightsA, setWeightsA] = useState<WeightsA>(DEFAULT_A);
-  const [weightsB, setWeightsB] = useState<WeightsB>(DEFAULT_B);
+  const [formula, setFormula] = useState<FormulaId>("K");
+  const [weightsK, setWeightsK] = useState<WeightsK>(DEFAULT_K);
   const [weightsC, setWeightsC] = useState<WeightsC>(DEFAULT_C);
-  const [weightsK2, setWeightsK2] = useState<WeightsK2>(DEFAULT_K2);
+  const [weightsKJ, setWeightsKJ] = useState<WeightsK>(DEFAULT_KJ);
   const [csvPins, setCsvPins] = useState<string[]>([...DEFAULT_CSV_PINS]);
   const [mockPins, setMockPins] = useState<string[]>([...DEFAULT_MOCK_PINS]);
-  const [capOn, setCapOn] = useState(false);
-  const [denomCapValue, setDenomCapValue] = useState(DENOM_CAP_DEMO);
   const [extras, setExtras] = useState<ExtraMap>({});
 
-  const denomCap = capOn ? denomCapValue : null;
-  const deferredA = useDeferredValue(weightsA);
-  const deferredB = useDeferredValue(weightsB);
+  const deferredK = useDeferredValue(weightsK);
   const deferredC = useDeferredValue(weightsC);
-  const deferredK2 = useDeferredValue(weightsK2);
-  const deferredCap = useDeferredValue(denomCap);
+  const deferredKJ = useDeferredValue(weightsKJ);
   const deferredExtras = useDeferredValue(extras);
   const liveStale =
-    deferredA !== weightsA ||
-    deferredB !== weightsB ||
+    deferredK !== weightsK ||
     deferredC !== weightsC ||
-    deferredK2 !== weightsK2 ||
-    deferredCap !== denomCap ||
+    deferredKJ !== weightsKJ ||
     deferredExtras !== extras;
-  const floor = floorOf(formula, deferredA, deferredB, deferredK2);
 
   const bump = useCallback(
     (id: string, stock: LabPlayer, key: BumpKey, delta: number) => {
@@ -1114,13 +1211,11 @@ export default function JoseLab() {
         README_PLAYERS,
         deferredExtras,
         formula,
-        deferredA,
-        deferredB,
+        deferredK,
         deferredC,
-        deferredK2,
-        deferredCap
+        deferredKJ
       ),
-    [formula, deferredA, deferredB, deferredC, deferredK2, deferredCap, deferredExtras]
+    [formula, deferredK, deferredC, deferredKJ, deferredExtras]
   );
   const scoredTest = useMemo(
     () =>
@@ -1128,13 +1223,11 @@ export default function JoseLab() {
         TEST_PLAYERS,
         deferredExtras,
         formula,
-        deferredA,
-        deferredB,
+        deferredK,
         deferredC,
-        deferredK2,
-        deferredCap
+        deferredKJ
       ),
-    [formula, deferredA, deferredB, deferredC, deferredK2, deferredCap, deferredExtras]
+    [formula, deferredK, deferredC, deferredKJ, deferredExtras]
   );
 
   const scoredReadmeCsv = useMemo(
@@ -1167,137 +1260,17 @@ export default function JoseLab() {
   );
   const bumpCount = extraCount(extras);
 
-  const sliders: SliderSpec[] = (() => {
+  const sliderGroups: SliderGroup[] = (() => {
     switch (formula) {
-      case "A":
-        return [
-          {
-            id: "leadCap",
-            label: "leadCap",
-            min: 5,
-            max: 40,
-            step: 1,
-            value: weightsA.leadCap,
-            onChange: (leadCap) => setWeightsA((w) => ({ ...w, leadCap })),
-          },
-          {
-            id: "leadScale",
-            label: "leadScale",
-            min: 2,
-            max: 20,
-            step: 0.5,
-            value: weightsA.leadScale,
-            onChange: (leadScale) => setWeightsA((w) => ({ ...w, leadScale })),
-          },
-          {
-            id: "leadMix",
-            label: "leadMix",
-            min: 0,
-            max: 4,
-            step: 0.1,
-            value: weightsA.leadMix,
-            onChange: (leadMix) => setWeightsA((w) => ({ ...w, leadMix })),
-          },
-          {
-            id: "wDatas",
-            label: "wDatas",
-            min: 0,
-            max: 15,
-            step: 0.1,
-            value: weightsA.wDatas,
-            onChange: (wDatas) => setWeightsA((w) => ({ ...w, wDatas })),
-          },
-          {
-            id: "wPoints",
-            label: "wPoints",
-            min: 0,
-            max: 0.5,
-            step: 0.01,
-            value: weightsA.wPoints,
-            onChange: (wPoints) => setWeightsA((w) => ({ ...w, wPoints })),
-          },
-          {
-            id: "wPollos",
-            label: "wPollos",
-            min: 0,
-            max: 20,
-            step: 0.5,
-            value: weightsA.wPollos,
-            onChange: (wPollos) => setWeightsA((w) => ({ ...w, wPollos })),
-          },
-          {
-            id: "wZapatos",
-            label: "wZapatos",
-            min: 0,
-            max: 12,
-            step: 0.5,
-            value: weightsA.wZapatos,
-            onChange: (wZapatos) => setWeightsA((w) => ({ ...w, wZapatos })),
-          },
-          {
-            id: "floor",
-            label: "floor",
-            min: 1,
-            max: 80,
-            step: 1,
-            value: weightsA.floor,
-            onChange: (floor) => setWeightsA((w) => ({ ...w, floor })),
-          },
-        ];
-      case "B":
-        return knSliderSpecs(weightsB, setWeightsB);
-      case "K2":
-        return [
-          {
-            id: "kGames",
-            label: "kGames (ΔG)",
-            min: 0,
-            max: 8,
-            step: 0.1,
-            value: weightsK2.kGames,
-            onChange: (kGames) => setWeightsK2((w) => ({ ...w, kGames })),
-          },
-          {
-            id: "dwPerGame",
-            label: "datas / win",
-            min: 1,
-            max: 12,
-            step: 0.1,
-            value: weightsK2.dwPerGame,
-            onChange: (dwPerGame) => setWeightsK2((w) => ({ ...w, dwPerGame })),
-          },
-          {
-            id: "pfPerGame",
-            label: "points / game",
-            min: 40,
-            max: 300,
-            step: 5,
-            value: weightsK2.pfPerGame,
-            onChange: (pfPerGame) => setWeightsK2((w) => ({ ...w, pfPerGame })),
-          },
-          {
-            id: "pollosPerGame",
-            label: "pollos / win",
-            min: 1,
-            max: 12,
-            step: 0.5,
-            value: weightsK2.pollosPerGame,
-            onChange: (pollosPerGame) =>
-              setWeightsK2((w) => ({ ...w, pollosPerGame })),
-          },
-          {
-            id: "zapPerPollo",
-            label: "zapatos / pollo",
-            min: 0,
-            max: 1,
-            step: 0.05,
-            value: weightsK2.zapPerPollo,
-            onChange: (zapPerPollo) =>
-              setWeightsK2((w) => ({ ...w, zapPerPollo })),
-          },
-        ];
+      case "K":
+      case "KJ":
+        return [];
       case "C":
         return [
+          {
+            id: "all",
+            title: null,
+            specs: [
           {
             id: "kSqrt",
             label: "kSqrt",
@@ -1352,6 +1325,8 @@ export default function JoseLab() {
             value: weightsC.wZapatos,
             onChange: (wZapatos) => setWeightsC((w) => ({ ...w, wZapatos })),
           },
+        ],
+          },
         ];
       default: {
         const _never: never = formula;
@@ -1386,8 +1361,7 @@ export default function JoseLab() {
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
             Move sliders and watch the CSV seasons first (Valhalla, Cesar,
-            Eliecer, Randy, Guillermo). Mocks are below — heaters and ugly +4,
-            not real people.
+            Eliecer, Randy, Guillermo). Mocks are below.
           </Typography>
         </Box>
         <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
@@ -1399,22 +1373,15 @@ export default function JoseLab() {
               if (value) setFormula(value);
             }}
           >
-            <ToggleButton value="B">K(x)</ToggleButton>
-            <ToggleButton value="K2">K2(x)</ToggleButton>
+            <ToggleButton value="K">K(x)</ToggleButton>
+            <ToggleButton value="KJ">KJ(x)</ToggleButton>
             <ToggleButton value="C">OG · F(x)</ToggleButton>
-            <ToggleButton value="A">Tangent (x)</ToggleButton>
           </ToggleButtonGroup>
           <Button
             size="small"
             variant="outlined"
             onClick={() => {
-              resetWeights(
-                formula,
-                setWeightsA,
-                setWeightsB,
-                setWeightsC,
-                setWeightsK2
-              );
+              resetWeights(formula, setWeightsK, setWeightsC, setWeightsKJ);
             }}
           >
             Reset {formulaShortName(formula)}
@@ -1425,78 +1392,74 @@ export default function JoseLab() {
       <Card sx={{ p: 1.25 }}>
         <Box
           sx={{
-            px: 1,
-            py: 0.75,
-            mb: 1,
+            px: 1.25,
+            py: 1,
+            mb: 1.25,
             bgcolor: alpha("#241D14", 0.05),
             borderRadius: 1,
-            fontFamily:
-              'ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace',
-            fontSize: 13,
-            lineHeight: 1.35,
           }}
         >
-          {equationLines(
-            formula,
-            weightsA,
-            weightsB,
-            weightsC,
-            weightsK2,
-            denomCap
-          ).map((line) => (
-            <Box key={line} component="div">
-              {line}
-            </Box>
-          ))}
+          <Typography
+            variant="caption"
+            sx={{ fontWeight: 800, display: "block", mb: 0.5, letterSpacing: "0.04em" }}
+          >
+            {formulaShortName(formula)}
+          </Typography>
+          <Box
+            sx={{
+              fontFamily:
+                'ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace',
+              fontSize: 13,
+              lineHeight: 1.55,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {equationLines(formula, weightsK, weightsC, weightsKJ).join("\n")}
+          </Box>
         </Box>
-        <Box
-          sx={{
-            display: "grid",
-            gap: { xs: 0.5, md: 1 },
-            gridTemplateColumns: {
-              xs: "1fr 1fr",
-              md: "repeat(4, 1fr)",
-            },
-          }}
-        >
-          {sliders.map((spec) => (
-            <LabSlider key={spec.id} spec={spec} />
-          ))}
-        </Box>
-        {formula === "C" || formula === "K2" ? null : (
-          <>
-            <FormControlLabel
-              sx={{ mt: 0.5, ml: 0 }}
-              control={
-                <Switch
-                  checked={capOn}
-                  color="warning"
-                  size="small"
-                  onChange={(_, checked) => setCapOn(checked)}
-                />
-              }
-              label="Dangerous: cap denom (demo only)"
-            />
-            {capOn ? (
-              <Box sx={{ maxWidth: 360, mt: 0.5 }}>
-                <LabSlider
-                  spec={{
-                    id: "denomCap",
-                    label: "denomCap",
-                    min: 10,
-                    max: 80,
-                    step: 1,
-                    value: denomCapValue,
-                    onChange: setDenomCapValue,
+        {formula === "K" || formula === "KJ" ? (
+          <UnitTermControls
+            columns={unitTermColumns(
+              formula === "K" ? weightsK : weightsKJ,
+              formula === "K" ? setWeightsK : setWeightsKJ
+            )}
+          />
+        ) : (
+          <Stack gap={1.5}>
+            {sliderGroups.map((group) => (
+              <Box key={group.id}>
+                {group.title ? (
+                  <Box sx={{ mb: 0.75 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ fontWeight: 800, display: "block", letterSpacing: "0.04em" }}
+                    >
+                      {group.title}
+                    </Typography>
+                    {group.hint ? (
+                      <Typography variant="caption" color="text.secondary">
+                        {group.hint}
+                      </Typography>
+                    ) : null}
+                  </Box>
+                ) : null}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gap: { xs: 0.5, md: 1 },
+                    gridTemplateColumns: {
+                      xs: "1fr 1fr",
+                      md: "repeat(4, 1fr)",
+                    },
                   }}
-                />
-                <Alert severity="warning" sx={{ mt: 1 }}>
-                  Point stocks will eat n. A top cap on denom is the wrong
-                  reliability knob — extras stop dying as G grows.
-                </Alert>
+                >
+                  {group.specs.map((spec) => (
+                    <LabSlider key={spec.id} spec={spec} />
+                  ))}
+                </Box>
               </Box>
-            ) : null}
-          </>
+            ))}
+          </Stack>
         )}
       </Card>
 
@@ -1510,11 +1473,9 @@ export default function JoseLab() {
         <LabAccordion title="Worth" defaultExpanded>
           <ExchangeTable
             formula={formula}
-            weightsA={deferredA}
-            weightsB={deferredB}
+            weightsK={deferredK}
             weightsC={deferredC}
-            weightsK2={deferredK2}
-            denomCap={deferredCap}
+            weightsKJ={deferredKJ}
           />
         </LabAccordion>
         <RulesPanel />
@@ -1534,17 +1495,15 @@ export default function JoseLab() {
       >
         <JoseLabCharts
           formula={formula}
-          weightsA={deferredA}
-          weightsB={deferredB}
+          weightsK={deferredK}
           weightsC={deferredC}
-          weightsK2={deferredK2}
-          denomCap={deferredCap}
+          weightsKJ={deferredKJ}
           players={liveReadme}
           scored={scoredReadmeCsv}
           pinnedIds={csvPins}
         />
         <ReadmeTable
-          title="CSV seasons · T–G–P, nets, live A and B"
+          title="CSV seasons · T–G–P, nets, live R"
           hint="Tap G, W, L, or a delta to age that person. Wins and losses also add to G. Pin the row to plot."
           rows={scoredReadmeCsv}
           failIds={EMPTY_FAIL_IDS}
@@ -1552,8 +1511,6 @@ export default function JoseLab() {
           pinnedIds={csvPins}
           onTogglePin={toggleCsvPin}
           extras={deferredExtras}
-          floor={floor}
-          denomCap={deferredCap}
           onBump={bump}
           onResetField={resetOneField}
           onResetPerson={resetOnePerson}
@@ -1572,17 +1529,15 @@ export default function JoseLab() {
       >
         <JoseLabCharts
           formula={formula}
-          weightsA={deferredA}
-          weightsB={deferredB}
+          weightsK={deferredK}
           weightsC={deferredC}
-          weightsK2={deferredK2}
-          denomCap={deferredCap}
+          weightsKJ={deferredKJ}
           players={liveMockPlayers}
           scored={scoredMockCharts}
           pinnedIds={mockPins}
         />
         <ReadmeTable
-          title="Mock scenarios · T–G–P, nets, live A and B"
+          title="Mock scenarios · T–G–P, nets, live R"
           hint="Same bumpers. Pin a row onto the graphs above."
           rows={scoredReadmeMock}
           failIds={EMPTY_FAIL_IDS}
@@ -1590,8 +1545,6 @@ export default function JoseLab() {
           pinnedIds={mockPins}
           onTogglePin={toggleMockPin}
           extras={deferredExtras}
-          floor={floor}
-          denomCap={deferredCap}
           onBump={bump}
           onResetField={resetOneField}
           onResetPerson={resetOnePerson}
@@ -1605,8 +1558,6 @@ export default function JoseLab() {
           pinnedIds={mockPins}
           onTogglePin={toggleMockPin}
           extras={deferredExtras}
-          floor={floor}
-          denomCap={deferredCap}
           onBump={bump}
           onResetField={resetOneField}
           onResetPerson={resetOnePerson}

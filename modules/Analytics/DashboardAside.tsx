@@ -125,7 +125,7 @@ export default function DashboardAside({
       </Box>
 
       {hasFilters ? (
-        <Collapse in={filtersOpen} timeout="auto" unmountOnExit={!isDesktop}>
+        <Collapse in={filtersOpen} timeout={isDesktop ? 0 : 200} unmountOnExit={!isDesktop}>
           <Box
             sx={{
               display: "flex",

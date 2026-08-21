@@ -31,6 +31,7 @@ export type PlayerOccurrence = {
   name: string;
   nameKey: string;
   isMyself: boolean;
+  isHidden: boolean;
   createdAt: string | null;
 };
 
@@ -308,6 +309,7 @@ function collectOccurrences(sources: MergeSource[]): PlayerOccurrence[] {
         name: player.name,
         nameKey: player.name_key || normalizeNameKey(player.name),
         isMyself: (player.is_myself ?? 0) === 1,
+        isHidden: (player.is_hidden ?? 0) === 1,
         createdAt: player.created_at ?? null,
       });
     }
@@ -570,6 +572,7 @@ type CanonicalPlayer = {
   name: string;
   nameKey: string;
   isMyself: boolean;
+  isHidden: boolean;
   createdAt: string | null;
   /** Source keys that map into this player. */
   aliases: { datasetId: string; playerId: number; publicId: string }[];
@@ -632,10 +635,13 @@ function resolveCanonicalPlayers(
         : undefined) ?? list[0];
 
     let isMyself = false;
+    let isHidden = true;
     for (const occ of list) {
       if (occ.isMyself) {
         isMyself = true;
-        break;
+      }
+      if (!occ.isHidden) {
+        isHidden = false;
       }
     }
 
@@ -664,6 +670,7 @@ function resolveCanonicalPlayers(
       name: named.name,
       nameKey: named.nameKey || normalizeNameKey(named.name),
       isMyself,
+      isHidden,
       createdAt,
       aliases,
     });
@@ -860,7 +867,8 @@ export function materializeMergedExport(
     name: player.name,
     name_key: player.nameKey,
     created_at: player.createdAt,
-    is_myself: player.isMyself ? 1 : 0,
+    is_myself: player.isMyself && !player.isHidden ? 1 : 0,
+    is_hidden: player.isHidden ? 1 : 0,
   }));
 
   const remap = new Map<string, number>();
@@ -923,6 +931,7 @@ export function materializeMergedExport(
     public_id: player.public_id,
     created_at: player.created_at ?? null,
     is_myself: player.is_myself ?? 0,
+    is_hidden: player.is_hidden ?? 0,
   }));
 
   let data: OlympusExportData = {

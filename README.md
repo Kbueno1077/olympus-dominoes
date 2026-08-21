@@ -259,7 +259,7 @@ See `lib/analytics/parseExport.ts`, `lib/analytics/dbMeta.ts`, and
 | `id` | Always `1` |
 | `db_identifier` | Stable **16-char** alphanumeric league identity |
 | `created_at` / `updated_at` | ISO-8601; `updated_at` bumps only on meaningful writes |
-| `schema_version` | Current schema (`23`) |
+| `schema_version` | Current schema (`24`) |
 | `app_version` | Last writer (e.g. `4.5.0`) |
 | `label` | Optional display name (often the data-set name) |
 | `origin` | `local` \| `imported` \| `web` |
@@ -279,6 +279,7 @@ so identity round-trips when you re-import on mobile.
 | `public_id` | Stable **16-char** alphanumeric (`A–Z a–z 0–9`). Survives renames. Cross-DB identity. |
 | `created_at` | ISO timestamp (optional) |
 | `is_myself` | `0` / `1` (optional) |
+| `is_hidden` | `0` / `1`. Missing on older CSVs → `0`. Hidden rows stay in the file with stats and seats; web pickers and the leaderboard skip them. |
 
 Legacy exports without `public_id` (only `id,name,name_key,created_at,is_myself`) still
 import: missing or invalid ids are generated with `crypto.getRandomValues`. When a valid

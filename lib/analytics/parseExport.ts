@@ -89,6 +89,19 @@ export function defaultMatchIsClosed(value: unknown): number {
   return 1;
 }
 
+/** Visible unless the cell is explicitly 1. Missing `is_hidden` → 0. */
+export function defaultPlayerIsHidden(value: unknown): number {
+  if (value === null || value === undefined || value === "") return 0;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value === 1 ? 1 : 0;
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n === 1 ? 1 : 0;
+  }
+  return 0;
+}
+
 export function stripSurrogateRowIds(
   tables: Partial<Record<ExportTable, Record<string, unknown>[]>>
 ): Partial<Record<ExportTable, Record<string, unknown>[]>> {
@@ -216,6 +229,7 @@ function normalizePlayers(rows: Record<string, unknown>[]): PlayerRow[] {
     name_key: asString(row.name_key, asString(row.name).trim().toLowerCase()),
     created_at: row.created_at == null ? null : asString(row.created_at),
     is_myself: asNumber(row.is_myself, 0),
+    is_hidden: defaultPlayerIsHidden(row.is_hidden),
   }));
 }
 

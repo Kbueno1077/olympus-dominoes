@@ -1,5 +1,6 @@
 "use client";
 
+import RestoreHiddenPlayersPanel from "@/modules/Analytics/RestoreHiddenPlayersPanel";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
 import {
   dashboardMainSx,
@@ -38,6 +39,7 @@ import {
 } from "@/utils/matchSettings";
 import { teamsFromRoster } from "@/utils/teams";
 import CallMergeOutlinedIcon from "@mui/icons-material/CallMergeOutlined";
+import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
@@ -71,6 +73,7 @@ const MONO =
   'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 
 type Step = "select" | "review" | "approve";
+type ToolId = "restore" | "merge";
 
 type ConflictSide = {
   key: string;
@@ -117,6 +120,7 @@ export default function MergeDatasets() {
   const { registry, createMergedDataset, loading } = useAnalytics();
   const openDataDrawer = useSetRecoilState(statsDataDrawerOpenRecoil);
 
+  const [tool, setTool] = useState<ToolId>("restore");
   const [step, setStep] = useState<Step>("select");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [plan, setPlan] = useState<MergePlan | null>(null);
@@ -294,7 +298,7 @@ export default function MergeDatasets() {
   if (loading) {
     return (
       <Box sx={{ p: 3 }}>
-        <Typography color="text.secondary">{t("mergeHint")}</Typography>
+        <Typography color="text.secondary">{t("toolsHintShort")}</Typography>
       </Box>
     );
   }
@@ -303,8 +307,8 @@ export default function MergeDatasets() {
     <Box sx={dashboardShellSx}>
       <DashboardAside
         title={t("mergeNav")}
-        subtitle={t("mergeHintShort")}
-        filtersLabel={t("mergeSteps")}
+        subtitle={t("toolsHintShort")}
+        filtersLabel={t("mergeNav")}
       >
         <Stack
           spacing={1.5}
@@ -316,6 +320,67 @@ export default function MergeDatasets() {
             overflow: { xs: "visible", md: "auto" },
           }}
         >
+          <Stack spacing={0.5}>
+            {(
+              [
+                ["restore", t("toolsRestoreSection"), PersonSearchOutlinedIcon],
+                ["merge", t("toolsMergeSection"), CallMergeOutlinedIcon],
+              ] as const
+            ).map(([id, label, Icon]) => {
+              const active = tool === id;
+              return (
+                <Box
+                  key={id}
+                  component="button"
+                  type="button"
+                  onClick={() => setTool(id)}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    width: "100%",
+                    textAlign: "left",
+                    border: "1px solid",
+                    borderColor: active
+                      ? alpha(GIT_OURS, 0.45)
+                      : "transparent",
+                    backgroundColor: active
+                      ? alpha(GIT_OURS, 0.08)
+                      : "transparent",
+                    borderRadius: 1.25,
+                    px: 1,
+                    py: 0.65,
+                    cursor: "pointer",
+                    font: "inherit",
+                    color: "inherit",
+                    "&:hover": {
+                      backgroundColor: (theme) =>
+                        alpha(theme.palette.primary.main, 0.06),
+                    },
+                  }}
+                >
+                  <Icon
+                    sx={{
+                      fontSize: 18,
+                      color: active ? "primary.main" : "text.secondary",
+                    }}
+                  />
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: active ? 700 : 500,
+                      color: active ? "text.primary" : "text.secondary",
+                    }}
+                  >
+                    {label}
+                  </Typography>
+                </Box>
+              );
+            })}
+          </Stack>
+
+          {tool === "merge" ? (
+          <Stack spacing={1.5}>
           <Stack spacing={0.5}>
             {(
               [
@@ -601,10 +666,15 @@ export default function MergeDatasets() {
               {t("mergeViewClean")}
             </Button>
           ) : null}
+          </Stack>
+          ) : null}
         </Stack>
       </DashboardAside>
 
       <Box sx={dashboardMainSx}>
+        {tool === "restore" ? (
+          <RestoreHiddenPlayersPanel />
+        ) : (
         <Stack
           spacing={2}
           sx={{
@@ -1243,6 +1313,7 @@ export default function MergeDatasets() {
             </>
           ) : null}
         </Stack>
+        )}
       </Box>
 
       <Dialog

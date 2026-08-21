@@ -2,6 +2,7 @@
 
 import AnalyticsCompareCharts from "@/modules/Analytics/AnalyticsCompareCharts";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
+import PlayerPickDialog from "@/modules/Analytics/PlayerPickDialog";
 import {
   ControlSection,
   dashboardMainSx,
@@ -12,6 +13,7 @@ import {
   loadCompareUiFilters,
   saveCompareUiFilters,
 } from "@/lib/analytics/compareFilterState";
+import { compareLaunchFromQueryString } from "@/lib/analytics/compareLaunch";
 import {
   BREAKDOWN_STAT_DEFS,
   breakdownValueColor,
@@ -22,6 +24,7 @@ import {
   matchupFilterFromTeams,
 } from "@/lib/analytics/matchup";
 import { computeMatchupStats } from "@/lib/analytics/matchupStats";
+import { listVisiblePlayers } from "@/lib/analytics/playerVisibility";
 import {
   getPlayerStats,
   listStatModes,
@@ -35,14 +38,8 @@ import {
   Box,
   Button,
   Card,
-  Checkbox,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControlLabel,
   Stack,
   Switch,
   ToggleButton,
@@ -56,6 +53,16 @@ const MAX_COMPARE = 10;
 const SIDE_A = "#2F6F9F";
 const SIDE_B = "#B8453A";
 const SIDE_ANY = "rgba(95, 83, 65, 0.45)";
+
+function launchFromLocation(): CompareLaunch | null {
+  if (typeof window === "undefined") return null;
+  return compareLaunchFromQueryString(window.location.search);
+}
+
+function prefillKey(launch: CompareLaunch | null): string {
+  if (!launch?.playerIds.length) return "";
+  return `${launch.playerIds.join(",")}::${launch.modeLabel ?? ""}::${launch.tileSet ?? ""}`;
+}
 
 type TeamSide = 1 | 2 | null;
 
@@ -89,15 +96,20 @@ export default function AnalyticsCompare({
   const { t, modeName } = useTranslation();
   const { activeDataset, registry } = useAnalytics();
   const datasetId = activeDataset?.id ?? registry.activeDatasetId;
-  const launchApplied = useRef(false);
+  const appliedPrefillKey = useRef("");
+  const launchKey = prefillKey(launchFromLocation() ?? initialLaunch);
 
-  const playerIds = useMemo(
-    () => new Set(data.players.map((player) => player.id)),
+  const visiblePlayers = useMemo(
+    () => listVisiblePlayers(data.players),
     [data.players]
   );
+  const playerIds = useMemo(
+    () => new Set(visiblePlayers.map((player) => player.id)),
+    [visiblePlayers]
+  );
   const playerIdKey = useMemo(
-    () => data.players.map((player) => player.id).join(","),
-    [data.players]
+    () => visiblePlayers.map((player) => player.id).join(","),
+    [visiblePlayers]
   );
 
   const tileSets = useMemo(() => listStatTileSets(data), [data]);
@@ -110,11 +122,9 @@ export default function AnalyticsCompare({
   );
 
   const [tileSet, setTileSet] = useState<TileSet>(() => {
-    if (
-      initialLaunch?.tileSet &&
-      tileSets.includes(initialLaunch.tileSet)
-    ) {
-      return initialLaunch.tileSet;
+    const launch = launchFromLocation() ?? initialLaunch;
+    if (launch?.tileSet && tileSets.includes(launch.tileSet)) {
+      return launch.tileSet;
     }
     if (stored.tileSet && tileSets.includes(stored.tileSet)) {
       return stored.tileSet;
@@ -127,11 +137,9 @@ export default function AnalyticsCompare({
   );
 
   const [modeLabel, setModeLabel] = useState<string | null>(() => {
-    if (
-      initialLaunch?.modeLabel &&
-      modesForSet.includes(initialLaunch.modeLabel)
-    ) {
-      return initialLaunch.modeLabel;
+    const launch = launchFromLocation() ?? initialLaunch;
+    if (launch?.modeLabel && modesForSet.includes(launch.modeLabel)) {
+      return launch.modeLabel;
     }
     if (stored.modeLabel && modesForSet.includes(stored.modeLabel)) {
       return stored.modeLabel;
@@ -139,17 +147,20 @@ export default function AnalyticsCompare({
     if (initialMode && modesForSet.includes(initialMode)) return initialMode;
     return modesForSet[0] ?? null;
   });
-  const [selectedIds, setSelectedIds] = useState<number[]>(() =>
-    initialLaunch?.playerIds?.length
-      ? [...initialLaunch.playerIds]
-      : stored.selectedIds
-  );
-  const [teams, setTeams] = useState<Record<number, TeamSide>>(() =>
-    initialLaunch?.teams ? { ...initialLaunch.teams } : { ...stored.teams }
-  );
-  const [matchupMode, setMatchupMode] = useState(() =>
-    initialLaunch ? Boolean(initialLaunch.matchupMode) : stored.matchupMode
-  );
+  const [selectedIds, setSelectedIds] = useState<number[]>(() => {
+    const launch = launchFromLocation() ?? initialLaunch;
+    return launch?.playerIds?.length
+      ? [...launch.playerIds]
+      : stored.selectedIds;
+  });
+  const [teams, setTeams] = useState<Record<number, TeamSide>>(() => {
+    const launch = launchFromLocation() ?? initialLaunch;
+    return launch?.teams ? { ...launch.teams } : { ...stored.teams };
+  });
+  const [matchupMode, setMatchupMode] = useState(() => {
+    const launch = launchFromLocation() ?? initialLaunch;
+    return launch ? Boolean(launch.matchupMode) : stored.matchupMode;
+  });
   const [filtersHydratedFor, setFiltersHydratedFor] = useState<string | null>(
     null
   );
@@ -163,15 +174,34 @@ export default function AnalyticsCompare({
   } | null>(null);
   const [matchupLoading, setMatchupLoading] = useState(false);
 
-  const players = data.players;
+  const players = visiblePlayers;
   const alignmentReady = matchupAlignmentReady(selectedIds, teams);
 
-  // Restore when switching data sets (pending H2H launch still wins once).
+  // URL (H2H) and pending launch win over saved Compare picks. Apply once per pair.
   useEffect(() => {
-    if (initialLaunch && !launchApplied.current) {
+    const launch = launchFromLocation() ?? initialLaunch;
+    const key = prefillKey(launch);
+    const stamped = key ? `${datasetId}:${key}` : `${datasetId}:stored`;
+    if (appliedPrefillKey.current === stamped) return;
+    appliedPrefillKey.current = stamped;
+
+    if (key && launch) {
+      setSelectedIds([...launch.playerIds]);
+      setTeams(launch.teams ?? {});
+      setMatchupMode(Boolean(launch.matchupMode));
+      const nextTile =
+        launch.tileSet && tileSets.includes(launch.tileSet)
+          ? launch.tileSet
+          : null;
+      if (nextTile) setTileSet(nextTile);
+      const nextModes = listStatModes(data, nextTile ?? tileSet);
+      if (launch.modeLabel && nextModes.includes(launch.modeLabel)) {
+        setModeLabel(launch.modeLabel);
+      }
       setFiltersHydratedFor(datasetId);
       return;
     }
+
     const loaded = loadCompareUiFilters(
       datasetId,
       playerIds,
@@ -193,9 +223,8 @@ export default function AnalyticsCompare({
     setTeams(loaded.teams);
     setMatchupMode(loaded.matchupMode);
     setFiltersHydratedFor(datasetId);
-    // Intentionally only on dataset change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [datasetId]);
+  }, [datasetId, launchKey]);
 
   useEffect(() => {
     if (filtersHydratedFor !== datasetId) return;
@@ -239,30 +268,6 @@ export default function AnalyticsCompare({
       return changed ? next : current;
     });
   }, [playerIdKey]);
-
-  useEffect(() => {
-    if (launchApplied.current || !initialLaunch) return;
-    launchApplied.current = true;
-    const ids = initialLaunch.playerIds.filter((id) =>
-      players.some((p) => p.id === id)
-    );
-    setSelectedIds(ids);
-    setTeams(initialLaunch.teams ?? {});
-    setMatchupMode(Boolean(initialLaunch.matchupMode));
-    if (
-      initialLaunch.tileSet &&
-      tileSets.includes(initialLaunch.tileSet)
-    ) {
-      setTileSet(initialLaunch.tileSet);
-    }
-    if (
-      initialLaunch.modeLabel &&
-      modesForSet.includes(initialLaunch.modeLabel)
-    ) {
-      setModeLabel(initialLaunch.modeLabel);
-    }
-    setFiltersHydratedFor(datasetId);
-  }, [initialLaunch, modesForSet, tileSets, players, datasetId]);
 
   useEffect(() => {
     if (modeLabel && modesForSet.includes(modeLabel)) return;
@@ -792,55 +797,14 @@ export default function AnalyticsCompare({
         </Stack>
       </Box>
 
-      <Dialog
+      <PlayerPickDialog
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle>{t("statsComparePick")}</DialogTitle>
-        <DialogContent dividers>
-          <Stack>
-            {players.map((player) => {
-              const checked = selectedIds.includes(player.id);
-              const disabled =
-                !checked &&
-                !matchupMode &&
-                selectedIds.length >= MAX_COMPARE;
-              return (
-                <FormControlLabel
-                  key={player.id}
-                  control={
-                    <Checkbox
-                      checked={checked}
-                      disabled={disabled}
-                      onChange={() => togglePlayer(player.id)}
-                    />
-                  }
-                  label={
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <span>{player.name}</span>
-                      {player.is_myself ? (
-                        <Typography
-                          variant="overline"
-                          sx={{ color: "primary.main", fontSize: 10 }}
-                        >
-                          {t("youBadge")}
-                        </Typography>
-                      ) : null}
-                    </Stack>
-                  }
-                />
-              );
-            })}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPickerOpen(false)} variant="contained">
-            {t("done")}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        players={players}
+        selectedIds={selectedIds}
+        onToggle={togglePlayer}
+        disableUnselected={!matchupMode && selectedIds.length >= MAX_COMPARE}
+      />
     </Box>
   );
 }

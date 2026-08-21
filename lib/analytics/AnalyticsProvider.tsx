@@ -52,6 +52,7 @@ import {
   backfillSeatPlayerIds,
   withEnsuredPlayerPublicIds,
 } from "./playerIdentity";
+import { restoreHiddenPlayer as unhidePlayer } from "./playerVisibility";
 import { recalculateAllJosesCoefficients } from "./joseCoefficient";
 import { withStatsFilledFromMatches } from "./recomputeFromMatches";
 import type { OlympusExportData } from "./types";
@@ -84,6 +85,8 @@ type AnalyticsContextValue = {
   setMyselfPlayer: (playerId: number) => void;
   /** Remove the "You" badge from every player in the active data set. */
   clearMyselfPlayer: () => void;
+  /** Un-hide a roster player so they show in pickers and the leaderboard again. */
+  restoreHiddenPlayer: (playerId: number) => void;
   /** Recompute Jose's Coefficient for every player from saved aggregates. */
   syncJosesCoefficients: () => void;
   setPendingCompare: (launch: CompareLaunch | null) => void;
@@ -435,6 +438,14 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     });
   }, [data, persistActiveData]);
 
+  const restoreHiddenPlayer = useCallback(
+    (playerId: number) => {
+      if (!data) throw new Error("no_data");
+      persistActiveData(unhidePlayer(data, playerId));
+    },
+    [data, persistActiveData]
+  );
+
   const syncJosesCoefficients = useCallback(() => {
     if (!data) {
       throw new Error("no_data");
@@ -461,6 +472,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       deleteDataset,
       setMyselfPlayer,
       clearMyselfPlayer,
+      restoreHiddenPlayer,
       syncJosesCoefficients,
       setPendingCompare,
       peekPendingCompare,
@@ -481,6 +493,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       deleteDataset,
       setMyselfPlayer,
       clearMyselfPlayer,
+      restoreHiddenPlayer,
       syncJosesCoefficients,
       setPendingCompare,
       peekPendingCompare,

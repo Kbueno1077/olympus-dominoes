@@ -6,6 +6,32 @@ import { alpha } from "@mui/material/styles";
 /** Viewport under the fixed 64px header. */
 export const DASHBOARD_VIEWPORT_HEIGHT = "calc(100vh - 64px)";
 
+/**
+ * Chart tiles keep the original 1 / 2 / 3-up packing.
+ * Extra columns only kick in on very wide panes (≈ 2560px+).
+ */
+export const chartGridDenseColumns = {
+  xs: "minmax(0, 1fr)",
+  sm: "repeat(2, minmax(0, 1fr))",
+  xl: "repeat(3, minmax(0, 1fr))",
+  "@media (min-width:2560px)": "repeat(4, minmax(0, 1fr))",
+};
+
+export const chartGridDenseSx = {
+  display: "grid",
+  gap: 2,
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
+  gridTemplateColumns: chartGridDenseColumns,
+};
+
+export const chartGridCompareColumns = {
+  xs: "minmax(0, 1fr)",
+  md: "repeat(2, minmax(0, 1fr))",
+  "@media (min-width:2560px)": "repeat(3, minmax(0, 1fr))",
+};
+
 /** Outer Stats / History / Compare row — fills parent; panes scroll alone on md+. */
 export const dashboardShellSx = {
   display: "flex",
