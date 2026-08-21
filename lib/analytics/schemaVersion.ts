@@ -4,8 +4,9 @@
  *
  * 22 was the last shape change (`matches.is_closed`, `game_players`).
  * 23 is a Jose formula-only bump (no new columns vs 22).
+ * 24 adds `players.is_hidden` (soft-delete roster rows that still have games).
  */
-export const SCHEMA_VERSION = 23;
+export const SCHEMA_VERSION = 24;
 
 /** First schema that stores the current Jose formula (no / max(G, 25)). */
 export const JOSES_FORMULA_SCHEMA = 23;

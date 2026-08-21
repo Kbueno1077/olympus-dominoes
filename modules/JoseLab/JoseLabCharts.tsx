@@ -1,16 +1,13 @@
 "use client";
 
 import {
-  leadTermA,
   leadTermB,
   leadTermC,
   volumeAtG,
   type Breakdown,
   type FormulaId,
-  type WeightsA,
-  type WeightsB,
   type WeightsC,
-  type WeightsK2,
+  type WeightsK,
 } from "@/lib/joseLab/compute";
 import { personName, type LabPlayer } from "@/lib/joseLab/data";
 import { JOSES_ACCENT } from "@/modules/Analytics/dashboardChrome";
@@ -35,10 +32,9 @@ import {
   YAxis,
 } from "recharts";
 
-const COLOR_A = JOSES_ACCENT;
-const COLOR_B = "rgb(31, 107, 88)";
+const COLOR_K = "rgb(180, 110, 30)";
 const COLOR_C = "rgb(61, 108, 140)";
-const COLOR_K2 = "rgb(180, 110, 30)";
+const COLOR_KJ = "rgb(31, 107, 88)";
 const PIN = "rgb(180, 84, 47)";
 
 const PART_COLORS = {
@@ -288,10 +284,9 @@ function LeadTooltip({
   const row = payload[0]?.payload;
   const n = asNumber(row?.n) ?? asNumber(label) ?? 0;
   const lines = [
-    { label: "K(x)", key: "B" },
-    { label: "K2(x)", key: "K2" },
+    { label: "K(x)", key: "K" },
+    { label: "KJ(x)", key: "KJ" },
     { label: "OG F(x)", key: "C" },
-    { label: "Tangent (x)", key: "A" },
   ] as const;
   return (
     <TipShell title={`ΔG ${signedDelta(n)}`}>
@@ -428,18 +423,15 @@ function ChartCard({
 function leadTerm(
   n: number,
   formula: FormulaId,
-  weightsA: WeightsA,
-  weightsB: WeightsB,
+  weightsK: WeightsK,
   weightsC: WeightsC,
-  weightsK2: WeightsK2
+  weightsKJ: WeightsK
 ): number {
   switch (formula) {
-    case "A":
-      return leadTermA(n, weightsA);
-    case "B":
-      return leadTermB(n, weightsB);
-    case "K2":
-      return leadTermB(n, weightsK2);
+    case "K":
+      return leadTermB(n, weightsK);
+    case "KJ":
+      return leadTermB(n, weightsKJ);
     case "C":
       return leadTermC(n, weightsC);
     default: {
@@ -451,12 +443,10 @@ function leadTerm(
 
 function scatterFill(formula: FormulaId): string {
   switch (formula) {
-    case "A":
-      return alpha(COLOR_A, 0.35);
-    case "B":
-      return alpha(COLOR_B, 0.35);
-    case "K2":
-      return alpha(COLOR_K2, 0.35);
+    case "K":
+      return alpha(COLOR_K, 0.35);
+    case "KJ":
+      return alpha(COLOR_KJ, 0.35);
     case "C":
       return alpha(COLOR_C, 0.35);
     default: {
@@ -477,11 +467,9 @@ function pick(
 
 type Props = {
   formula: FormulaId;
-  weightsA: WeightsA;
-  weightsB: WeightsB;
+  weightsK: WeightsK;
   weightsC: WeightsC;
-  weightsK2: WeightsK2;
-  denomCap: number | null;
+  weightsKJ: WeightsK;
   players: LabPlayer[];
   scored: { player: LabPlayer; br: Breakdown | null }[];
   pinnedIds: string[];
@@ -489,8 +477,8 @@ type Props = {
 
 const LINE_COLORS = [
   PIN,
-  COLOR_A,
-  COLOR_B,
+  JOSES_ACCENT,
+  COLOR_K,
   "rgb(61, 108, 140)",
   "rgb(140, 98, 57)",
   "rgb(120, 70, 130)",
@@ -500,11 +488,9 @@ const LINE_COLORS = [
 
 export default memo(function JoseLabCharts({
   formula,
-  weightsA,
-  weightsB,
+  weightsK,
   weightsC,
-  weightsK2,
-  denomCap,
+  weightsKJ,
   players,
   scored,
   pinnedIds,
@@ -521,9 +507,8 @@ export default memo(function JoseLabCharts({
     const n = i - 30;
     return {
       n,
-      A: leadTermA(n, weightsA),
-      B: leadTermB(n, weightsB),
-      K2: leadTermB(n, weightsK2),
+      K: leadTermB(n, weightsK),
+      KJ: leadTermB(n, weightsKJ),
       C: leadTermC(n, weightsC),
     };
   });
@@ -532,7 +517,7 @@ export default memo(function JoseLabCharts({
     const n = p.W - p.L;
     return {
       n,
-      lead: leadTerm(n, formula, weightsA, weightsB, weightsC, weightsK2),
+      lead: leadTerm(n, formula, weightsK, weightsC, weightsKJ),
       name: personName(p),
     };
   });
@@ -573,7 +558,7 @@ export default memo(function JoseLabCharts({
     const row: Record<string, number> = { G };
     pinnedPlayers.forEach((p) => {
       row[personName(p)] = Number(
-        volumeAtG(p, formula, weightsA, weightsB, weightsC, weightsK2, G, denomCap).toFixed(2)
+        volumeAtG(p, formula, weightsK, weightsC, weightsKJ, G).toFixed(2)
       );
     });
     return row;
@@ -620,8 +605,8 @@ export default memo(function JoseLabCharts({
             <ReferenceLine y={0} stroke={alpha("#241D14", 0.35)} />
             <Line
               type="monotone"
-              dataKey="B"
-              stroke={COLOR_B}
+              dataKey="K"
+              stroke={COLOR_K}
               dot={false}
               strokeWidth={2}
               name="K(x)"
@@ -629,11 +614,11 @@ export default memo(function JoseLabCharts({
             />
             <Line
               type="monotone"
-              dataKey="K2"
-              stroke={COLOR_K2}
+              dataKey="KJ"
+              stroke={COLOR_KJ}
               dot={false}
               strokeWidth={2}
-              name="K2(x)"
+              name="KJ(x)"
               isAnimationActive={false}
             />
             <Line
@@ -643,15 +628,6 @@ export default memo(function JoseLabCharts({
               dot={false}
               strokeWidth={2}
               name="OG F(x)"
-              isAnimationActive={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="A"
-              stroke={COLOR_A}
-              dot={false}
-              strokeWidth={2}
-              name="Tangent (x)"
               isAnimationActive={false}
             />
             <Scatter name="people" data={leadPeople} dataKey="lead" fill={PIN} isAnimationActive={false}>

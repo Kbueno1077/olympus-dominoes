@@ -3,31 +3,55 @@
 import AnalyticsCompare from "@/modules/Analytics/AnalyticsCompare";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
+import {
+  compareLaunchFromQueryString,
+  peekCompareLaunch,
+} from "@/lib/analytics/compareLaunch";
 import type { CompareLaunch } from "@/lib/analytics/datasets";
 import { listStatModes } from "@/lib/analytics/selectors";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Box, Card, CircularProgress, Typography } from "@mui/material";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 /**
- * Standalone Compare Stats page — picks up a pending H2H launch if one was set.
+ * Standalone Compare Stats page — prefills from the URL (H2H) or a pending launch.
  */
 export default function AnalyticsComparePage() {
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
+  const searchKey = searchParams.toString();
   const { data, loading, peekPendingCompare, clearPendingCompare } =
     useAnalytics();
-  const [compareLaunch, setCompareLaunch] = useState<CompareLaunch | null>(
-    null
+
+  const urlLaunch = useMemo(() => {
+    return (
+      compareLaunchFromQueryString(searchKey) ??
+      (typeof window === "undefined"
+        ? null
+        : compareLaunchFromQueryString(window.location.search))
+    );
+  }, [searchKey]);
+  const [stickyLaunch, setStickyLaunch] = useState<CompareLaunch | null>(
+    () => peekCompareLaunch()
   );
-  const [compareKey, setCompareKey] = useState(0);
 
   useEffect(() => {
+    if (urlLaunch) {
+      clearPendingCompare();
+      return;
+    }
     const launch = peekPendingCompare();
     if (!launch) return;
-    setCompareLaunch(launch);
-    setCompareKey((k) => k + 1);
-    clearPendingCompare();
-  }, [peekPendingCompare, clearPendingCompare]);
+    setStickyLaunch(launch);
+    const handle = window.setTimeout(() => clearPendingCompare(), 0);
+    return () => window.clearTimeout(handle);
+  }, [urlLaunch, peekPendingCompare, clearPendingCompare]);
+
+  const compareLaunch = urlLaunch ?? stickyLaunch;
+  const compareKey = compareLaunch?.playerIds.length
+    ? compareLaunch.playerIds.join(",")
+    : "stored";
 
   const modes = useMemo(() => (data ? listStatModes(data) : []), [data]);
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { APP_UI_SIGNATURE, WRITING_APP_VERSION } from "@/lib/analytics/dbMeta";
+import { SCHEMA_VERSION } from "@/lib/analytics/schemaVersion";
 import { CHANGELOG } from "@/lib/changelog/releases";
 
 export const metadata: Metadata = {
@@ -42,7 +43,7 @@ export default function ChangelogPage() {
             tweaks, and removals — version by version.
           </p>
           <p className="text-xs font-medium tracking-wide text-[rgb(var(--text-muted))]">
-            {APP_UI_SIGNATURE}
+            {APP_UI_SIGNATURE} · schema {SCHEMA_VERSION}
           </p>
         </header>
 
@@ -51,6 +52,8 @@ export default function ChangelogPage() {
             const isUnreleased = release.version === "unreleased";
             const isCurrent = release.version === WRITING_APP_VERSION;
             const dateLabel = isCurrent ? formatDate(release.date) : null;
+            const schema =
+              release.schema ?? (isUnreleased ? SCHEMA_VERSION : null);
 
             return (
               <li
@@ -63,6 +66,11 @@ export default function ChangelogPage() {
                     <h2 className="text-xl font-semibold tracking-tight">
                       {isUnreleased ? "Unreleased" : `v${release.version}`}
                     </h2>
+                    {schema != null ? (
+                      <span className="text-sm text-[rgb(var(--text-muted))]">
+                        schema {schema}
+                      </span>
+                    ) : null}
                     {dateLabel && (
                       <time
                         dateTime={release.date ?? undefined}

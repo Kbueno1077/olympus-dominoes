@@ -11,7 +11,10 @@ import {
   perHandAverage,
 } from "@/lib/analytics/signedDiff";
 import type { LeaderboardRow, PlayerStatsView } from "@/lib/analytics/types";
-import { JOSES_ACCENT } from "@/modules/Analytics/dashboardChrome";
+import {
+  JOSES_ACCENT,
+  chartGridDenseSx,
+} from "@/modules/Analytics/dashboardChrome";
 import { Box, Card, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
 import {
@@ -232,6 +235,7 @@ export default function StatsDashboardCharts({
     : t("statsChartGames");
 
   return (
+    <Stack spacing={2} sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
     <Box
       sx={{
         display: "grid",
@@ -372,7 +376,9 @@ export default function StatsDashboardCharts({
           </Stack>
         )}
       </ChartCard>
+    </Box>
 
+    <Box sx={chartGridDenseSx}>
       <ChartCard title={t("statsChartPointsForAgainst")}>
         {!activeStats ? (
           empty
@@ -594,5 +600,6 @@ export default function StatsDashboardCharts({
         )}
       </ChartCard>
     </Box>
+    </Stack>
   );
 }

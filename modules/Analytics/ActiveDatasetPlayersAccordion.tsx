@@ -1,6 +1,11 @@
 "use client";
 
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
+import {
+  gamesPlayedForPlayer,
+  listHiddenPlayers,
+  listVisiblePlayers,
+} from "@/lib/analytics/playerVisibility";
 import type { PlayerRow } from "@/lib/analytics/types";
 import { useTranslation } from "@/i18n/useTranslation";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -30,10 +35,15 @@ function sortPlayers(players: PlayerRow[]) {
  */
 export default function ActiveDatasetPlayersAccordion() {
   const { t } = useTranslation();
-  const { data, setMyselfPlayer, clearMyselfPlayer } = useAnalytics();
+  const { data, setMyselfPlayer, clearMyselfPlayer, restoreHiddenPlayer } =
+    useAnalytics();
 
-  const players = useMemo(
-    () => (data ? sortPlayers(data.players) : []),
+  const visiblePlayers = useMemo(
+    () => (data ? sortPlayers(listVisiblePlayers(data.players)) : []),
+    [data]
+  );
+  const hiddenPlayers = useMemo(
+    () => (data ? sortPlayers(listHiddenPlayers(data.players)) : []),
     [data]
   );
 
@@ -64,7 +74,10 @@ export default function ActiveDatasetPlayersAccordion() {
             {t("datasetsPlayersTitle")}
           </Typography>
           <Typography variant="caption" sx={{ color: "text.secondary" }}>
-            {t("datasetsPlayersCount", { n: players.length })}
+            {t("datasetsPlayersCount", { n: visiblePlayers.length })}
+            {hiddenPlayers.length > 0
+              ? ` · ${t("datasetsHiddenPlayersCount", { n: hiddenPlayers.length })}`
+              : ""}
           </Typography>
         </Box>
       </AccordionSummary>
@@ -86,13 +99,13 @@ export default function ActiveDatasetPlayersAccordion() {
           {t("datasetsPlayersHint")}
         </Typography>
 
-        {players.length === 0 ? (
+        {visiblePlayers.length === 0 ? (
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
             {t("datasetsPlayersEmpty")}
           </Typography>
         ) : (
           <Stack spacing={0.75}>
-            {players.map((player) => {
+            {visiblePlayers.map((player) => {
               const isMyself = Boolean(player.is_myself);
               return (
                 <Box
@@ -164,6 +177,63 @@ export default function ActiveDatasetPlayersAccordion() {
             })}
           </Stack>
         )}
+
+        {hiddenPlayers.length > 0 ? (
+          <Box sx={{ mt: 2.25 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              {t("datasetsHiddenPlayersTitle")}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "text.secondary", mt: 0.5, mb: 1.25 }}
+            >
+              {t("datasetsHiddenPlayersHint")}
+            </Typography>
+            <Stack spacing={0.75}>
+              {hiddenPlayers.map((player) => {
+                const games = gamesPlayedForPlayer(data, player.id);
+                return (
+                  <Box
+                    key={player.id}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      px: 1.25,
+                      py: 0.85,
+                      borderRadius: 1.5,
+                      border: "1px dashed",
+                      borderColor: "divider",
+                      backgroundColor: (theme) =>
+                        alpha(theme.palette.common.white, 0.35),
+                    }}
+                  >
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography noWrap sx={{ fontWeight: 600 }}>
+                        {player.name}
+                      </Typography>
+                      {games > 0 ? (
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {t("datasetsHiddenPlayerGames", { n: games })}
+                        </Typography>
+                      ) : null}
+                    </Box>
+                    <Button
+                      size="small"
+                      onClick={() => restoreHiddenPlayer(player.id)}
+                      sx={{ flexShrink: 0 }}
+                    >
+                      {t("datasetsRestorePlayer")}
+                    </Button>
+                  </Box>
+                );
+              })}
+            </Stack>
+          </Box>
+        ) : null}
       </AccordionDetails>
     </Accordion>
   );

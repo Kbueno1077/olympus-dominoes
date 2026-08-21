@@ -2,6 +2,7 @@
 
 import DashboardAside from "@/modules/Analytics/DashboardAside";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
+import PlayerPickDialog from "@/modules/Analytics/PlayerPickDialog";
 import HistoryGamesNotes from "@/modules/History/HistoryGamesNotes";
 import OpenTableBoard from "@/modules/History/OpenTableBoard";
 import {
@@ -33,6 +34,7 @@ import {
   saveHistoryUiFilters,
 } from "@/lib/analytics/historyFilterState";
 import { tallyOpenTablePlayers } from "@/lib/analytics/openTableBoard";
+import { listVisiblePlayers } from "@/lib/analytics/playerVisibility";
 import {
   formatSignedDiff,
   signedDiffColor,
@@ -49,13 +51,7 @@ import {
   Box,
   Button,
   Card,
-  Checkbox,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControlLabel,
   Stack,
   TextField,
   ToggleButton,
@@ -472,7 +468,7 @@ export default function History() {
 
   const players = useMemo(() => {
     if (!data) return [];
-    return data.players
+    return listVisiblePlayers(data.players)
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [data]);
@@ -949,52 +945,13 @@ export default function History() {
         )}
       </Box>
 
-      <Dialog
+      <PlayerPickDialog
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle>{t("statsComparePick")}</DialogTitle>
-        <DialogContent dividers>
-          <Stack>
-            {players.map((player) => {
-              const checked = rosterFilter.some(
-                (entry) => entry.playerId === player.id
-              );
-              return (
-                <FormControlLabel
-                  key={player.id}
-                  control={
-                    <Checkbox
-                      checked={checked}
-                      onChange={() => togglePlayer(player.id)}
-                    />
-                  }
-                  label={
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <span>{player.name}</span>
-                      {player.is_myself ? (
-                        <Typography
-                          variant="overline"
-                          sx={{ color: "primary.main", fontSize: 10 }}
-                        >
-                          {t("youBadge")}
-                        </Typography>
-                      ) : null}
-                    </Stack>
-                  }
-                />
-              );
-            })}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPickerOpen(false)} variant="contained">
-            {t("done")}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        players={players}
+        selectedIds={rosterFilter.map((entry) => entry.playerId)}
+        onToggle={togglePlayer}
+      />
     </Box>
   );
 }

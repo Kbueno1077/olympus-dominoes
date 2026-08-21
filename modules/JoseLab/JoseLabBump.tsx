@@ -301,12 +301,10 @@ export function extraCount(map: ExtraMap): number {
   return Object.keys(map).length;
 }
 
-function fieldHint(key: BumpKey, formula?: FormulaId): string {
+function fieldHint(key: BumpKey): string {
   switch (key) {
     case "G":
-      return formula === "K2" || formula === "C"
-        ? "Independent games. W–L and nets stay put — extras do not dilute."
-        : "Independent games. W–L and nets stay put — extras dilute past the floor.";
+      return "Independent games. W–L and nets stay put — extras do not dilute.";
     case "W":
       return "Each win also adds 1 to G. Nets stay put.";
     case "L":
@@ -342,22 +340,10 @@ function fieldHint(key: BumpKey, formula?: FormulaId): string {
   }
 }
 
-export function denomHint(
-  formula: FormulaId,
-  G: number,
-  floor: number | null,
-  denomCap: number | null
-): string {
+export function denomHint(formula: FormulaId, G: number): string {
   switch (formula) {
-    case "A":
-    case "B": {
-      if (floor == null) return "—";
-      const raw = Math.max(G, floor);
-      const d = denomCap == null ? raw : Math.min(raw, denomCap);
-      const capBit = denomCap == null ? "" : `, cap ${denomCap}`;
-      return `denom = max(${G}, ${floor}${capBit}) = ${d}`;
-    }
-    case "K2":
+    case "K":
+    case "KJ":
       return "no denom · extras in game units (not /G)";
     case "C":
       return `no denom · √(G/2) = ${Math.sqrt(G / 2).toFixed(2)}`;
@@ -384,8 +370,6 @@ function canStep(
 
 type DenomCtx = {
   formula: FormulaId;
-  floor: number | null;
-  denomCap: number | null;
 };
 
 function BumpButton({
@@ -462,11 +446,11 @@ function BumpButton({
               >
                 G {player.G}
                 {player.G !== stock.G ? ` (stock ${stock.G})` : ""} ·{" "}
-                {denomHint(denom.formula, player.G, denom.floor, denom.denomCap)}
+                {denomHint(denom.formula, player.G)}
               </Typography>
             ) : null}
             <Typography variant="caption" color="text.secondary">
-              {fieldHint(bumpKey, denom?.formula)}
+              {fieldHint(bumpKey)}
             </Typography>
           </Box>
           <Stack direction="row" gap={0.5} justifyContent="space-between">

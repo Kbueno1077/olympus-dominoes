@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultMatchIsClosed,
+  defaultPlayerIsHidden,
   parseOlympusExport,
   peekCsvSchemaVersion,
 } from "./parseExport";
@@ -25,6 +26,17 @@ describe("defaultMatchIsClosed", () => {
     expect(defaultMatchIsClosed("")).toBe(1);
     expect(defaultMatchIsClosed(0)).toBe(0);
     expect(defaultMatchIsClosed(1)).toBe(1);
+  });
+});
+
+describe("defaultPlayerIsHidden", () => {
+  it("fills is_hidden=0 on a legacy players row", () => {
+    expect(defaultPlayerIsHidden(undefined)).toBe(0);
+    expect(defaultPlayerIsHidden(null)).toBe(0);
+    expect(defaultPlayerIsHidden("")).toBe(0);
+    expect(defaultPlayerIsHidden(0)).toBe(0);
+    expect(defaultPlayerIsHidden(1)).toBe(1);
+    expect(defaultPlayerIsHidden("1")).toBe(1);
   });
 });
 
@@ -104,23 +116,25 @@ describe("assertImportSchemaVersion", () => {
     );
   });
 
-  it("is schema 23, in lockstep with mobile, and treats 23 as current", () => {
-    expect(SCHEMA_VERSION).toBe(23);
+  it("is schema 24, in lockstep with mobile, and treats 24 as current", () => {
+    expect(SCHEMA_VERSION).toBe(24);
     expect(JOSES_FORMULA_SCHEMA).toBe(23);
+    expect(() => assertImportSchemaVersion(24)).not.toThrow();
     expect(() => assertImportSchemaVersion(23)).not.toThrow();
     expect(() => assertImportSchemaVersion(22)).not.toThrow();
     expect(needsJosesRecompute(0)).toBe(true);
     expect(needsJosesRecompute(22)).toBe(true);
     expect(needsJosesRecompute(23)).toBe(false);
+    expect(needsJosesRecompute(24)).toBe(false);
   });
 });
 
 describe("schema 23 round-trip", () => {
-  it("imports a schema 23 file and writes schema_version 23 on export", () => {
+  it("imports a schema 23 file, defaults is_hidden to 0, and writes schema 24 on export", () => {
     const contents = csv(`
 # db_meta
 id,db_identifier,created_at,updated_at,schema_version,app_version,label,origin
-1,Wgpr0j8jv6WzvMbq,2026-08-16T17:48:46.829Z,2026-08-16T17:48:46.829Z,23,4.8.0,Panteon,imported
+1,Wgpr0j8jv6WzvMbq,2026-08-16T17:48:46.829Z,2026-08-16T17:48:46.829Z,23,4.7.0,Panteon,imported
 
 # players
 id,name,name_key,public_id,created_at,is_myself
@@ -136,16 +150,49 @@ id,game_id,seat,display_name,player_id
 `);
     expect(peekCsvSchemaVersion(contents)).toBe(23);
     const data = parseOlympusExport(contents, "mobile-23.csv");
-    expect(data.db_meta?.schema_version).toBe(23);
+    expect(data.db_meta?.schema_version).toBe(SCHEMA_VERSION);
+    expect(data.players[0]?.is_hidden).toBe(0);
     expect(data.matches[0]?.is_closed).toBe(0);
     expect(data.tables.game_players).toHaveLength(1);
     expect(data.tables.game_players?.[0]).not.toHaveProperty("id");
 
     const exported = serializeOlympusExport(data, { label: "Panteon" });
-    expect(peekCsvSchemaVersion(exported)).toBe(23);
-    const again = parseOlympusExport(exported, "web-23.csv");
+    expect(peekCsvSchemaVersion(exported)).toBe(24);
+    expect(exported).toMatch(/# players\n[^\n]*is_hidden/);
+    const again = parseOlympusExport(exported, "web-24.csv");
+    expect(again.players[0]?.is_hidden).toBe(0);
     expect(again.tables.game_players).toHaveLength(1);
     expect(again.tables.game_players?.[0]?.game_id).toBe(2);
     expect(again.tables.game_players?.[0]?.display_name).toBe("Guillermo");
+  });
+});
+
+describe("schema 24 is_hidden", () => {
+  it("imports hidden players and keeps them hidden on re-export", () => {
+    const contents = csv(`
+# db_meta
+id,db_identifier,created_at,updated_at,schema_version,app_version,label,origin
+1,Wgpr0j8jv6WzvMbq,2026-08-16T17:48:46.829Z,2026-08-16T17:48:46.829Z,24,4.7.0,Panteon,imported
+
+# players
+id,name,name_key,public_id,created_at,is_myself,is_hidden
+1,Guillermo,guillermo,GuillermoPub0001,2026-08-16T17:48:46.829Z,0,1
+2,Kevin,kevin,KevinPublicId001,2026-08-16T17:48:46.829Z,1,0
+`);
+    expect(peekCsvSchemaVersion(contents)).toBe(24);
+    const data = parseOlympusExport(contents, "mobile-24.csv");
+    expect(data.players).toHaveLength(2);
+    expect(data.players[0]?.public_id).toBe("GuillermoPub0001");
+    expect(data.players[0]?.is_hidden).toBe(1);
+    expect(data.players[1]?.is_hidden).toBe(0);
+
+    const exported = serializeOlympusExport(data, { label: "Panteon" });
+    expect(exported).toContain("GuillermoPub0001");
+    const again = parseOlympusExport(exported, "web-24.csv");
+    const hidden = again.players.find((p) => p.public_id === "GuillermoPub0001");
+    const visible = again.players.find((p) => p.public_id === "KevinPublicId001");
+    expect(hidden?.is_hidden).toBe(1);
+    expect(visible?.is_hidden).toBe(0);
+    expect(hidden?.public_id).toBe("GuillermoPub0001");
   });
 });

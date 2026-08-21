@@ -72,6 +72,7 @@ export function withEnsuredPlayerPublicIds(
               public_id: player.public_id,
               created_at: player.created_at ?? null,
               is_myself: player.is_myself ?? 0,
+              is_hidden: player.is_hidden ?? 0,
             })),
     },
   };

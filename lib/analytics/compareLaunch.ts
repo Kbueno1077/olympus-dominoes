@@ -1,6 +1,7 @@
 import { FREE_FOR_ALL, normalizeNameKey, teamsFromRoster } from "@/utils/teams";
 import type { CompareLaunch } from "./datasets";
 import { findMatchingPlayer } from "./playerIdentity";
+import { isPlayerHidden } from "./playerVisibility";
 import type { OlympusExportData } from "./types";
 
 const MAX_COMPARE = 10;
@@ -53,7 +54,7 @@ export function buildLiveMatchCompareLaunch(input: {
         name: member.name,
         nameKey: normalizeNameKey(member.name),
       });
-      if (!player) continue;
+      if (!player || isPlayerHidden(player)) continue;
       if (playerIds.includes(player.id)) continue;
       if (playerIds.length >= MAX_COMPARE) break;
       playerIds.push(player.id);
@@ -84,13 +85,78 @@ export function buildH2HCompareLaunch(input: {
   modeLabel: string;
   playerId: number;
   opponentId: number;
+  tileSet?: "55" | "28";
 }): CompareLaunch {
   return {
     modeLabel: input.modeLabel,
+    tileSet: input.tileSet,
     playerIds: [input.playerId, input.opponentId],
     teams: {},
     matchupMode: false,
   };
+}
+
+type SearchParamReader = {
+  get: (name: string) => string | null;
+  getAll: (name: string) => string[];
+};
+
+function parseTileSet(raw: string | null): "55" | "28" | undefined {
+  if (raw === "55" || raw === "28") return raw;
+  return undefined;
+}
+
+function parsePlayerIds(raw: string[]): number[] {
+  const ids: number[] = [];
+  for (const entry of raw) {
+    const id = Number(entry);
+    if (!Number.isInteger(id) || id <= 0) continue;
+    if (!ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
+/** Encode a Compare prefill so /compare can apply it from the URL. */
+export function compareLaunchToSearchParams(
+  launch: CompareLaunch
+): URLSearchParams {
+  const params = new URLSearchParams();
+  if (launch.playerIds.length > 0) {
+    params.set("players", launch.playerIds.join(","));
+  }
+  if (launch.modeLabel) params.set("mode", launch.modeLabel);
+  if (launch.tileSet) params.set("tiles", launch.tileSet);
+  return params;
+}
+
+export function compareLaunchFromSearchParams(
+  params: SearchParamReader
+): CompareLaunch | null {
+  const fromCsv = parsePlayerIds((params.get("players") ?? "").split(/[,\s]+/));
+  const fromRepeated = parsePlayerIds(params.getAll("p"));
+  const fromSingle = parsePlayerIds((params.get("p") ?? "").split(/[,\s]+/));
+  const playerIds = fromCsv.length
+    ? fromCsv
+    : fromRepeated.length
+      ? fromRepeated
+      : fromSingle;
+  if (playerIds.length === 0) return null;
+  return {
+    modeLabel: params.get("mode"),
+    tileSet: parseTileSet(params.get("tiles")),
+    playerIds,
+    teams: {},
+    matchupMode: false,
+  };
+}
+
+/** Parse a query string (with or without `?`) the same way the Compare page does. */
+export function compareLaunchFromQueryString(
+  search: string
+): CompareLaunch | null {
+  const trimmed = search.startsWith("?") ? search.slice(1) : search;
+  if (!trimmed) return null;
+  return compareLaunchFromSearchParams(new URLSearchParams(trimmed));
 }
 
 /**
