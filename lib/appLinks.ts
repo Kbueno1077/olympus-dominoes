@@ -1,6 +1,6 @@
 /** Public share links for the companion site and store listings. */
 
-export const SITE_URL = "https://olympus-dominoes.vercel.app/";
+export const SITE_URL = "https://olympus-dominoes.kbueno-studio.com/";
 
 export const IOS_APP_URL =
   "https://apps.apple.com/us/app/olympus-dominoes/id6799737142";

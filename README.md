@@ -6,7 +6,7 @@ Recoil + `recoil-persist` (localStorage). Stats, history, and compare read
 Olympus exports (CSV) from the mobile app, stored as named datasets in
 localStorage.
 
-**Live:** [https://olympus-dominoes.vercel.app/](https://olympus-dominoes.vercel.app/)
+**Live:** [https://olympus-dominoes.kbueno-studio.com/](https://olympus-dominoes.kbueno-studio.com/)
 
 Companion mobile app: `olympus-dominoes-app` (Expo / React Native). Jose's
 Coefficient and export table shapes stay aligned across both.
