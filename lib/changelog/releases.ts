@@ -20,24 +20,15 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
-    version: "unreleased",
-    date: null,
-    schema: 24,
-    summary: "Hidden players from the phone can be restored here.",
-    highlights: [
-      "Phone-app schema 24 exports import here. A web export writes schema 24.",
-      "Players you removed on the phone who still have games stay in the file as hidden. Restore them from Manage data so they show on the roster and leaderboard again.",
-    ],
-  },
-  {
     version: "4.7.0",
     date: "2026-08-18",
-    schema: 23,
+    schema: 24,
     summary:
-      "Jose matches the phone app, schema 23 imports, open tables, and How to use.",
+      "Jose matches the phone app, schema 24 imports, open tables, and How to use.",
     highlights: [
       "Jose’s Coefficient matches the phone app.",
-      "Phone-app schema 23 exports import here. A web export writes schema 23.",
+      "Phone-app schema 24 exports import here. A web export writes schema 24.",
+      "Players you removed on the phone who still have games stay in the file as hidden. Restore them from Tools so they show on the roster and leaderboard again.",
       "Compare → This matchup: A and B are partners on that side. Any means either team, so you can pick more than four people and still count those games.",
       "Import rotating / open-table matches from the app. Every game stays under one History match, and each game shows who sat.",
       "History labels Closed match vs Open table. Compare seating stays on closed matches, where the lineup does not change.",
