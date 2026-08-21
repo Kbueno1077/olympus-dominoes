@@ -79,6 +79,12 @@ const en = {
   privacyLink: "Privacy Policy",
   changelogLink: "Changelog",
   howToUseLink: "How to use",
+  qrWebsite: "Web",
+  qrIos: "iOS App Store",
+  qrAndroid: "Android",
+  qrComingSoon: "Coming soon",
+  qrAndroidSoonBody: "Google Play link will land here when the app ships.",
+  qrShowAria: "Show QR code for {name}",
   howToUseTitle: "How to use",
   howToUseIntro:
     "This is the companion website to the Olympus Dominoes phone app. Import a save here to see your record bigger — history, charts, rankings. You can also keep a casual scoreboard, or play against bots (that table is better on a bigger screen).",
@@ -132,6 +138,7 @@ const en = {
     "The notepad here is just for fun and doesn’t touch your league",
   homeWebBulletSourceOfTruth: "The phone app is still where your real record lives",
   homeAppStore: "Download on the App Store",
+  homePlayStore: "Get it on Google Play",
 
   // Analytics
   analyticsTitle: "Analytics",
@@ -905,6 +912,13 @@ const es = {
   privacyLink: "Política de privacidad",
   changelogLink: "Novedades",
   howToUseLink: "Cómo usarlo",
+  qrWebsite: "Web",
+  qrIos: "App Store (iOS)",
+  qrAndroid: "Android",
+  qrComingSoon: "Próximamente",
+  qrAndroidSoonBody:
+    "El enlace de Google Play aparecerá aquí cuando salga la app.",
+  qrShowAria: "Mostrar código QR de {name}",
   howToUseTitle: "Cómo usarlo",
   howToUseIntro:
     "Este es el sitio compañero de la app de Olympus Dominoes. Importa un respaldo aquí para ver tu historial más grande — partidas, gráficos, rankings. También puedes anotar una mesa a la ligera, o jugar contra bots (esa mesa se ve mejor en una pantalla grande).",
@@ -961,6 +975,7 @@ const es = {
   homeWebBulletSourceOfTruth:
     "La app del teléfono sigue siendo donde vive tu marca real",
   homeAppStore: "Descargar en el App Store",
+  homePlayStore: "Consíguelo en Google Play",
 
   // Analytics
   analyticsTitle: "Analítica",

@@ -2,11 +2,18 @@
 
 import DominoTile from "@/components/DominoTile";
 import Iconify from "@/components/Iconify";
+import QrCodeDialog from "@/components/QrCodeDialog";
+import {
+  ANDROID_APP_URL,
+  IOS_APP_URL,
+  SITE_URL,
+} from "@/lib/appLinks";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
+import QrCode2Outlined from "@mui/icons-material/QrCode2Outlined";
 import SmartToyOutlined from "@mui/icons-material/SmartToyOutlined";
 import {
   Box,
@@ -14,6 +21,7 @@ import {
   Card,
   Collapse,
   Container,
+  IconButton,
   Stack,
   Typography,
 } from "@mui/material";
@@ -30,9 +38,6 @@ const HERO_TILES = [
   { top: 5, bottom: 5, rotate: 3 },
   { top: 2, bottom: 7, rotate: 9 },
 ];
-
-const APP_STORE_URL =
-  "https://apps.apple.com/us/app/olympus-dominoes/id6799737142";
 
 const FEATURE_KEYS = ["featurePlayers", "featureModes", "featureLocal"];
 
@@ -69,33 +74,161 @@ const SPLIT_SIDES = [
   },
 ];
 
-function AppStoreButton({ t }) {
+const ANDROID_DISABLED = ANDROID_APP_URL == null;
+
+function StoreLinkRow({
+  t,
+  href,
+  label,
+  icon,
+  disabled = false,
+  comingSoon = false,
+  onShowQr,
+}) {
   return (
-    <Button
-      component="a"
-      href={APP_STORE_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      variant="contained"
-      size="large"
-      startIcon={
-        <Iconify
-          icon="ion:logo-apple-appstore"
-          sx={{ width: 28, height: 28 }}
+    <Stack direction="row" spacing={1} alignItems="stretch" sx={{ width: "100%", maxWidth: 420 }}>
+      <Button
+        component={disabled ? "button" : "a"}
+        href={disabled ? undefined : href}
+        target={disabled ? undefined : "_blank"}
+        rel={disabled ? undefined : "noopener noreferrer"}
+        disabled={disabled}
+        variant="contained"
+        size="large"
+        startIcon={icon}
+        fullWidth
+        sx={{
+          fontSize: 16.5,
+          textTransform: "none",
+          fontWeight: 700,
+          letterSpacing: 0.01,
+          px: 3.25,
+          minHeight: 56,
+          justifyContent: "flex-start",
+          "& .MuiButton-startIcon": { mr: 1.25 },
+        }}
+      >
+        <Box
+          component="span"
+          sx={{
+            display: "flex",
+            width: "100%",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1,
+          }}
+        >
+          <span>{label}</span>
+          {comingSoon ? (
+            <Typography
+              component="span"
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                opacity: 0.85,
+              }}
+            >
+              {t("qrComingSoon")}
+            </Typography>
+          ) : null}
+        </Box>
+      </Button>
+      <IconButton
+        onClick={onShowQr}
+        disabled={disabled}
+        aria-label={t("qrShowAria", { name: label })}
+        sx={{
+          width: 56,
+          height: 56,
+          flexShrink: 0,
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 1.5,
+          bgcolor: (theme) => alpha(theme.palette.common.white, 0.55),
+        }}
+      >
+        <QrCode2Outlined />
+      </IconButton>
+    </Stack>
+  );
+}
+
+function AppDownloadLinks({ t }) {
+  const [qr, setQr] = useState(null);
+
+  return (
+    <>
+      <Stack
+        spacing={1.25}
+        alignItems={{ xs: "center", md: "flex-start" }}
+        sx={{ width: "100%" }}
+      >
+        <StoreLinkRow
+          t={t}
+          href={IOS_APP_URL}
+          label={t("homeAppStore")}
+          icon={
+            <Iconify
+              icon="ion:logo-apple-appstore"
+              sx={{ width: 28, height: 28 }}
+            />
+          }
+          onShowQr={() =>
+            setQr({ title: t("qrIos"), href: IOS_APP_URL })
+          }
         />
-      }
-      sx={{
-        fontSize: 16.5,
-        textTransform: "none",
-        fontWeight: 700,
-        letterSpacing: 0.01,
-        px: 3.25,
-        minHeight: 56,
-        "& .MuiButton-startIcon": { mr: 1.25 },
-      }}
-    >
-      {t("homeAppStore")}
-    </Button>
+        <StoreLinkRow
+          t={t}
+          href={ANDROID_APP_URL}
+          label={t("homePlayStore")}
+          disabled={ANDROID_DISABLED}
+          comingSoon={ANDROID_DISABLED}
+          icon={
+            <Iconify
+              icon="ion:logo-google-playstore"
+              sx={{ width: 26, height: 26 }}
+            />
+          }
+          onShowQr={() =>
+            setQr({
+              title: t("qrAndroid"),
+              href: ANDROID_APP_URL,
+              comingSoon: ANDROID_DISABLED,
+            })
+          }
+        />
+        <Button
+          onClick={() => setQr({ title: t("qrWebsite"), href: SITE_URL })}
+          variant="contained"
+          size="large"
+          startIcon={<QrCode2Outlined sx={{ width: 26, height: 26 }} />}
+          sx={{
+            width: "100%",
+            maxWidth: 420,
+            fontSize: 16.5,
+            textTransform: "none",
+            fontWeight: 700,
+            letterSpacing: 0.01,
+            px: 3.25,
+            minHeight: 56,
+            justifyContent: "flex-start",
+            "& .MuiButton-startIcon": { mr: 1.25 },
+          }}
+        >
+          {t("qrWebsite")}
+        </Button>
+      </Stack>
+
+      <QrCodeDialog
+        open={qr != null}
+        onClose={() => setQr(null)}
+        title={qr?.title ?? ""}
+        href={qr?.href ?? null}
+        comingSoon={Boolean(qr?.comingSoon)}
+      />
+    </>
   );
 }
 
@@ -389,7 +522,7 @@ export default function Dashboard({
                 </Typography>
               </Stack>
 
-              <AppStoreButton t={t} />
+              <AppDownloadLinks t={t} />
 
               <FeatureRow t={t} />
             </Stack>
