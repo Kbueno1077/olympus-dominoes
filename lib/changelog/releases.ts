@@ -27,7 +27,7 @@ export const CHANGELOG: ChangelogRelease[] = [
     highlights: [
       "Jose’s Coefficient on Stats, Compare, Leaderboard, and Podium uses the KJ ranking.",
       "Stats, Compare, and History share a start/end date filter.",
-      "Home and How to use follow the phone app: accordions, optional CSV import, and store links after App vs site.",
+      "Home and How to use follow the phone app: accordions, optional CSV import, and store / QR on the Phone and Web cards.",
     ],
   },
   {
