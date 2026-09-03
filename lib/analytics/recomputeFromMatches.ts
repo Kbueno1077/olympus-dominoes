@@ -3,6 +3,11 @@
  * Used when an import ships matches but empty aggregate sections.
  */
 
+import {
+  isDateRangeActive,
+  matchInDateRange,
+  type DateRange,
+} from "./dateRangeFilter";
 import { getMatchDetail, listMatches } from "./history";
 import { recalculateAllJosesCoefficients } from "./joseCoefficient";
 import {
@@ -64,12 +69,20 @@ export function needsStatsRecomputeFromMatches(
 /**
  * Recompute aggregates from match/game rows, then Jose coefficients.
  * Preserves players / matches / tables other than player_stats & player_h2h.
+ * Optional `dateRange` keeps only matches whose ended_at falls in range.
  */
 export function recomputeAggregatesFromMatches(
-  data: OlympusExportData
+  data: OlympusExportData,
+  dateRange?: DateRange | null
 ): OlympusExportData {
   const deltas: StatsDelta[] = [];
   for (const item of listMatches(data)) {
+    if (
+      isDateRangeActive(dateRange) &&
+      !matchInDateRange(item.endedAt, dateRange)
+    ) {
+      continue;
+    }
     const detail = getMatchDetail(data, item.id);
     if (!detail) continue;
     deltas.push(

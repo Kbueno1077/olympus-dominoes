@@ -1,5 +1,10 @@
 import { normalizeImportedTileSet } from "./schemaVersion";
 import { normalizeNameKey } from "@/utils/teams";
+import {
+  isDateRangeActive,
+  matchInDateRange,
+  type DateRange,
+} from "./dateRangeFilter";
 import { computeJosesCoefficient } from "./joseCoefficient";
 import { stripTrailingPadHands } from "./hands";
 import {
@@ -154,9 +159,11 @@ export function computeMatchupStats(args: {
   modeLabel: string;
   tileSet?: "55" | "28";
   playerIds: number[];
+  dateRange?: DateRange | null;
 }): MatchupStatsResult {
   const { data, filter, modeLabel, playerIds } = args;
   const tileSet = args.tileSet ?? null;
+  const dateRange = args.dateRange ?? null;
   const tables = data.tables;
 
   const matches = (tables.matches ?? []).map((row) => ({
@@ -165,6 +172,7 @@ export function computeMatchupStats(args: {
     tile_set: normalizeImportedTileSet(row.tile_set),
     players_amount: asNumber(row.players_amount),
     is_closed: row.is_closed === 0 || row.is_closed === "0" ? 0 : 1,
+    ended_at: asString(row.ended_at),
   }));
 
   const seats = (tables.match_players ?? []).map((row) => ({
@@ -269,6 +277,12 @@ export function computeMatchupStats(args: {
   for (const match of matches) {
     if (match.mode_label !== modeLabel) continue;
     if (tileSet && match.tile_set !== tileSet) continue;
+    if (
+      isDateRangeActive(dateRange) &&
+      !matchInDateRange(match.ended_at, dateRange)
+    ) {
+      continue;
+    }
     const isClosed = match.is_closed !== 0;
     const matchGames = gamesByMatch.get(match.id) ?? [];
 

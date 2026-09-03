@@ -11,13 +11,14 @@ import {
 } from "@/lib/joseLab/compute";
 import { personName, type LabPlayer } from "@/lib/joseLab/data";
 import { JOSES_ACCENT } from "@/modules/Analytics/dashboardChrome";
-import { Box, Card, Typography } from "@mui/material";
+import { Box, Card, Chip, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { memo, type ReactNode } from "react";
+import { memo, useEffect, useState, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ComposedChart,
   LabelList,
   Legend,
@@ -69,6 +70,34 @@ const BREAKDOWN_TIP_LINES = [
   { label: "ΔPo", delta: "dPo", add: "po" },
   { label: "ΔZap", delta: "dZap", add: "zap" },
 ] as const;
+
+type LeadCurveRow = {
+  n: number;
+  K: number;
+  KJ: number;
+  C: number;
+  pinLead: number | null;
+  pinNames: string | null;
+};
+
+type MixPoint = {
+  name: string;
+  lead: number;
+  extras: number;
+  r: number;
+  ratio: number | null;
+  ratioLabel: string;
+  pin: boolean;
+};
+
+type WaterfallStep = {
+  name: string;
+  base: number;
+  span: number;
+  amount: number;
+  total: number;
+  fill: string;
+};
 
 type BreakdownBarKey = "sqrt" | "games" | "datas" | "pts" | "po" | "zap";
 
@@ -269,20 +298,11 @@ function LeadTooltip({
   label?: string | number;
 }) {
   if (!active || !payload?.length) return null;
-  const person = payload.find(
-    (item) => typeof item.payload?.name === "string"
-  );
-  if (person && typeof person.payload?.name === "string") {
-    const n = asNumber(person.payload.n) ?? asNumber(label) ?? 0;
-    const lead = asNumber(person.payload.lead) ?? asNumber(person.value) ?? 0;
-    return (
-      <TipShell title={person.payload.name}>
-        <TipRow label={`ΔG ${signedDelta(n)}`} value={`(${signedAdd(lead)})`} color={addColor(lead)} />
-      </TipShell>
-    );
-  }
-  const row = payload[0]?.payload;
+  const row =
+    payload.find((item) => asNumber(item.payload?.K) != null)?.payload ??
+    payload[0]?.payload;
   const n = asNumber(row?.n) ?? asNumber(label) ?? 0;
+  const pinNames = typeof row?.pinNames === "string" ? row.pinNames : null;
   const lines = [
     { label: "K(x)", key: "K" },
     { label: "KJ(x)", key: "KJ" },
@@ -301,7 +321,114 @@ function LeadTooltip({
           />
         );
       })}
+      {pinNames ? (
+        <Box
+          sx={{
+            mt: 0.75,
+            pt: 0.6,
+            borderTop: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <TipRow label="here" value={pinNames} />
+        </Box>
+      ) : null}
     </TipShell>
+  );
+}
+
+function MixTooltip({
+  active,
+  payload,
+  yName = "extras",
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<TipItem>;
+  yName?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload;
+  const name = typeof row?.name === "string" ? row.name : "";
+  const lead = asNumber(row?.lead) ?? 0;
+  const extras = asNumber(row?.extras) ?? 0;
+  const r = asNumber(row?.r) ?? 0;
+  const ratio = asNumber(row?.ratio);
+  return (
+    <TipShell title={name || `Lead vs ${yName}`}>
+      <TipRow
+        label="lead (X)"
+        value={signedAdd(lead)}
+        color={addColor(lead)}
+      />
+      <TipRow
+        label={`${yName} (Y)`}
+        value={signedAdd(extras)}
+        color={addColor(extras)}
+      />
+      <TipRow
+        label={`${yName} / lead`}
+        value={ratio == null ? `${yName} only` : `${ratio.toFixed(2)}×`}
+      />
+      <Box
+        sx={{
+          mt: 0.75,
+          pt: 0.6,
+          borderTop: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <TipRow label="R" value={signedAdd(r)} color={addColor(r)} strong />
+      </Box>
+    </TipShell>
+  );
+}
+
+function WaterfallTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<TipItem>;
+}) {
+  if (!active || !payload?.length) return null;
+  const row =
+    payload.find((item) => item.dataKey === "span")?.payload ??
+    payload[0]?.payload;
+  const name = typeof row?.name === "string" ? row.name : "";
+  const amount = asNumber(row?.amount) ?? 0;
+  const total = asNumber(row?.total) ?? 0;
+  return (
+    <TipShell title={name || "Waterfall"}>
+      <TipRow
+        label={name === "R" ? "R" : "term"}
+        value={signedAdd(amount)}
+        color={addColor(amount)}
+        strong={name === "R"}
+      />
+      {name === "R" ? null : (
+        <TipRow label="running R" value={signedAdd(total)} color={addColor(total)} />
+      )}
+    </TipShell>
+  );
+}
+
+function PinNamesLabel({
+  x,
+  y,
+  value,
+}: {
+  x?: number | string;
+  y?: number | string;
+  value?: unknown;
+}) {
+  const text = typeof value === "string" ? value : "";
+  const px = asNumber(x);
+  const py = asNumber(y);
+  if (!text || px == null || py == null) return null;
+  return (
+    <text x={px} y={py} dy={-10} textAnchor="middle" fontSize={11} fill="#241D14">
+      {text}
+    </text>
   );
 }
 
@@ -403,18 +530,31 @@ function SqrtTooltip({
 
 function ChartCard({
   title,
+  hint,
+  header,
   height = 300,
   children,
 }: {
   title: string;
+  hint?: string;
+  header?: ReactNode;
   height?: number;
   children: ReactNode;
 }) {
   return (
     <Card sx={{ p: 1.5, minWidth: 0 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: hint ? 0.25 : 0.75 }}>
         {title}
       </Typography>
+      {hint ? (
+        <Typography
+          variant="caption"
+          sx={{ display: "block", color: "text.secondary", mb: 0.75, lineHeight: 1.35 }}
+        >
+          {hint}
+        </Typography>
+      ) : null}
+      {header}
       <Box sx={{ width: "100%", height, minWidth: 0 }}>{children}</Box>
     </Card>
   );
@@ -465,6 +605,185 @@ function pick(
     .filter((p): p is LabPlayer => !!p);
 }
 
+function waterfallFromBreakdown(
+  br: Breakdown,
+  formula: FormulaId
+): WaterfallStep[] {
+  const parts: { name: string; amount: number; fill: string }[] = [];
+  if (formula === "C") {
+    parts.push({ name: "√(G/2)", amount: br.sqrt, fill: PART_COLORS.sqrt });
+  }
+  parts.push(
+    { name: "Lead", amount: br.games, fill: PART_COLORS.games },
+    { name: "Datas", amount: br.datas, fill: PART_COLORS.datas },
+    { name: "Points", amount: br.pts, fill: PART_COLORS.pts },
+    { name: "Pollos", amount: br.po, fill: PART_COLORS.po },
+    { name: "Zapatos", amount: br.zap, fill: PART_COLORS.zap }
+  );
+
+  let cursor = 0;
+  const rows: WaterfallStep[] = parts.map((part) => {
+    const amount = part.amount;
+    const base = amount >= 0 ? cursor : cursor + amount;
+    cursor += amount;
+    return {
+      name: part.name,
+      base,
+      span: Math.abs(amount),
+      amount,
+      total: cursor,
+      fill: part.fill,
+    };
+  });
+
+  rows.push({
+    name: "R",
+    base: br.r >= 0 ? 0 : br.r,
+    span: Math.abs(br.r),
+    amount: br.r,
+    total: br.r,
+    fill: JOSES_ACCENT,
+  });
+  return rows;
+}
+
+type ExtraVsLeadSpec = {
+  id: "sqrt" | "datas" | "pts" | "po" | "zap";
+  title: string;
+  yName: string;
+  fill: string;
+  extraOf: (br: Breakdown) => number;
+};
+
+function extraVsLeadSpecs(formula: FormulaId): ExtraVsLeadSpec[] {
+  const rest: ExtraVsLeadSpec[] = [
+    {
+      id: "datas",
+      title: "Datas vs lead",
+      yName: "datas",
+      fill: PART_COLORS.datas,
+      extraOf: (br) => br.datas,
+    },
+    {
+      id: "pts",
+      title: "Points vs lead",
+      yName: "points",
+      fill: PART_COLORS.pts,
+      extraOf: (br) => br.pts,
+    },
+    {
+      id: "po",
+      title: "Pollos vs lead",
+      yName: "pollos",
+      fill: PART_COLORS.po,
+      extraOf: (br) => br.po,
+    },
+    {
+      id: "zap",
+      title: "Zapatos vs lead",
+      yName: "zapatos",
+      fill: PART_COLORS.zap,
+      extraOf: (br) => br.zap,
+    },
+  ];
+  if (formula === "C") {
+    return [
+      {
+        id: "sqrt",
+        title: "√(G/2) vs lead",
+        yName: "√(G/2)",
+        fill: PART_COLORS.sqrt,
+        extraOf: (br) => br.sqrt,
+      },
+      ...rest,
+    ];
+  }
+  return rest;
+}
+
+function toMixPoints(
+  scored: { player: LabPlayer; br: Breakdown | null }[],
+  pinnedSet: Set<string>,
+  extraOf: (br: Breakdown) => number
+): MixPoint[] {
+  return scored
+    .filter((row) => row.br)
+    .map((row) => {
+      const br = row.br!;
+      const lead = br.games;
+      const extras = extraOf(br);
+      const ratio = lead === 0 ? null : extras / lead;
+      return {
+        name: personName(row.player),
+        lead: Number(lead.toFixed(2)),
+        extras: Number(extras.toFixed(2)),
+        r: Number(br.r.toFixed(2)),
+        ratio,
+        ratioLabel: ratio == null ? "" : `${ratio.toFixed(1)}×`,
+        pin: pinnedSet.has(row.player.id),
+      };
+    });
+}
+
+function LeadExtraScatter({
+  points,
+  restFill,
+  yName,
+}: {
+  points: MixPoint[];
+  restFill: string;
+  yName: string;
+}) {
+  const pins = points.filter((row) => row.pin);
+  const rest = points.filter((row) => !row.pin);
+  return (
+    <ResponsiveContainer width="100%" height="100%" debounce={80}>
+      <ScatterChart margin={{ top: 28, right: 12, left: 4, bottom: 4 }}>
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke={alpha("#241D14", 0.12)}
+        />
+        <XAxis
+          type="number"
+          dataKey="lead"
+          name="lead"
+          tick={{ fontSize: 11 }}
+        />
+        <YAxis
+          type="number"
+          dataKey="extras"
+          name={yName}
+          tick={{ fontSize: 11 }}
+        />
+        <Tooltip content={<MixTooltip yName={yName} />} />
+        <ReferenceLine x={0} stroke={alpha("#241D14", 0.35)} />
+        <ReferenceLine y={0} stroke={alpha("#241D14", 0.35)} />
+        <Scatter
+          name="others"
+          data={rest}
+          fill={restFill}
+          isAnimationActive={false}
+        >
+          <LabelList
+            dataKey="ratioLabel"
+            position="top"
+            fontSize={10}
+            fill={alpha("#241D14", 0.7)}
+          />
+        </Scatter>
+        <Scatter
+          name="pinned"
+          data={pins}
+          fill={PIN}
+          isAnimationActive={false}
+        >
+          <LabelList dataKey="name" position="top" fontSize={11} />
+        </Scatter>
+      </ScatterChart>
+    </ResponsiveContainer>
+  );
+}
+
 type Props = {
   formula: FormulaId;
   weightsK: WeightsK;
@@ -503,22 +822,33 @@ export default memo(function JoseLabCharts({
       ? "none pinned — tap a pin in the table"
       : pinNames.join(", ");
 
-  const leadCurve = Array.from({ length: 61 }, (_, i) => {
+  const [waterfallId, setWaterfallId] = useState(pinnedIds[0] ?? "");
+  useEffect(() => {
+    if (!pinnedIds.includes(waterfallId)) {
+      setWaterfallId(pinnedIds[0] ?? "");
+    }
+  }, [pinnedIds, waterfallId]);
+
+  const peopleByN = new Map<number, string[]>();
+  pinnedPlayers.forEach((p) => {
+    const n = p.W - p.L;
+    const names = peopleByN.get(n) ?? [];
+    names.push(personName(p));
+    peopleByN.set(n, names);
+  });
+
+  const leadCurve: LeadCurveRow[] = Array.from({ length: 61 }, (_, i) => {
     const n = i - 30;
+    const names = peopleByN.get(n) ?? [];
     return {
       n,
       K: leadTermB(n, weightsK),
       KJ: leadTermB(n, weightsKJ),
       C: leadTermC(n, weightsC),
-    };
-  });
-
-  const leadPeople = pinnedPlayers.map((p) => {
-    const n = p.W - p.L;
-    return {
-      n,
-      lead: leadTerm(n, formula, weightsK, weightsC, weightsKJ),
-      name: personName(p),
+      pinLead: names.length
+        ? leadTerm(n, formula, weightsK, weightsC, weightsKJ)
+        : null,
+      pinNames: names.length ? names.join(" · ") : null,
     };
   });
 
@@ -532,6 +862,12 @@ export default memo(function JoseLabCharts({
     }));
   const scatterPins = scatter.filter((row) => row.pin);
   const scatterRest = scatter.filter((row) => !row.pin);
+
+  const mix = toMixPoints(scored, pinnedSet, (br) => br.r - br.games);
+  const extraMix = extraVsLeadSpecs(formula).map((spec) => ({
+    spec,
+    points: toMixPoints(scored, pinnedSet, spec.extraOf),
+  }));
 
   const breakdown = scored
     .filter((row) => row.br && pinnedSet.has(row.player.id))
@@ -551,6 +887,15 @@ export default memo(function JoseLabCharts({
       zap: Number(row.br!.zap.toFixed(2)),
       r: Number(row.br!.r.toFixed(2)),
     }));
+
+  const waterfallPlayer =
+    scored.find((row) => row.player.id === waterfallId && row.br) ?? null;
+  const waterfallSteps = waterfallPlayer?.br
+    ? waterfallFromBreakdown(waterfallPlayer.br, formula)
+    : [];
+  const waterfallName = waterfallPlayer
+    ? personName(waterfallPlayer.player)
+    : "";
 
   const volumeKeys = pinNames;
   const volume = Array.from({ length: 25 }, (_, i) => {
@@ -583,7 +928,10 @@ export default memo(function JoseLabCharts({
         gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
       }}
     >
-      <ChartCard title={`Lead term · ${pinLabel}`}>
+      <ChartCard
+        title="Lead vs net games"
+        hint={`Dots = ${pinLabel}`}
+      >
         <ResponsiveContainer width="100%" height="100%" debounce={80}>
           <ComposedChart
             data={leadCurve}
@@ -630,9 +978,33 @@ export default memo(function JoseLabCharts({
               name="OG F(x)"
               isAnimationActive={false}
             />
-            <Scatter name="people" data={leadPeople} dataKey="lead" fill={PIN} isAnimationActive={false}>
-              <LabelList dataKey="name" position="top" fontSize={11} />
-            </Scatter>
+            <Line
+              type="linear"
+              dataKey="pinLead"
+              stroke="none"
+              legendType="none"
+              name="people"
+              isAnimationActive={false}
+              activeDot={false}
+              dot={(props: {
+                cx?: number;
+                cy?: number;
+                payload?: LeadCurveRow;
+              }) => {
+                if (
+                  props.payload?.pinLead == null ||
+                  props.cx == null ||
+                  props.cy == null
+                ) {
+                  return <g />;
+                }
+                return (
+                  <circle cx={props.cx} cy={props.cy} r={4} fill={PIN} />
+                );
+              }}
+            >
+              <LabelList dataKey="pinNames" content={PinNamesLabel} />
+            </Line>
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -725,6 +1097,109 @@ export default memo(function JoseLabCharts({
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>
+
+      <ChartCard
+        title="Lead vs extras · all in this set"
+        hint="X = games term. Y = everything else. Closers sit right; volume sits up. Ratio = extras / lead."
+      >
+        <LeadExtraScatter
+          points={mix}
+          restFill={scatterFill(formula)}
+          yName="extras"
+        />
+      </ChartCard>
+
+      <ChartCard
+        title={`Waterfall to R${waterfallName ? ` · ${waterfallName}` : ""}`}
+        hint="Lead → extras, stacked as a running total. Pin someone, then pick who."
+        header={
+          pinnedPlayers.length > 0 ? (
+            <Stack
+              direction="row"
+              flexWrap="wrap"
+              gap={0.5}
+              sx={{ mb: 0.75 }}
+            >
+              {pinnedPlayers.map((p) => {
+                const selected = p.id === waterfallId;
+                return (
+                  <Chip
+                    key={p.id}
+                    size="small"
+                    label={personName(p)}
+                    onClick={() => setWaterfallId(p.id)}
+                    variant={selected ? "filled" : "outlined"}
+                    sx={{
+                      height: 22,
+                      fontSize: 11,
+                      fontWeight: selected ? 700 : 500,
+                      bgcolor: selected ? alpha(PIN, 0.18) : undefined,
+                      borderColor: selected ? PIN : undefined,
+                    }}
+                  />
+                );
+              })}
+            </Stack>
+          ) : null
+        }
+      >
+        {waterfallSteps.length === 0 ? (
+          <Box
+            sx={{
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "text.secondary",
+              fontSize: 13,
+            }}
+          >
+            Pin someone in the table to see the waterfall.
+          </Box>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%" debounce={80}>
+            <BarChart
+              data={waterfallSteps}
+              margin={{ top: 8, right: 12, left: 4, bottom: 4 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={alpha("#241D14", 0.12)}
+              />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip content={<WaterfallTooltip />} />
+              <ReferenceLine y={0} stroke={alpha("#241D14", 0.35)} />
+              <Bar
+                dataKey="base"
+                stackId="wf"
+                fill="transparent"
+                legendType="none"
+                isAnimationActive={false}
+              />
+              <Bar dataKey="span" stackId="wf" isAnimationActive={false}>
+                {waterfallSteps.map((step) => (
+                  <Cell key={step.name} fill={step.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </ChartCard>
+
+      {extraMix.map(({ spec, points }) => (
+        <ChartCard
+          key={spec.id}
+          title={`${spec.title} · all in this set`}
+          hint={`X = games term. Y = ${spec.yName}. Ratio = ${spec.yName} / lead.`}
+        >
+          <LeadExtraScatter
+            points={points}
+            restFill={alpha(spec.fill, 0.45)}
+            yName={spec.yName}
+          />
+        </ChartCard>
+      ))}
 
       {formula === "C" ? (
         <ChartCard title="√(G/2) as G grows · OG F(x)">

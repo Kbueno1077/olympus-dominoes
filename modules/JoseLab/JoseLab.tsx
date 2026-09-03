@@ -1163,7 +1163,7 @@ function TestTable({
 }
 
 export default function JoseLab() {
-  const [formula, setFormula] = useState<FormulaId>("K");
+  const [formula, setFormula] = useState<FormulaId>("KJ");
   const [weightsK, setWeightsK] = useState<WeightsK>(DEFAULT_K);
   const [weightsC, setWeightsC] = useState<WeightsC>(DEFAULT_C);
   const [weightsKJ, setWeightsKJ] = useState<WeightsK>(DEFAULT_KJ);

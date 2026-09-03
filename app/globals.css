@@ -143,3 +143,53 @@ body {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
+
+/* Date range calendar (react-day-picker) ---------------------------------- */
+.olympus-rdp.rdp-root {
+  --rdp-accent-color: rgb(var(--primary));
+  --rdp-accent-background-color: rgb(var(--primary) / 0.14);
+  --rdp-today-color: rgb(var(--secondary));
+  --rdp-day-height: 40px;
+  --rdp-day-width: 40px;
+  --rdp-day_button-height: 38px;
+  --rdp-day_button-width: 38px;
+  --rdp-day_button-border-radius: 10px;
+  --rdp-selected-border: 2px solid rgb(var(--primary));
+  --rdp-range_start-color: rgb(var(--bone-100));
+  --rdp-range_end-color: rgb(var(--bone-100));
+  --rdp-range_middle-color: rgb(var(--bone-900));
+  --rdp-range_middle-background-color: rgb(var(--primary) / 0.14);
+  margin: 0 auto;
+  color: rgb(var(--bone-900));
+  font-size: 0.875rem;
+}
+
+.olympus-rdp .rdp-month_caption {
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+.olympus-rdp .rdp-weekday {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--text-muted));
+}
+
+.olympus-rdp .rdp-day_button {
+  font-variant-numeric: tabular-nums;
+}
+
+.olympus-rdp .rdp-selected .rdp-day_button {
+  font-weight: 700;
+}
+
+.olympus-rdp .rdp-nav button {
+  color: rgb(var(--bone-800));
+}
+
+.olympus-rdp .rdp-nav button:hover {
+  background: rgb(var(--primary) / 0.1);
+}
