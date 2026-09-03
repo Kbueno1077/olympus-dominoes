@@ -20,6 +20,17 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "4.8.0",
+    date: "2026-09-02",
+    schema: 25,
+    summary: "Jose ranking uses KJ, a date range on Stats and History, and a recast home.",
+    highlights: [
+      "Jose’s Coefficient on Stats, Compare, Leaderboard, and Podium uses the KJ ranking.",
+      "Stats, Compare, and History share a start/end date filter.",
+      "Home and How to use follow the phone app: accordions, optional CSV import, and store links after App vs site.",
+    ],
+  },
+  {
     version: "4.7.0",
     date: "2026-08-18",
     schema: 24,

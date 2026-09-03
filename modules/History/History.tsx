@@ -1,6 +1,7 @@
 "use client";
 
 import DashboardAside from "@/modules/Analytics/DashboardAside";
+import DashboardDateRangeFilter from "@/modules/Analytics/DashboardDateRangeFilter";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import PlayerPickDialog from "@/modules/Analytics/PlayerPickDialog";
 import HistoryGamesNotes from "@/modules/History/HistoryGamesNotes";
@@ -11,6 +12,8 @@ import {
 } from "@/modules/Analytics/dashboardChrome";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { buildHistoryMatchCompareLaunch } from "@/lib/analytics/compareLaunch";
+import { useDashboardDateRange } from "@/lib/analytics/dashboardDateFilterState";
+import { matchInDateRange } from "@/lib/analytics/dateRangeFilter";
 import {
   formatMatchDate,
   formatMatchScoreline,
@@ -435,6 +438,7 @@ export default function History() {
     useAnalytics();
 
   const datasetId = activeDataset?.id ?? registry.activeDatasetId;
+  const dateFilter = useDashboardDateRange(datasetId);
 
   const [query, setQuery] = useState(() => loadHistoryUiFilters(datasetId).query);
   const [modeFilter, setModeFilter] = useState(
@@ -527,6 +531,7 @@ export default function History() {
     const needle = query.trim().toLowerCase();
 
     return items.filter((item) => {
+      if (!matchInDateRange(item.endedAt, dateFilter.range)) return false;
       if (modeFilter !== "all" && item.modeLabel !== modeFilter) return false;
 
       if (
@@ -559,7 +564,7 @@ export default function History() {
         .toLowerCase();
       return haystack.includes(needle);
     });
-  }, [items, query, modeFilter, rosterFilter, language, modeName]);
+  }, [items, query, modeFilter, rosterFilter, language, modeName, dateFilter.range]);
 
   const setPlayerTeam = (playerId: number, team: HistoryFilterTeam) => {
     setRosterFilter((current) =>
@@ -671,6 +676,22 @@ export default function History() {
                 {t("historyFilterFind")}
               </Typography>
               <Stack spacing={1.25}>
+                <Box>
+                  <Typography
+                    variant="overline"
+                    component="p"
+                    sx={{ color: "text.secondary", mb: 0.75 }}
+                  >
+                    {t("dashboardDateRange")}
+                  </Typography>
+                  <DashboardDateRangeFilter
+                    startDate={dateFilter.startDate}
+                    endDate={dateFilter.endDate}
+                    onStartChange={dateFilter.setStartDate}
+                    onEndChange={dateFilter.setEndDate}
+                    onClear={dateFilter.clear}
+                  />
+                </Box>
                 <TextField
                   size="small"
                   label={t("historySearch")}

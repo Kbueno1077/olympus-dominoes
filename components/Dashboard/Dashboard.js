@@ -13,6 +13,8 @@ import { useHasMounted } from "@/hooks/useHasMounted";
 import { isGameStartedRecoil } from "@/recoil/recoilState";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
+import LanguageOutlined from "@mui/icons-material/LanguageOutlined";
+import PhoneIphoneOutlined from "@mui/icons-material/PhoneIphoneOutlined";
 import QrCode2Outlined from "@mui/icons-material/QrCode2Outlined";
 import SmartToyOutlined from "@mui/icons-material/SmartToyOutlined";
 import {
@@ -45,6 +47,7 @@ const HOW_STEPS = [
   { title: "howStep1Title", body: "howStep1Body" },
   { title: "howStep2Title", body: "howStep2Body" },
   { title: "howStep3Title", body: "howStep3Body" },
+  { title: "howStep4Title", body: "howStep4Body", optional: true },
 ];
 
 const FOOTER_LINKS = [
@@ -55,18 +58,22 @@ const FOOTER_LINKS = [
 
 const SPLIT_SIDES = [
   {
+    id: "phone",
     title: "homeAppTitle",
+    icon: PhoneIphoneOutlined,
+    blurb: "homeAppBulletScore",
     bullets: [
-      "homeAppBulletScore",
       "homeAppBulletConcurrent",
       "homeAppBulletHistory",
       "homeAppBulletExport",
     ],
   },
   {
+    id: "web",
     title: "homeWebTitle",
+    icon: LanguageOutlined,
+    blurb: "homeWebBulletAnalytics",
     bullets: [
-      "homeWebBulletAnalytics",
       "homeWebBulletSingleGame",
       "homeWebBulletThrowaway",
       "homeWebBulletSourceOfTruth",
@@ -76,6 +83,15 @@ const SPLIT_SIDES = [
 
 const ANDROID_DISABLED = ANDROID_APP_URL == null;
 
+/** Same side inset as the site header so home sections share one left edge. */
+const PAGE_INSET = { xs: 1.5, sm: 2, md: 2.5 };
+const PAGE_GAP = { xs: 5, md: 6 };
+
+const SECTION_LABEL_SX = {
+  color: "text.secondary",
+  mb: 2,
+};
+
 function StoreLinkRow({
   t,
   href,
@@ -83,27 +99,25 @@ function StoreLinkRow({
   icon,
   disabled = false,
   comingSoon = false,
+  showSideQr = true,
   onShowQr,
 }) {
+  const isExternal = Boolean(href) && !disabled;
+
   return (
-    <Stack direction="row" spacing={1} alignItems="stretch" sx={{ width: "100%", maxWidth: 420 }}>
+    <Stack direction="row" spacing={1} alignItems="stretch" sx={{ width: "100%" }}>
       <Button
-        component={disabled ? "button" : "a"}
-        href={disabled ? undefined : href}
-        target={disabled ? undefined : "_blank"}
-        rel={disabled ? undefined : "noopener noreferrer"}
+        component={isExternal ? "a" : "button"}
+        href={isExternal ? href : undefined}
+        target={isExternal ? "_blank" : undefined}
+        rel={isExternal ? "noopener noreferrer" : undefined}
+        onClick={isExternal || disabled ? undefined : onShowQr}
         disabled={disabled}
         variant="contained"
         size="large"
         startIcon={icon}
         fullWidth
         sx={{
-          fontSize: 16.5,
-          textTransform: "none",
-          fontWeight: 700,
-          letterSpacing: 0.01,
-          px: 3.25,
-          minHeight: 56,
           justifyContent: "flex-start",
           "& .MuiButton-startIcon": { mr: 1.25 },
         }}
@@ -124,8 +138,6 @@ function StoreLinkRow({
               component="span"
               variant="caption"
               sx={{
-                fontWeight: 700,
-                letterSpacing: "0.04em",
                 textTransform: "uppercase",
                 opacity: 0.85,
               }}
@@ -135,22 +147,24 @@ function StoreLinkRow({
           ) : null}
         </Box>
       </Button>
-      <IconButton
-        onClick={onShowQr}
-        disabled={disabled}
-        aria-label={t("qrShowAria", { name: label })}
-        sx={{
-          width: 56,
-          height: 56,
-          flexShrink: 0,
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 1.5,
-          bgcolor: (theme) => alpha(theme.palette.common.white, 0.55),
-        }}
-      >
-        <QrCode2Outlined />
-      </IconButton>
+      {showSideQr ? (
+        <IconButton
+          onClick={onShowQr}
+          disabled={disabled}
+          aria-label={t("qrShowAria", { name: label })}
+          sx={{
+            width: 48,
+            height: 48,
+            flexShrink: 0,
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 1.5,
+            bgcolor: (theme) => alpha(theme.palette.common.white, 0.55),
+          }}
+        >
+          <QrCode2Outlined />
+        </IconButton>
+      ) : null}
     </Stack>
   );
 }
@@ -160,11 +174,7 @@ function AppDownloadLinks({ t }) {
 
   return (
     <>
-      <Stack
-        spacing={1.25}
-        alignItems={{ xs: "center", md: "flex-start" }}
-        sx={{ width: "100%" }}
-      >
+      <Stack spacing={1.5} sx={{ width: "100%" }}>
         <StoreLinkRow
           t={t}
           href={IOS_APP_URL}
@@ -181,7 +191,7 @@ function AppDownloadLinks({ t }) {
         />
         <StoreLinkRow
           t={t}
-          href={ANDROID_APP_URL}
+          href={ANDROID_APP_URL ?? undefined}
           label={t("homePlayStore")}
           disabled={ANDROID_DISABLED}
           comingSoon={ANDROID_DISABLED}
@@ -199,26 +209,13 @@ function AppDownloadLinks({ t }) {
             })
           }
         />
-        <Button
-          onClick={() => setQr({ title: t("qrWebsite"), href: SITE_URL })}
-          variant="contained"
-          size="large"
-          startIcon={<QrCode2Outlined sx={{ width: 26, height: 26 }} />}
-          sx={{
-            width: "100%",
-            maxWidth: 420,
-            fontSize: 16.5,
-            textTransform: "none",
-            fontWeight: 700,
-            letterSpacing: 0.01,
-            px: 3.25,
-            minHeight: 56,
-            justifyContent: "flex-start",
-            "& .MuiButton-startIcon": { mr: 1.25 },
-          }}
-        >
-          {t("qrWebsite")}
-        </Button>
+        <StoreLinkRow
+          t={t}
+          label={t("qrWebsite")}
+          icon={<QrCode2Outlined sx={{ width: 26, height: 26 }} />}
+          showSideQr={false}
+          onShowQr={() => setQr({ title: t("qrWebsite"), href: SITE_URL })}
+        />
       </Stack>
 
       <QrCodeDialog
@@ -237,7 +234,7 @@ function FeatureRow({ t }) {
     <Stack
       direction={{ xs: "column", sm: "row" }}
       spacing={{ xs: 1, sm: 2.5 }}
-      alignItems={{ xs: "center", sm: "flex-start" }}
+      alignItems={{ xs: "center", md: "flex-start" }}
       justifyContent={{ xs: "center", md: "flex-start" }}
       flexWrap="wrap"
       useFlexGap
@@ -268,7 +265,7 @@ function HowItWorks({ t }) {
       <Typography
         variant="overline"
         component="p"
-        sx={{ color: "text.secondary", mb: 2 }}
+        sx={SECTION_LABEL_SX}
       >
         {t("howItWorksTitle")}
       </Typography>
@@ -279,24 +276,38 @@ function HowItWorks({ t }) {
           gap: 2,
           gridTemplateColumns: {
             xs: "1fr",
-            sm: "repeat(3, minmax(0, 1fr))",
+            sm: "repeat(2, minmax(0, 1fr))",
+            lg: "repeat(4, minmax(0, 1fr))",
           },
         }}
       >
         {HOW_STEPS.map((step, index) => (
           <Box key={step.title}>
-            <Typography
-              sx={{
-                fontFamily: (theme) => theme.typography.h2.fontFamily,
-                fontWeight: 700,
-                fontSize: 28,
-                lineHeight: 1,
-                color: (theme) => alpha(theme.palette.primary.main, 0.28),
-                mb: 0.75,
-              }}
-            >
-              {String(index + 1).padStart(2, "0")}
-            </Typography>
+            {step.optional ? (
+              <Typography
+                variant="overline"
+                sx={{
+                  display: "block",
+                  color: "secondary.main",
+                  mb: 0.5,
+                }}
+              >
+                {t("howStep4Badge")}
+              </Typography>
+            ) : (
+              <Typography
+                sx={{
+                  fontFamily: (theme) => theme.typography.h2.fontFamily,
+                  fontWeight: 700,
+                  fontSize: 28,
+                  lineHeight: 1,
+                  color: (theme) => alpha(theme.palette.primary.main, 0.28),
+                  mb: 0.75,
+                }}
+              >
+                {String(index + 1).padStart(2, "0")}
+              </Typography>
+            )}
             <Typography
               variant="subtitle1"
               sx={{ color: "text.primary", fontWeight: 600, mb: 0.5 }}
@@ -313,142 +324,130 @@ function HowItWorks({ t }) {
   );
 }
 
-function HistoryNotice({ t, onOpenAnalytics }) {
-  return (
-    <Card
-      sx={{
-        p: { xs: 2.5, sm: 3 },
-        backgroundColor: "background.neutral",
-        borderColor: "divider",
-      }}
-    >
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        alignItems={{ xs: "flex-start", sm: "center" }}
-        justifyContent="space-between"
-      >
-        <Box sx={{ minWidth: 0 }}>
-          <Typography
-            variant="subtitle1"
-            sx={{ color: "text.primary", fontWeight: 600, mb: 0.5 }}
-          >
-            {t("webHistoryTitle")}
-          </Typography>
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            {t("webHistoryBody")}
-          </Typography>
-        </Box>
-        <Stack
-          direction={{ xs: "row", sm: "column" }}
-          spacing={1}
-          alignItems={{ xs: "center", sm: "flex-end" }}
-          sx={{ flexShrink: 0 }}
-        >
-          <Typography
-            variant="overline"
-            sx={{
-              color: "text.disabled",
-              fontSize: 10,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {t("webHistoryNote")}
-          </Typography>
-          <Button variant="outlined" size="small" onClick={onOpenAnalytics}>
-            {t("webHistoryCta")}
-          </Button>
-        </Stack>
-      </Stack>
-    </Card>
-  );
-}
-
-/** Quiet disclosure — same tone as How it works, not a feature-matrix card. */
 function AppVsWebDetails({ t }) {
-  const [open, setOpen] = useState(true);
+  const [openId, setOpenId] = useState(null);
 
   return (
     <Box>
-      <Button
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        endIcon={
-          <ExpandMore
-            sx={{
-              fontSize: 18,
-              transform: open ? "rotate(180deg)" : "none",
-              transition: "transform 160ms ease",
-            }}
-          />
-        }
+      <Typography variant="overline" component="p" sx={SECTION_LABEL_SX}>
+        {t("homeSplitToggleTitle")}
+      </Typography>
+      <Stack spacing={1.5}>
+        {SPLIT_SIDES.map((side) => {
+          const open = openId === side.id;
+          const Icon = side.icon;
+          return (
+            <Card
+              key={side.id}
+              sx={{
+                p: 2,
+                borderColor: (theme) =>
+                  open
+                    ? alpha(theme.palette.primary.main, 0.28)
+                    : "divider",
+              }}
+            >
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ mb: 0.75 }}
+              >
+                <Icon sx={{ fontSize: 22, color: "primary.main" }} />
+                <Typography
+                  variant="subtitle1"
+                  sx={{ fontWeight: 700, flex: 1 }}
+                >
+                  {t(side.title)}
+                </Typography>
+              </Stack>
+              <Typography
+                variant="body2"
+                sx={{ color: "text.secondary", mb: 0.5 }}
+              >
+                {t(side.blurb)}
+              </Typography>
+              <Button
+                onClick={() => setOpenId(open ? null : side.id)}
+                aria-expanded={open}
+                endIcon={
+                  <ExpandMore
+                    sx={{
+                      fontSize: 18,
+                      transform: open ? "rotate(180deg)" : "none",
+                      transition: "transform 160ms ease",
+                    }}
+                  />
+                }
+                sx={{
+                  px: 0,
+                  minWidth: 0,
+                  mt: 0.25,
+                  color: "primary.main",
+                  textTransform: "none",
+                  fontWeight: 700,
+                  "&:hover": { backgroundColor: "transparent" },
+                }}
+              >
+                {open ? t("howToUseClose") : t("howToUseSeeHow")}
+              </Button>
+              <Collapse in={open} timeout="auto" unmountOnExit>
+                <Box
+                  component="ul"
+                  sx={{
+                    m: 0,
+                    mt: 0.75,
+                    pl: 2.25,
+                    color: "text.secondary",
+                    "& li": { mb: 0.65 },
+                    "& li:last-child": { mb: 0 },
+                  }}
+                >
+                  {side.bullets.map((key) => (
+                    <Typography
+                      key={key}
+                      component="li"
+                      variant="body2"
+                      sx={{ color: "inherit" }}
+                    >
+                      {t(key)}
+                    </Typography>
+                  ))}
+                </Box>
+              </Collapse>
+            </Card>
+          );
+        })}
+      </Stack>
+    </Box>
+  );
+}
+
+function GetTheApp({ t }) {
+  return (
+    <Box>
+      <Typography variant="overline" component="p" sx={SECTION_LABEL_SX}>
+        {t("homeGetAppTitle")}
+      </Typography>
+      <Box
         sx={{
-          px: 0,
-          py: 0.5,
-          minWidth: 0,
-          color: "text.secondary",
-          textTransform: "none",
-          fontWeight: 500,
-          "&:hover": {
-            backgroundColor: "transparent",
-            color: "text.primary",
+          display: "grid",
+          gap: 2,
+          alignItems: "start",
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "minmax(0, 1fr) minmax(0, 420px)",
           },
         }}
       >
         <Typography
-          variant="overline"
-          component="span"
-          sx={{ letterSpacing: "0.08em", color: "inherit" }}
+          variant="body2"
+          sx={{ color: "text.secondary", maxWidth: 400 }}
         >
-          {t("homeSplitToggleTitle")}
+          {t("homeGetAppBody")}
         </Typography>
-      </Button>
-
-      <Collapse in={open} timeout="auto" unmountOnExit>
-        <Box
-          sx={{
-            mt: 2,
-            display: "grid",
-            gap: 2.5,
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, minmax(0, 1fr))",
-            },
-          }}
-        >
-          {SPLIT_SIDES.map((side) => (
-            <Box key={side.title}>
-              <Typography
-                variant="subtitle1"
-                sx={{ color: "text.primary", fontWeight: 600, mb: 0.75 }}
-              >
-                {t(side.title)}
-              </Typography>
-              <Box
-                component="ul"
-                sx={{
-                  m: 0,
-                  pl: 2.25,
-                  color: "text.secondary",
-                  "& li": { mb: 0.65 },
-                  "& li:last-child": { mb: 0 },
-                }}
-              >
-                {side.bullets.map((key) => (
-                  <Typography
-                    key={key}
-                    component="li"
-                    variant="body2"
-                    sx={{ color: "inherit" }}
-                  >
-                    {t(key)}
-                  </Typography>
-                ))}
-              </Box>
-            </Box>
-          ))}
-        </Box>
-      </Collapse>
+        <AppDownloadLinks t={t} />
+      </Box>
     </Box>
   );
 }
@@ -456,7 +455,6 @@ function AppVsWebDetails({ t }) {
 export default function Dashboard({
   onPlayWithBots,
   onStartScorepad,
-  onOpenAnalytics,
 }) {
   const { t } = useTranslation();
   const hasMounted = useHasMounted();
@@ -465,31 +463,30 @@ export default function Dashboard({
   const matchInProgress = hasMounted && isGameStarted;
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 6, md: 7 } }}>
+    <Container
+      maxWidth="lg"
+      disableGutters
+      sx={{ px: PAGE_INSET, py: PAGE_GAP }}
+    >
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <Stack spacing={{ xs: 4, md: 5 }}>
+        <Stack spacing={PAGE_GAP}>
           <Box
             sx={{
               display: "grid",
-              gap: { xs: 4, md: 5 },
+              gap: PAGE_GAP,
               alignItems: "center",
               gridTemplateColumns: { xs: "1fr", md: "1.15fr 0.85fr" },
             }}
           >
-            <Stack
-              spacing={3}
-              alignItems={{ xs: "center", md: "flex-start" }}
-              textAlign={{ xs: "center", md: "left" }}
-            >
+            <Stack spacing={2.5}>
               <Stack
                 direction="row"
                 spacing={-0.5}
                 justifyContent={{ xs: "center", md: "flex-start" }}
-                sx={{ pt: 1 }}
               >
                 {HERO_TILES.map((tile, i) => (
                   <motion.div
@@ -507,11 +504,14 @@ export default function Dashboard({
                 ))}
               </Stack>
 
-              <Stack
-                spacing={1.5}
-                alignItems={{ xs: "center", md: "flex-start" }}
-              >
-                <Typography variant="h2" sx={{ color: "text.primary" }}>
+              <Stack spacing={1.5}>
+                <Typography
+                  variant="h2"
+                  sx={{
+                    color: "text.primary",
+                    textAlign: { xs: "center", md: "left" },
+                  }}
+                >
                   {t("heroTitle")}
                 </Typography>
                 <Typography
@@ -522,35 +522,25 @@ export default function Dashboard({
                 </Typography>
               </Stack>
 
-              <AppDownloadLinks t={t} />
-
               <FeatureRow t={t} />
             </Stack>
 
             <Card
               sx={{
                 width: "100%",
-                p: { xs: 3, sm: 4 },
+                p: { xs: 2.5, sm: 3 },
                 backgroundColor: "background.paper",
-                borderColor: (theme) =>
-                  alpha(theme.palette.primary.main, 0.24),
+                borderColor: "divider",
               }}
             >
               <Stack spacing={2.5}>
-                <Stack spacing={1} alignItems="center">
-                  <Typography
-                    variant="h5"
-                    sx={{ color: "text.primary", textAlign: "center" }}
-                  >
+                <Stack spacing={1}>
+                  <Typography variant="h5" sx={{ color: "text.primary" }}>
                     {t("readyTitle")}
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{
-                      color: "text.secondary",
-                      maxWidth: 340,
-                      textAlign: "center",
-                    }}
+                    sx={{ color: "text.secondary" }}
                   >
                     {t("readyBody")}
                   </Typography>
@@ -657,40 +647,16 @@ export default function Dashboard({
             </Card>
           </Box>
 
-          <Box
-            sx={{
-              display: { xs: "none", md: "block" },
-              width: 44,
-              height: "2px",
-              borderRadius: 1,
-              mx: "auto",
-              backgroundColor: (theme) =>
-                alpha(theme.palette.secondary.main, 0.5),
-            }}
-          />
-
-          <Box sx={{ display: { xs: "none", md: "block" } }}>
-            <HowItWorks t={t} />
-          </Box>
-
-          <HistoryNotice t={t} onOpenAnalytics={onOpenAnalytics} />
+          <HowItWorks t={t} />
 
           <AppVsWebDetails t={t} />
 
-          <Stack spacing={1.5} alignItems="center" sx={{ pt: 1 }}>
-            <Box
-              sx={{
-                width: 44,
-                height: "2px",
-                borderRadius: 1,
-                backgroundColor: (theme) =>
-                  alpha(theme.palette.secondary.main, 0.5),
-                display: { md: "none" },
-              }}
-            />
+          <GetTheApp t={t} />
+
+          <Stack spacing={1.5} alignItems="center">
             <Typography
               variant="overline"
-              sx={{ color: "text.disabled", fontSize: 10 }}
+              sx={{ color: "text.disabled" }}
             >
               {t("madeForTheTable")}
             </Typography>
@@ -698,8 +664,9 @@ export default function Dashboard({
               direction="row"
               spacing={1.5}
               alignItems="center"
-              flexWrap="wrap"
               justifyContent="center"
+              flexWrap="wrap"
+              useFlexGap
             >
               {FOOTER_LINKS.map(({ href, key }, index) => (
                 <Stack

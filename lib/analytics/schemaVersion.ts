@@ -5,11 +5,12 @@
  * 22 was the last shape change (`matches.is_closed`, `game_players`).
  * 23 is a Jose formula-only bump (no new columns vs 22).
  * 24 adds `players.is_hidden` (soft-delete roster rows that still have games).
+ * 25 is a Jose formula-only bump to KJ(x) (no new columns vs 24).
  */
-export const SCHEMA_VERSION = 24;
+export const SCHEMA_VERSION = 25;
 
-/** First schema that stores the current Jose formula (no / max(G, 25)). */
-export const JOSES_FORMULA_SCHEMA = 23;
+/** First schema that stores the current Jose formula (KJ). */
+export const JOSES_FORMULA_SCHEMA = 25;
 
 /** Pre-`db_meta` CSVs are treated as version 0 and still upgraded. */
 export const MIN_IMPORT_SCHEMA = 0;
@@ -62,7 +63,7 @@ export function schemaVersionFromExport(data: {
   return parseSchemaVersion(data.tables?.db_meta?.[0]?.schema_version);
 }
 
-/** Same idea as mobile `needs_joses_recompute` on the schema-23 formula bump. */
+/** Same idea as mobile `needs_joses_recompute` on the schema-25 KJ formula bump. */
 export function needsJosesRecompute(fileSchema: number): boolean {
   return fileSchema < JOSES_FORMULA_SCHEMA;
 }

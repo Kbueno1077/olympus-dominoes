@@ -1,119 +1,240 @@
 "use client";
 
-import { IOS_APP_URL } from "@/lib/appLinks";
 import { APP_UI_SIGNATURE } from "@/lib/analytics/dbMeta";
 import { useTranslation } from "@/i18n/useTranslation";
+import { HowToUseDemo, type HowToUseDemoId } from "@/modules/HowToUse/HowToUseDemos";
+import BarChartOutlined from "@mui/icons-material/BarChartOutlined";
+import CloudUploadOutlined from "@mui/icons-material/CloudUploadOutlined";
+import CompareArrowsOutlined from "@mui/icons-material/CompareArrowsOutlined";
+import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
+import EmojiEventsOutlined from "@mui/icons-material/EmojiEventsOutlined";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
+import InfoOutlined from "@mui/icons-material/InfoOutlined";
+import LeaderboardOutlined from "@mui/icons-material/LeaderboardOutlined";
+import PhoneIphoneOutlined from "@mui/icons-material/PhoneIphoneOutlined";
+import SmartToyOutlined from "@mui/icons-material/SmartToyOutlined";
+import {
+  Box,
+  Button,
+  Card,
+  Collapse,
+  Container,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import Link from "next/link";
+import { useState, type ComponentType } from "react";
 
-const HOW_STEPS = [
-  { title: "howStep1Title", body: "howStep1Body" },
-  { title: "howStep2Title", body: "howStep2Body" },
-  { title: "howStep3Title", body: "howStep3Body" },
-] as const;
+type Section = {
+  id: HowToUseDemoId;
+  icon: ComponentType<{ sx?: object }>;
+  title: string;
+  blurb: string;
+  detail: string;
+};
 
-const PAGES = [
-  { href: "/play", nav: "navPlay", body: "howToUsePagePlay" },
-  { href: "/match", nav: "navMatch", body: "howToUsePageMatch" },
-  { href: "/history", nav: "historyNav", body: "howToUsePageHistory" },
-  { href: "/stats", nav: "statsNav", body: "howToUsePageStats" },
-  { href: "/leaderboard", nav: "leaderboardNav", body: "howToUsePageLeaderboard" },
-  { href: "/compare", nav: "compareNav", body: "howToUsePageCompare" },
-  { href: "/podium", nav: "podiumNav", body: "howToUsePagePodium" },
-] as const;
-
-const linkClass =
-  "underline decoration-[rgb(var(--border))] underline-offset-2 hover:text-[rgb(var(--primary))]";
+const SECTIONS: Section[] = [
+  {
+    id: "intro",
+    icon: InfoOutlined,
+    title: "howToUseTitle",
+    blurb: "howToUseIntro",
+    detail: "howToUseIntroDetail",
+  },
+  {
+    id: "notepad",
+    icon: EditNoteOutlined,
+    title: "howToUseNotepadTitle",
+    blurb: "howToUseNotepadBody",
+    detail: "howToUseNotepadDetail",
+  },
+  {
+    id: "play",
+    icon: SmartToyOutlined,
+    title: "howToUsePlayTitle",
+    blurb: "howToUsePlayBody",
+    detail: "howToUsePlayDetail",
+  },
+  {
+    id: "save",
+    icon: CloudUploadOutlined,
+    title: "howToUseSaveTitle",
+    blurb: "howToUseSaveBody",
+    detail: "howToUseSaveDetail",
+  },
+  {
+    id: "history",
+    icon: HistoryOutlined,
+    title: "historyNav",
+    blurb: "howToUsePageHistory",
+    detail: "howToUseHistoryDetail",
+  },
+  {
+    id: "stats",
+    icon: BarChartOutlined,
+    title: "statsNav",
+    blurb: "howToUsePageStats",
+    detail: "howToUseStatsDetail",
+  },
+  {
+    id: "leaderboard",
+    icon: LeaderboardOutlined,
+    title: "leaderboardNav",
+    blurb: "howToUsePageLeaderboard",
+    detail: "howToUseLeaderboardDetail",
+  },
+  {
+    id: "compare",
+    icon: CompareArrowsOutlined,
+    title: "compareNav",
+    blurb: "howToUsePageCompare",
+    detail: "howToUseCompareDetail",
+  },
+  {
+    id: "podium",
+    icon: EmojiEventsOutlined,
+    title: "podiumNav",
+    blurb: "howToUsePagePodium",
+    detail: "howToUsePodiumDetail",
+  },
+  {
+    id: "phone",
+    icon: PhoneIphoneOutlined,
+    title: "howToUsePhoneTitle",
+    blurb: "howToUsePhoneBody",
+    detail: "howToUsePhoneDetail",
+  },
+];
 
 export default function HowToUse() {
   const { t } = useTranslation();
+  const [openId, setOpenId] = useState<HowToUseDemoId | null>(null);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-      <p className="mb-6 text-sm text-[rgb(var(--text-muted))]">
-        <Link href="/" className={linkClass}>
-          ← Olympus Dominoes
-        </Link>
-      </p>
+    <Container maxWidth="sm" sx={{ py: { xs: 4, sm: 6 } }}>
+      <Typography
+        component={Link}
+        href="/"
+        variant="body2"
+        sx={{
+          display: "inline-block",
+          mb: 3,
+          color: "text.secondary",
+          textDecoration: "underline",
+          textUnderlineOffset: 2,
+          "&:hover": { color: "primary.main" },
+        }}
+      >
+        ← Olympus Dominoes
+      </Typography>
 
-      <article className="space-y-8 text-[rgb(var(--text))]">
-        <header className="space-y-2 border-b border-[rgb(var(--border))] pb-6">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+      <Stack spacing={1.5}>
+        <Box sx={{ pb: 1 }}>
+          <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.75 }}>
             {t("howToUseTitle")}
-          </h1>
-          <p className="leading-relaxed text-[rgb(var(--text-muted))]">
-            {t("howToUseIntro")}
-          </p>
-          <p className="text-xs font-medium tracking-wide text-[rgb(var(--text-muted))]">
+          </Typography>
+          <Typography variant="caption" sx={{ color: "text.disabled" }}>
             {APP_UI_SIGNATURE}
-          </p>
-        </header>
+          </Typography>
+        </Box>
 
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold">{t("howToUseWebTitle")}</h2>
-          <h3 className="text-lg font-medium">{t("howToUseSaveTitle")}</h3>
-          <p className="leading-relaxed text-[rgb(var(--text-muted))]">
-            {t("howToUseSaveBody")}
-          </p>
-          <h3 className="text-lg font-medium">{t("howToUseNotepadTitle")}</h3>
-          <p className="leading-relaxed text-[rgb(var(--text-muted))]">
-            {t("howToUseNotepadBody")}
-          </p>
-          <ol className="list-decimal space-y-2 pl-5 leading-relaxed text-[rgb(var(--text-muted))]">
-            {HOW_STEPS.map((step) => (
-              <li key={step.title}>
-                <span className="font-medium text-[rgb(var(--text))]">
-                  {t(step.title)}
-                </span>
-                {` — ${t(step.body)}`}
-              </li>
-            ))}
-          </ol>
-          <h3 className="text-lg font-medium">{t("howToUsePlayTitle")}</h3>
-          <p className="leading-relaxed text-[rgb(var(--text-muted))]">
-            {t("howToUsePlayBody")}
-          </p>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold">{t("howToUsePhoneTitle")}</h2>
-          <p className="leading-relaxed text-[rgb(var(--text-muted))]">
-            {t("howToUsePhoneBody")}
-          </p>
-          <p>
-            <a
-              href={IOS_APP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={linkClass}
+        {SECTIONS.map((section) => {
+          const open = openId === section.id;
+          const Icon = section.icon;
+          return (
+            <Card
+              key={section.id}
+              sx={{
+                p: 2,
+                borderColor: (theme) =>
+                  open
+                    ? alpha(theme.palette.primary.main, 0.28)
+                    : "divider",
+              }}
             >
-              {t("homeAppStore")}
-            </a>
-          </p>
-        </section>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
+                <Icon sx={{ fontSize: 22, color: "primary.main" }} />
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, flex: 1 }}>
+                  {t(section.title)}
+                </Typography>
+              </Stack>
+              <Typography variant="body2" sx={{ color: "text.secondary", mb: 0.5 }}>
+                {t(section.blurb)}
+              </Typography>
+              <Button
+                onClick={() => setOpenId(open ? null : section.id)}
+                aria-expanded={open}
+                endIcon={
+                  <ExpandMore
+                    sx={{
+                      fontSize: 18,
+                      transform: open ? "rotate(180deg)" : "none",
+                      transition: "transform 160ms ease",
+                    }}
+                  />
+                }
+                sx={{
+                  px: 0,
+                  minWidth: 0,
+                  mt: 0.25,
+                  color: "primary.main",
+                  textTransform: "none",
+                  fontWeight: 700,
+                  "&:hover": { backgroundColor: "transparent" },
+                }}
+              >
+                {open ? t("howToUseClose") : t("howToUseSeeHow")}
+              </Button>
+              <Collapse in={open} timeout="auto" unmountOnExit>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "text.primary", mt: 0.75, mb: 0.5, lineHeight: 1.55 }}
+                >
+                  {t(section.detail)}
+                </Typography>
+                <HowToUseDemo id={section.id} />
+              </Collapse>
+            </Card>
+          );
+        })}
 
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold">{t("howToUsePagesTitle")}</h2>
-          <ul className="list-disc space-y-2 pl-5 leading-relaxed text-[rgb(var(--text-muted))]">
-            {PAGES.map((page) => (
-              <li key={page.href}>
-                <Link href={page.href} className={linkClass}>
-                  {t(page.nav)}
-                </Link>
-                {` — ${t(page.body)}`}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <aside className="space-y-2 border-t border-[rgb(var(--border))] pt-6">
-          <p className="text-xs font-medium uppercase tracking-wide text-[rgb(var(--text-muted))]">
+        <Box
+          sx={{
+            mt: 1,
+            px: 2.25,
+            py: 2,
+            borderRadius: 2,
+            borderLeft: "4px solid",
+            borderLeftColor: "secondary.main",
+            bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.1),
+          }}
+        >
+          <Typography
+            variant="overline"
+            sx={{
+              display: "block",
+              color: "secondary.dark",
+              letterSpacing: "0.1em",
+              fontWeight: 800,
+              mb: 0.75,
+            }}
+          >
             {t("howToUseJoseNoteLabel")}
-          </p>
-          <p className="leading-relaxed text-[rgb(var(--text-muted))]">
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: "var(--font-hand), cursive",
+              fontSize: 20,
+              lineHeight: 1.35,
+              color: "secondary.dark",
+            }}
+          >
             {t("howToUseJoseNote")}
-          </p>
-        </aside>
-      </article>
-    </div>
+          </Typography>
+        </Box>
+      </Stack>
+    </Container>
   );
 }

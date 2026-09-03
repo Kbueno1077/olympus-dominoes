@@ -2,6 +2,7 @@
 
 import AnalyticsCompareCharts from "@/modules/Analytics/AnalyticsCompareCharts";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
+import DashboardDateRangeFilter from "@/modules/Analytics/DashboardDateRangeFilter";
 import PlayerPickDialog from "@/modules/Analytics/PlayerPickDialog";
 import {
   ControlSection,
@@ -14,6 +15,8 @@ import {
   saveCompareUiFilters,
 } from "@/lib/analytics/compareFilterState";
 import { compareLaunchFromQueryString } from "@/lib/analytics/compareLaunch";
+import { useDashboardDateRange } from "@/lib/analytics/dashboardDateFilterState";
+import { isDateRangeActive } from "@/lib/analytics/dateRangeFilter";
 import {
   BREAKDOWN_STAT_DEFS,
   breakdownValueColor,
@@ -96,6 +99,8 @@ export default function AnalyticsCompare({
   const { t, modeName } = useTranslation();
   const { activeDataset, registry } = useAnalytics();
   const datasetId = activeDataset?.id ?? registry.activeDatasetId;
+  const dateFilter = useDashboardDateRange(datasetId);
+  const dateRangeActive = isDateRangeActive(dateFilter.range);
   const appliedPrefillKey = useRef("");
   const launchKey = prefillKey(launchFromLocation() ?? initialLaunch);
 
@@ -176,6 +181,7 @@ export default function AnalyticsCompare({
 
   const players = visiblePlayers;
   const alignmentReady = matchupAlignmentReady(selectedIds, teams);
+  const scanFromMatches = matchupMode || dateRangeActive;
 
   // URL (H2H) and pending launch win over saved Compare picks. Apply once per pair.
   useEffect(() => {
@@ -275,13 +281,19 @@ export default function AnalyticsCompare({
   }, [modesForSet, modeLabel]);
 
   useEffect(() => {
-    if (!matchupMode) {
+    if (!scanFromMatches) {
       setMatchupByPlayer({});
       setMatchupMeta(null);
       setMatchupLoading(false);
       return;
     }
-    if (!alignmentReady || modeLabel == null || selectedIds.length === 0) {
+    if (modeLabel == null || selectedIds.length === 0) {
+      setMatchupByPlayer({});
+      setMatchupMeta(null);
+      setMatchupLoading(false);
+      return;
+    }
+    if (matchupMode && !alignmentReady) {
       setMatchupByPlayer({});
       setMatchupMeta(null);
       setMatchupLoading(false);
@@ -292,13 +304,16 @@ export default function AnalyticsCompare({
     // Defer so the loading card paints before a heavy scan.
     const handle = window.setTimeout(() => {
       try {
-        const filter = matchupFilterFromTeams(selectedIds, teams);
+        const filter = matchupMode
+          ? matchupFilterFromTeams(selectedIds, teams)
+          : { players: [] };
         const result = computeMatchupStats({
           data,
           filter,
           modeLabel,
           tileSet,
           playerIds: selectedIds,
+          dateRange: dateFilter.range,
         });
         setMatchupByPlayer(result.byPlayerId);
         setMatchupMeta({
@@ -314,7 +329,17 @@ export default function AnalyticsCompare({
     }, 0);
 
     return () => window.clearTimeout(handle);
-  }, [matchupMode, alignmentReady, modeLabel, tileSet, selectedIds, teams, data]);
+  }, [
+    scanFromMatches,
+    matchupMode,
+    alignmentReady,
+    modeLabel,
+    tileSet,
+    selectedIds,
+    teams,
+    data,
+    dateFilter.range,
+  ]);
 
   const selectedPlayers = useMemo(
     () =>
@@ -358,7 +383,7 @@ export default function AnalyticsCompare({
   };
 
   const statsForPlayer = (playerId: number): PlayerStatsView | null => {
-    if (matchupMode) {
+    if (scanFromMatches) {
       return matchupByPlayer[playerId] ?? null;
     }
     if (!modeLabel) return null;
@@ -372,7 +397,8 @@ export default function AnalyticsCompare({
 
   const showTable =
     selectedPlayers.length > 0 &&
-    (!matchupMode || (alignmentReady && !matchupLoading));
+    (!scanFromMatches ||
+      ((matchupMode ? alignmentReady : true) && !matchupLoading));
 
   return (
     <Box sx={dashboardShellSx}>
@@ -401,6 +427,16 @@ export default function AnalyticsCompare({
             pb: 2,
           }}
         >
+        <ControlSection label={t("dashboardDateRange")}>
+          <DashboardDateRangeFilter
+            startDate={dateFilter.startDate}
+            endDate={dateFilter.endDate}
+            onStartChange={dateFilter.setStartDate}
+            onEndChange={dateFilter.setEndDate}
+            onClear={dateFilter.clear}
+          />
+        </ControlSection>
+
         {tileSets.length > 0 ? (
           <ControlSection label={t("dominoSet")}>
             <ToggleButtonGroup
@@ -647,7 +683,7 @@ export default function AnalyticsCompare({
             {t("statsCompareEmpty")}
           </Typography>
         </Card>
-      ) : matchupMode && matchupLoading ? (
+      ) : scanFromMatches && matchupLoading ? (
         <Card sx={{ p: 4, textAlign: "center" }}>
           <CircularProgress size={28} sx={{ mb: 1.5 }} />
           <Typography sx={{ fontWeight: 600, mb: 0.5 }}>

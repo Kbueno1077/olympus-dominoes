@@ -88,30 +88,64 @@ const en = {
   howToUseTitle: "How to use",
   howToUseIntro:
     "This is the companion website to the Olympus Dominoes phone app. Import a save here to see your record bigger — history, charts, rankings. You can also keep a casual scoreboard, or play against bots (that table is better on a bigger screen).",
+  howToUseIntroDetail:
+    "Home is for bots and a casual notepad. Import a save when you want History, Stats, Compare, and Podium on a bigger screen. The phone app is still the real record.",
+  howToUseSeeHow: "See how",
+  howToUseClose: "Close",
   howToUsePhoneTitle: "The phone app",
   howToUsePhoneBody:
     "The app is still the real record. Keep score at the table, leave a few matches open, and share a CSV here when you want the full picture.",
+  howToUsePhoneDetail:
+    "Score at the mesa, leave sit-out matches open, and export a backup from Settings when you want the charts on a bigger screen.",
   howToUseWebTitle: "On this site",
   howToUsePlayTitle: "Play against bots",
   howToUsePlayBody:
     "Deal real tiles and play a full table against bots on this device. It works on a phone, but the table is better on a bigger screen — laptop, tablet, or TV.",
+  howToUsePlayDetail:
+    "1 vs 1, 2 vs 2, or free-for-all. Double-six can draw; double-nine is block only. Tap a train tile to turn that arm.",
   howToUseNotepadTitle: "Casual scoreboard",
   howToUseNotepadBody:
     "Need a pad for a live mesa and you only have a browser? Names, partners or free for all, a target. One game at a time, and it doesn’t touch your league.",
+  howToUseNotepadDetail:
+    "Pick 2–4 players, partners or free-for-all, and a target. Tally leftover pips after each hand. End the game when a side hits the target. This pad is throwaway — it does not write your league.",
   howToUseSaveTitle: "See it bigger",
   howToUseSaveBody:
     "On the phone: Settings → Export. Drop the CSV into Analytics here. History, Stats, Leaderboard, Compare, and Podium open that same save on a bigger screen, with charts. Nothing is sent to a server.",
+  howToUseSaveDetail:
+    "The file stays in this browser. You can keep more than one save and switch between them. Nothing is uploaded.",
   howToUsePagesTitle: "Where to go",
   howToUsePagePlay: "Play vs bots — better on a bigger screen.",
   howToUsePageMatch: "A casual scoreboard for a live table.",
   howToUsePageHistory: "Imported matches, easier to browse.",
+  howToUseHistoryDetail:
+    "Open a finished match to read the notebook. Filter the list, or jump into a seating.",
   howToUsePageStats: "One player’s numbers, with charts.",
+  howToUseStatsDetail:
+    "Pick a name for the breakdown — games, points, pollos, zapatos — and how they feed Jose’s Coefficient.",
   howToUsePageLeaderboard: "Rank the table by Jose’s Coefficient.",
+  howToUseLeaderboardDetail:
+    "Same ranking as the phone. Filter by mode and tile set. Jose sits at the top of the table.",
   howToUsePageCompare: "Put two or more players side by side.",
+  howToUseCompareDetail:
+    "Line up two or more people from the same save and read the matchup, not just the totals.",
   howToUsePagePodium: "Trophies and the hall of mild disgrace.",
+  howToUsePodiumDetail:
+    "Surplus points, pollos, zapatos, and more — glory and shame from the games you imported.",
   howToUseJoseNoteLabel: "A note on Jose’s Coefficient",
   howToUseJoseNote:
-    "The ranking on Stats and the Leaderboard is named for Jose — not a lab, the one at the table. In the 90s he filled a notebook and came up with the original formula. We kept the name and later modified the math. Same ghost, new bones. Credit where the pencil was.",
+    "The ranking on Stats and the Leaderboard is named for Jose. In the 90s he filled a notebook and came up with the original formula. We kept the name and later modified the math. Same ghost, new bones. Credit where the pencil was.",
+  howToUseDemoIntroCaption: "Example · tiles",
+  howToUseDemoScorepadCaption: "Example · scorepad",
+  howToUseDemoBotsCaption: "Example · train",
+  howToUseDemoSaveCaption: "Example · import",
+  howToUseDemoHistoryCaption: "Example · history",
+  howToUseDemoStatsCaption: "Example · stats",
+  howToUseDemoLeaderboardCaption: "Example · leaderboard",
+  howToUseDemoCompareCaption: "Example · compare",
+  howToUseDemoPodiumCaption: "Example · trophy",
+  howToUseDemoPhoneCaption: "Example · the phone",
+  howToUseDemoPodiumSub: "Most pollos delivered.",
+  howToUseDemoCsvName: "olympus-export.csv",
   howItWorksTitle: "How it works",
   howStep1Title: "Set the table",
   howStep1Body: "Name the players, choose partners or free for all, and pick a target.",
@@ -119,6 +153,10 @@ const en = {
   howStep2Body: "Add the leftover pips after every hand. The pad keeps the running total.",
   howStep3Title: "Call the winner",
   howStep3Body: "When a team hits the target, lock the game and start the next one.",
+  howStep4Badge: "Optional",
+  howStep4Title: "See it bigger",
+  howStep4Body:
+    "Export a CSV from the phone app and drop it here. History, Stats, Compare, and Podium open that save on a bigger screen. Nothing is sent to a server.",
   webHistoryTitle: "Bring your match history",
   webHistoryBody:
     "Export a CSV save from the mobile app, then open Analytics to load it. History and player stats use that same save.",
@@ -137,6 +175,10 @@ const en = {
   homeWebBulletThrowaway:
     "The notepad here is just for fun and doesn’t touch your league",
   homeWebBulletSourceOfTruth: "The phone app is still where your real record lives",
+  homeGetAppKicker: "On your phone",
+  homeGetAppTitle: "Get the app",
+  homeGetAppBody:
+    "Scan a code or open the store. The phone is where your real record lives.",
   homeAppStore: "Download on the App Store",
   homePlayStore: "Get it on Google Play",
 
@@ -468,6 +510,16 @@ const en = {
   setAsMyself: "This is me",
   clearMyself: "Not me",
   dashboardFilters: "Filters",
+  dashboardDateRange: "Date range",
+  dashboardDateStart: "Start",
+  dashboardDateEnd: "End",
+  dashboardDateClear: "Clear dates",
+  dashboardDatePick: "Choose dates",
+  dashboardDateFrom: "From {date}",
+  dashboardDateUntil: "Until {date}",
+  dashboardDateBetween: "{start} – {end}",
+  dashboardDateHint: "Tap a start day, then an end day.",
+  dashboardDateApply: "Apply",
   dashboardViewingDataset: "Viewing {name}",
 
   dashboardEmptyNoData: "No data set loaded",
@@ -922,30 +974,64 @@ const es = {
   howToUseTitle: "Cómo usarlo",
   howToUseIntro:
     "Este es el sitio compañero de la app de Olympus Dominoes. Importa un respaldo aquí para ver tu historial más grande — partidas, gráficos, rankings. También puedes anotar una mesa a la ligera, o jugar contra bots (esa mesa se ve mejor en una pantalla grande).",
+  howToUseIntroDetail:
+    "El inicio es para bots y una libreta casual. Importa un respaldo cuando quieras Historial, Stats, Comparar y Podio en una pantalla grande. La app del teléfono sigue siendo el registro de verdad.",
+  howToUseSeeHow: "Ver cómo",
+  howToUseClose: "Cerrar",
   howToUsePhoneTitle: "La app del teléfono",
   howToUsePhoneBody:
     "La app sigue siendo el registro de verdad. Anota en la mesa, deja varias partidas abiertas, y comparte un CSV aquí cuando quieras ver el panorama.",
+  howToUsePhoneDetail:
+    "Anota en la mesa, deja partidas en espera abiertas, y exporta un respaldo desde Ajustes cuando quieras los gráficos en una pantalla grande.",
   howToUseWebTitle: "En este sitio",
   howToUsePlayTitle: "Jugar contra bots",
   howToUsePlayBody:
     "Reparte fichas de verdad y juega una mesa completa contra bots en este dispositivo. Funciona en el teléfono, pero la mesa se ve mejor en una pantalla grande — laptop, tablet o televisor.",
+  howToUsePlayDetail:
+    "1 vs 1, 2 vs 2, o todos contra todos. El doble seis puede ir a pozo; el doble nueve es solo bloqueo. Toca una ficha del tren para girar ese brazo.",
   howToUseNotepadTitle: "Marcador casual",
   howToUseNotepadBody:
     "¿Necesitas una libreta para una mesa en vivo y solo tienes el navegador? Nombres, parejas o todos contra todos, una meta. Una partida a la vez, y no toca tu liga.",
+  howToUseNotepadDetail:
+    "Elige 2–4 jugadores, parejas o todos contra todos, y una meta. Suma los puntos que quedaron después de cada mano. Cierra el juego cuando un lado llega a la meta. Esta libreta es de usar y tirar — no escribe tu liga.",
   howToUseSaveTitle: "Véelo más grande",
   howToUseSaveBody:
     "En el teléfono: Ajustes → Exportar. Suelta el CSV en Analítica aquí. Historial, Stats, Clasificación, Comparar y Podio abren ese mismo respaldo en una pantalla grande, con gráficos. Nada se envía a un servidor.",
+  howToUseSaveDetail:
+    "El archivo se queda en este navegador. Puedes guardar más de un respaldo y cambiar entre ellos. Nada se sube.",
   howToUsePagesTitle: "Por dónde ir",
   howToUsePagePlay: "Juega vs bots — mejor en una pantalla grande.",
   howToUsePageMatch: "Un marcador casual para una mesa en vivo.",
   howToUsePageHistory: "Partidas importadas, más fáciles de revisar.",
+  howToUseHistoryDetail:
+    "Abre una partida terminada para leer la libreta. Filtra la lista, o entra a una mesa.",
   howToUsePageStats: "Los números de un jugador, con gráficos.",
+  howToUseStatsDetail:
+    "Elige un nombre para el desglose — juegos, puntos, pollos, zapatos — y cómo alimentan el Coeficiente de José.",
   howToUsePageLeaderboard: "Ordena la mesa por el Coeficiente de José.",
+  howToUseLeaderboardDetail:
+    "El mismo ranking que en el teléfono. Filtra por modo y set. José se sienta arriba de la mesa.",
   howToUsePageCompare: "Pon dos o más jugadores lado a lado.",
+  howToUseCompareDetail:
+    "Alinea a dos o más personas del mismo respaldo y lee el mano a mano, no solo los totales.",
   howToUsePagePodium: "Trofeos y el salón de la leve desgracia.",
+  howToUsePodiumDetail:
+    "Puntos de más, pollos, zapatos y más — gloria y vergüenza de las partidas que importaste.",
   howToUseJoseNoteLabel: "Una nota sobre el Coeficiente de José",
   howToUseJoseNote:
-    "El ranking en Stats y la Clasificación lleva el nombre de José — no un laboratorio, el de la mesa. En los 90 llenó un cuaderno y sacó la fórmula original. El nombre se quedó y más tarde modificamos la matemática. El mismo fantasma, otros huesos. Crédito a quien tenía el lápiz.",
+    "El ranking en Stats y la Clasificación lleva el nombre de José. En los 90 llenó un cuaderno y sacó la fórmula original. El nombre se quedó y más tarde modificamos la matemática. El mismo fantasma, otros huesos. Crédito a quien tenía el lápiz.",
+  howToUseDemoIntroCaption: "Ejemplo · fichas",
+  howToUseDemoScorepadCaption: "Ejemplo · libreta",
+  howToUseDemoBotsCaption: "Ejemplo · tren",
+  howToUseDemoSaveCaption: "Ejemplo · importar",
+  howToUseDemoHistoryCaption: "Ejemplo · historial",
+  howToUseDemoStatsCaption: "Ejemplo · stats",
+  howToUseDemoLeaderboardCaption: "Ejemplo · clasificación",
+  howToUseDemoCompareCaption: "Ejemplo · comparar",
+  howToUseDemoPodiumCaption: "Ejemplo · trofeo",
+  howToUseDemoPhoneCaption: "Ejemplo · el teléfono",
+  howToUseDemoPodiumSub: "Más pollos repartidos.",
+  howToUseDemoCsvName: "olympus-export.csv",
   howItWorksTitle: "Cómo funciona",
   howStep1Title: "Arma la mesa",
   howStep1Body: "Pon los nombres, elige parejas o todos contra todos, y fija la meta.",
@@ -953,6 +1039,10 @@ const es = {
   howStep2Body: "Suma los puntos que quedaron. La libreta lleva el total.",
   howStep3Title: "Canta al ganador",
   howStep3Body: "Cuando un equipo llega a la meta, cierra el juego y empieza el siguiente.",
+  howStep4Badge: "Opcional",
+  howStep4Title: "Véelo más grande",
+  howStep4Body:
+    "Exporta un CSV desde el teléfono y suéltalo aquí. Historial, Stats, Comparar y Podio abren ese respaldo en una pantalla grande. Nada se envía a un servidor.",
   webHistoryTitle: "Trae tu historial",
   webHistoryBody:
     "Exporta un CSV desde la app móvil y ábrelo en Analítica. El historial y las estadísticas usan ese mismo archivo.",
@@ -974,6 +1064,10 @@ const es = {
     "La libreta de aquí es solo por diversión y no toca tu liga",
   homeWebBulletSourceOfTruth:
     "La app del teléfono sigue siendo donde vive tu marca real",
+  homeGetAppKicker: "En el teléfono",
+  homeGetAppTitle: "Consigue la app",
+  homeGetAppBody:
+    "Escanea un código o abre la tienda. El teléfono es donde vive tu récord de verdad.",
   homeAppStore: "Descargar en el App Store",
   homePlayStore: "Consíguelo en Google Play",
 
@@ -1307,6 +1401,16 @@ const es = {
   setAsMyself: "Soy yo",
   clearMyself: "No soy yo",
   dashboardFilters: "Filtros",
+  dashboardDateRange: "Rango de fechas",
+  dashboardDateStart: "Desde",
+  dashboardDateEnd: "Hasta",
+  dashboardDateClear: "Quitar fechas",
+  dashboardDatePick: "Elegir fechas",
+  dashboardDateFrom: "Desde {date}",
+  dashboardDateUntil: "Hasta {date}",
+  dashboardDateBetween: "{start} – {end}",
+  dashboardDateHint: "Toca el primer día, luego el último.",
+  dashboardDateApply: "Aplicar",
   dashboardViewingDataset: "Viendo {name}",
 
   dashboardEmptyNoData: "Sin conjunto de datos",

@@ -116,21 +116,21 @@ describe("assertImportSchemaVersion", () => {
     );
   });
 
-  it("is schema 24, in lockstep with mobile, and treats 24 as current", () => {
-    expect(SCHEMA_VERSION).toBe(24);
-    expect(JOSES_FORMULA_SCHEMA).toBe(23);
+  it("is schema 25, in lockstep with mobile, and treats 25 as current", () => {
+    expect(SCHEMA_VERSION).toBe(25);
+    expect(JOSES_FORMULA_SCHEMA).toBe(25);
+    expect(() => assertImportSchemaVersion(25)).not.toThrow();
     expect(() => assertImportSchemaVersion(24)).not.toThrow();
     expect(() => assertImportSchemaVersion(23)).not.toThrow();
-    expect(() => assertImportSchemaVersion(22)).not.toThrow();
     expect(needsJosesRecompute(0)).toBe(true);
-    expect(needsJosesRecompute(22)).toBe(true);
-    expect(needsJosesRecompute(23)).toBe(false);
-    expect(needsJosesRecompute(24)).toBe(false);
+    expect(needsJosesRecompute(23)).toBe(true);
+    expect(needsJosesRecompute(24)).toBe(true);
+    expect(needsJosesRecompute(25)).toBe(false);
   });
 });
 
 describe("schema 23 round-trip", () => {
-  it("imports a schema 23 file, defaults is_hidden to 0, and writes schema 24 on export", () => {
+  it("imports a schema 23 file, defaults is_hidden to 0, and writes schema 25 on export", () => {
     const contents = csv(`
 # db_meta
 id,db_identifier,created_at,updated_at,schema_version,app_version,label,origin
@@ -157,7 +157,7 @@ id,game_id,seat,display_name,player_id
     expect(data.tables.game_players?.[0]).not.toHaveProperty("id");
 
     const exported = serializeOlympusExport(data, { label: "Panteon" });
-    expect(peekCsvSchemaVersion(exported)).toBe(24);
+    expect(peekCsvSchemaVersion(exported)).toBe(SCHEMA_VERSION);
     expect(exported).toMatch(/# players\n[^\n]*is_hidden/);
     const again = parseOlympusExport(exported, "web-24.csv");
     expect(again.players[0]?.is_hidden).toBe(0);

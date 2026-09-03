@@ -25,13 +25,13 @@ function row(
 }
 
 describe("josesLeadTerm", () => {
-  it("is 3 × net games, signed and uncapped", () => {
+  it("is 2.5 × net games, signed and uncapped", () => {
     expect(josesLeadTerm(0)).toBe(0);
-    expect(josesLeadTerm(2)).toBe(6);
-    expect(josesLeadTerm(4)).toBe(12);
-    expect(josesLeadTerm(18)).toBe(54);
-    expect(josesLeadTerm(30)).toBe(90);
-    expect(josesLeadTerm(-5)).toBe(-15);
+    expect(josesLeadTerm(2)).toBe(5);
+    expect(josesLeadTerm(4)).toBe(10);
+    expect(josesLeadTerm(18)).toBe(45);
+    expect(josesLeadTerm(30)).toBe(75);
+    expect(josesLeadTerm(-5)).toBe(-12.5);
   });
 });
 
@@ -42,7 +42,7 @@ describe("computeJosesCoefficient", () => {
     ).toBeNull();
   });
 
-  it("uses 3 × ΔG for the same net regardless of G when secondaries are zero", () => {
+  it("uses 2.5 × ΔG for the same net regardless of G when secondaries are zero", () => {
     const a = computeJosesCoefficient(
       row({ gamesPlayed: 10, gamesWon: 6.5, gamesLost: 3.5 })
     );
@@ -53,7 +53,7 @@ describe("computeJosesCoefficient", () => {
     expect(b!).toBeCloseTo(a!, 5);
   });
 
-  it("matches R = 3ΔG + ΔDW/4 + ΔPF/165 + 3×(ΔPo/5 + 0.4×ΔZap/5)", () => {
+  it("matches R = 2.5ΔG + ΔDW/3.5 + ΔPF/150 + 2.5×(ΔPo/4 + 0.4×ΔZap/4)", () => {
     const stats = row({
       gamesPlayed: 29,
       gamesWon: 17,
@@ -73,10 +73,10 @@ describe("computeJosesCoefficient", () => {
     const deltaPo = 4;
     const deltaZap = -1;
     const expected =
-      3 * deltaG +
-      deltaDW / 4 +
-      deltaPF / 165 +
-      3 * (deltaPo / 5 + (0.4 * deltaZap) / 5);
+      2.5 * deltaG +
+      deltaDW / 3.5 +
+      deltaPF / 150 +
+      2.5 * (deltaPo / 4 + (0.4 * deltaZap) / 4);
 
     expect(computeJosesCoefficient(stats)).toBeCloseTo(expected, 10);
   });
@@ -98,7 +98,7 @@ describe("computeJosesCoefficient", () => {
     const long = computeJosesCoefficient(
       row({ gamesPlayed: 80, gamesWon: 41, gamesLost: 39, ...extras })
     );
-    expect(short!).toBeCloseTo(josesLeadTerm(2) + 20 / 4 + 165 / 165, 10);
+    expect(short!).toBeCloseTo(josesLeadTerm(2) + 20 / 3.5 + 165 / 150, 10);
     expect(long!).toBeCloseTo(short!, 10);
   });
 
@@ -212,9 +212,9 @@ describe("computeJosesCoefficient", () => {
     ) =>
       josesLeadTerm(net) + josesSecondaryTerm(deltaDW, deltaPF, deltaPo, deltaZap);
 
-    expect(fromDeltas(18, 56, 2010, 3, 1)).toBeCloseTo(82.2, 1);
-    expect(fromDeltas(5, 19, 609, 4, -1)).toBeCloseTo(25.6, 1);
-    expect(fromDeltas(4, 13, 490, 1, 1)).toBeCloseTo(19.1, 1);
+    expect(fromDeltas(18, 56, 2010, 3, 1)).toBeCloseTo(76.5, 1);
+    expect(fromDeltas(5, 19, 609, 4, -1)).toBeCloseTo(24.2, 1);
+    expect(fromDeltas(4, 13, 490, 1, 1)).toBeCloseTo(17.9, 1);
   });
 
   it("mirrors for a closed head-to-head", () => {

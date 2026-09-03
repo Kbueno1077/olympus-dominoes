@@ -6,7 +6,8 @@ import type { OlympusExportData, PlayerStatsView } from "./types";
  * olympus-dominoes-app/src/domain/joseCoefficient.ts
  * and README § Jose's Coefficient.
  *
- * R = 3 × ΔG + ΔDW / 4 + ΔPF / 165 + 3 × (ΔPo / 5 + 0.4 × ΔZap / 5)
+ * Production ranking is KJ(x):
+ * R = 2.5 × ΔG + ΔDW / 3.5 + ΔPF / 150 + 2.5 × (ΔPo / 4 + 0.4 × ΔZap / 4)
  * null when G = 0. Secondaries are stocks, not rates — no / max(G, 25).
  */
 
@@ -25,29 +26,29 @@ export type JosesCoefficientInput = Pick<
   | "zapatosAgainst"
 >;
 
-/** Weights for Jose's Coefficient (see README). */
+/** Weights for Jose's Coefficient — KJ(x) (see README). */
 export const JOSES_COEFFICIENT_WEIGHTS = {
   /** Multiplier on net games ΔG = W − L. */
-  games: 3,
-  /** ΔDW / 4 — four net datas = 1 R. */
-  datasDivisor: 4,
-  /** ΔPF / 165 — 165 net points = 1 R. */
-  pointsDivisor: 165,
-  /** 3 × (ΔPo / 5 + 0.4 × ΔZap / 5). */
-  shutoutScale: 3,
-  pollosDivisor: 5,
+  games: 2.5,
+  /** ΔDW / 3.5 — 3.5 net datas = 1 R. */
+  datasDivisor: 3.5,
+  /** ΔPF / 150 — 150 net points = 1 R. */
+  pointsDivisor: 150,
+  /** 2.5 × (ΔPo / 4 + 0.4 × ΔZap / 4). */
+  shutoutScale: 2.5,
+  pollosDivisor: 4,
   /** Zapato share inside the shutout term (a pollo is 2.5× a zapato). */
   zapatoWeight: 0.4,
 } as const;
 
-/** Lead term: `3 × ΔG`. */
+/** Lead term: `2.5 × ΔG`. */
 export function josesLeadTerm(netGames: number): number {
   return JOSES_COEFFICIENT_WEIGHTS.games * netGames;
 }
 
 /**
  * Datas, points, pollos, zapatos — not divided by games.
- * `ΔDW / 4 + ΔPF / 165 + 3 × (ΔPo / 5 + 0.4 × ΔZap / 5)`
+ * `ΔDW / 3.5 + ΔPF / 150 + 2.5 × (ΔPo / 4 + 0.4 × ΔZap / 4)`
  */
 export function josesSecondaryTerm(
   deltaDW: number,
@@ -75,9 +76,9 @@ export function josesSecondaryTerm(
  * Returns the coefficient for one (player, mode) aggregate row.
  * `null` when there are no games yet (undefined ranking).
  *
- * R = 3 × ΔG
- *   + ΔDW / 4 + ΔPF / 165
- *   + 3 × (ΔPo / 5 + 0.4 × ΔZap / 5)
+ * R = 2.5 × ΔG
+ *   + ΔDW / 3.5 + ΔPF / 150
+ *   + 2.5 × (ΔPo / 4 + 0.4 × ΔZap / 4)
  */
 export function computeJosesCoefficient(
   stats: JosesCoefficientInput

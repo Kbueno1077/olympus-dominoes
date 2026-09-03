@@ -129,4 +129,55 @@ describe("recomputeAggregatesFromMatches open vs closed", () => {
     expect(byId.get(1)?.games_played).toBe(2);
     expect(byId.get(3)?.games_played).toBe(2);
   });
+
+  it("keeps only matches inside the date range", () => {
+    const data = emptyData({
+      matches: [
+        {
+          id: 1,
+          title: "march",
+          ended_at: "2026-03-15T12:00:00.000Z",
+          players_amount: 4,
+          mode_label: "2 vs 2",
+          max_points: 150,
+          is_closed: 1,
+        },
+        {
+          id: 2,
+          title: "april",
+          ended_at: "2026-04-20T12:00:00.000Z",
+          players_amount: 4,
+          mode_label: "2 vs 2",
+          max_points: 150,
+          is_closed: 1,
+        },
+      ],
+      match_players: [
+        { match_id: 1, seat: 1, display_name: "Ana", player_id: 1 },
+        { match_id: 1, seat: 2, display_name: "Pedro", player_id: 2 },
+        { match_id: 1, seat: 3, display_name: "Luis", player_id: 3 },
+        { match_id: 1, seat: 4, display_name: "Maria", player_id: 4 },
+        { match_id: 2, seat: 1, display_name: "Ana", player_id: 1 },
+        { match_id: 2, seat: 2, display_name: "Pedro", player_id: 2 },
+        { match_id: 2, seat: 3, display_name: "Luis", player_id: 3 },
+        { match_id: 2, seat: 4, display_name: "Maria", player_id: 4 },
+      ],
+      games: [
+        { id: 10, match_id: 1, game_index: 1, winner_team: "Team 1" },
+        { id: 11, match_id: 2, game_index: 1, winner_team: "Team 1" },
+      ],
+      game_team_scores: [...teamScores(10), ...teamScores(11)],
+    });
+
+    const out = recomputeAggregatesFromMatches(data, {
+      startDate: "2026-04-01",
+      endDate: "2026-04-30",
+    });
+    const byId = new Map(out.player_stats.map((row) => [row.player_id, row]));
+    expect(byId.get(1)?.games_played).toBe(1);
+
+    const all = recomputeAggregatesFromMatches(data);
+    const allById = new Map(all.player_stats.map((row) => [row.player_id, row]));
+    expect(allById.get(1)?.games_played).toBe(2);
+  });
 });

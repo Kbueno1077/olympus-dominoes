@@ -117,13 +117,13 @@ player’s saved stats (per mode) into a single number for leaderboards.
 `olympus-dominoes-app/src/domain/joseCoefficient.ts`.
 Web source of truth: `lib/analytics/joseCoefficient.ts`
 (`computeJosesCoefficient`, `josesLeadTerm`, `josesSecondaryTerm`,
-`JOSES_COEFFICIENT_WEIGHTS`). Schema **23** is this formula (no new columns
-vs 22).
+`JOSES_COEFFICIENT_WEIGHTS`). Schema **25** is this KJ formula (no new columns
+vs 24).
 
 **Design goals**
 
 - **Games won are principal** — closing the partida is the sport; lead is
-  linear `3 × ΔG` (`ΔG = W − L`). No curve, no cap.
+  linear `2.5 × ΔG` (`ΔG = W − L`). No curve, no cap.
 - **Secondaries are stocks, not rates** — datas, points, pollos, and zapatos
   add the same amount whether they came from 8 games or 80. There is **no**
   `/ max(G, 25)`.
@@ -146,32 +146,32 @@ Definitions match the app: a **pollo** is a win where the loser scored
 **Manos (M / `hands_played`)** = all datas played = **MG + MP**.
 If `G = 0`, the coefficient is **null** (no ranking yet).
 
-### Lead (`3 × ΔG`)
+### Lead (`2.5 × ΔG`)
 
 | |ΔG| | Lead |
 |-------|------|
-| +1 | 3 |
-| +2 | 6 |
-| +4 | 12 |
-| +5 | 15 |
-| +18 | 54 |
+| +1 | 2.5 |
+| +2 | 5 |
+| +4 | 10 |
+| +5 | 12.5 |
+| +18 | 45 |
 
-Lead depends **only** on net wins. A parked +2 stays at **6** as `G` grows.
+Lead depends **only** on net wins. A parked +2 stays at **5** as `G` grows.
 
 ### Formula
 
 ```text
 ΔG = W − L
 
-R = 3 × ΔG
-  + ΔDW / 4 + ΔPF / 165
-  + 3 × (ΔPo / 5 + 0.4 × ΔZap / 5)
+R = 2.5 × ΔG
+  + ΔDW / 3.5 + ΔPF / 150
+  + 2.5 × (ΔPo / 4 + 0.4 × ΔZap / 4)
 ```
 
 ### Persistence & UI (web)
 
-- Import and schema-22→23 hydrate recompute `player_stats.joses_coefficient`
-  (same idea as mobile `needs_joses_recompute` on 23)
+- Import and schema-24→25 hydrate recompute `player_stats.joses_coefficient`
+  (same idea as mobile `needs_joses_recompute` on 25)
 - The UI also recomputes Jose in selectors so leaderboards stay current
 - **Sync Jose's Coefficient** on Stats writes the formula back into the
   active dataset
@@ -191,11 +191,11 @@ R = 3 × ΔG
 
 | Constant | On what | Why that size |
 |----------|---------|----------------|
-| **3 × ΔG** | Net games | Closing is the ranking. No curve. A parked +2 stays at **6**. |
-| **ΔDW / 4** | Net datas | Four extra datas = 1 R. |
-| **ΔPF / 165** | Net points | 165 net points = 1 R. |
-| **3 × (ΔPo / 5)** | Net pollos | Five pollos = 3 R. |
-| **0.4 × ΔZap / 5** | Net zapatos | A zapato is 0.4 of a pollo in that term. |
+| **2.5 × ΔG** | Net games | Closing is the ranking. No curve. A parked +2 stays at **5**. |
+| **ΔDW / 3.5** | Net datas | 3.5 extra datas = 1 R. |
+| **ΔPF / 150** | Net points | 150 net points = 1 R. |
+| **2.5 × (ΔPo / 4)** | Net pollos | Four pollos = 2.5 R. |
+| **0.4 × ΔZap / 4** | Net zapatos | A zapato is 0.4 of a pollo in that term. |
 
 Cuban scoring context for invented examples: games to **150**, typical win
 ~**170**, ~**30–40** pts/hand; ΔPF/net often ~100–130 (like the CSV export).
@@ -207,28 +207,28 @@ Sorted by **R**. Columns: **Lead**, **2nds**, **R**, then deltas.
 
 | # | Player | Record | Net | Lead | 2nds | R | ΔDW | ΔPF | ΔPo | ΔZap |
 |---|--------|--------|-----|------|------|---|-----|-----|-----|------|
-| 1 | Pedro | 24–6–30 | +18 | 54.0 | +28.2 | **82.2** | +56 | +2010 | +3 | +1 |
-| 2 | DominantPair | 18–7–25 | +11 | 33.0 | +20.4 | **53.4** | +39 | +1375 | +3 | +2 |
-| 3 | Cesar (CSV) | 17–12–29 | +5 | 15.0 | +10.6 | **25.6** | +19 | +609 | +4 | −1 |
-| 4 | Ariel (CSV) | 17–12–29 | +5 | 15.0 | +10.6 | **25.6** | +19 | +609 | +4 | −1 |
-| 5 | Ana | 18–12–30 | +6 | 18.0 | +4.9 | **22.9** | +9 | +330 | +1 | 0 |
-| 6 | HotWeekend | 6–2–8 | +4 | 12.0 | +7.1 | **19.1** | +13 | +490 | +1 | +1 |
-| 7 | Grinder100 | 52–48–100 | +4 | 12.0 | +5.7 | **17.7** | +11 | +380 | +1 | 0 |
-| 8 | Solid40 | 22–18–40 | +4 | 12.0 | +5.4 | **17.4** | +10 | +380 | +1 | 0 |
-| 9 | Maya50 | 27–23–50 | +4 | 12.0 | +5.4 | **17.4** | +10 | +380 | +1 | 0 |
-| 10 | Omar80loud | 41–39–80 | +2 | 6.0 | +8.3 | **14.3** | +13 | +455 | +3 | +2 |
-| 11 | Luis | 16–14–30 | +2 | 6.0 | +5.3 | **11.3** | +8 | +260 | +2 | +2 |
-| 12 | Eliecer (CSV) | 6–4–10 | +2 | 6.0 | +3.0 | **9.0** | +7 | +268 | −1 | +1 |
-| 13 | Omar80 | 41–39–80 | +2 | 6.0 | +3.0 | **9.0** | +5 | +190 | +1 | 0 |
-| 14 | Quiet+2 | 16–14–30 | +2 | 6.0 | +0.5 | **6.5** | +1 | +40 | 0 | 0 |
-| 15 | NearEven | 23–22–45 | +1 | 3.0 | +1.1 | **4.1** | +2 | +95 | 0 | 0 |
-| 16 | Ugly+4 | 17–13–30 | +4 | 12.0 | −9.3 | **2.7** | −17 | −600 | −2 | −1 |
-| 17 | EvenBlow | 15–15–30 | 0 | 0.0 | +0.8 | **0.8** | 0 | 0 | +1 | +1 |
-| 18 | Comeback | 16–19–35 | −3 | −9.0 | +5.1 | **−3.9** | +12 | +445 | −1 | 0 |
-| 19 | Randy (CSV) | 12–17–29 | −5 | −15.0 | −10.6 | **−25.6** | −19 | −609 | −4 | +1 |
-| 20 | Guillermo (CSV) | 6–13–19 | −7 | −21.0 | −13.6 | **−34.6** | −26 | −877 | −3 | 0 |
+| 1 | Pedro | 24–6–30 | +18 | 45.0 | +31.5 | **76.5** | +56 | +2010 | +3 | +1 |
+| 2 | DominantPair | 18–7–25 | +11 | 27.5 | +22.7 | **50.2** | +39 | +1375 | +3 | +2 |
+| 3 | Cesar (CSV) | 17–12–29 | +5 | 12.5 | +11.7 | **24.2** | +19 | +609 | +4 | −1 |
+| 4 | Ariel (CSV) | 17–12–29 | +5 | 12.5 | +11.7 | **24.2** | +19 | +609 | +4 | −1 |
+| 5 | Ana | 18–12–30 | +6 | 15.0 | +5.4 | **20.4** | +9 | +330 | +1 | 0 |
+| 6 | HotWeekend | 6–2–8 | +4 | 10.0 | +7.9 | **17.9** | +13 | +490 | +1 | +1 |
+| 7 | Grinder100 | 52–48–100 | +4 | 10.0 | +6.3 | **16.3** | +11 | +380 | +1 | 0 |
+| 8 | Solid40 | 22–18–40 | +4 | 10.0 | +6.0 | **16.0** | +10 | +380 | +1 | 0 |
+| 9 | Maya50 | 27–23–50 | +4 | 10.0 | +6.0 | **16.0** | +10 | +380 | +1 | 0 |
+| 10 | Omar80loud | 41–39–80 | +2 | 5.0 | +9.1 | **14.1** | +13 | +455 | +3 | +2 |
+| 11 | Luis | 16–14–30 | +2 | 5.0 | +5.8 | **10.8** | +8 | +260 | +2 | +2 |
+| 12 | Eliecer (CSV) | 6–4–10 | +2 | 5.0 | +3.4 | **8.4** | +7 | +268 | −1 | +1 |
+| 13 | Omar80 | 41–39–80 | +2 | 5.0 | +3.3 | **8.3** | +5 | +190 | +1 | 0 |
+| 14 | Quiet+2 | 16–14–30 | +2 | 5.0 | +0.6 | **5.6** | +1 | +40 | 0 | 0 |
+| 15 | NearEven | 23–22–45 | +1 | 2.5 | +1.2 | **3.7** | +2 | +95 | 0 | 0 |
+| 16 | EvenBlow | 15–15–30 | 0 | 0.0 | +0.9 | **0.9** | 0 | 0 | +1 | +1 |
+| 17 | Ugly+4 | 17–13–30 | +4 | 10.0 | −10.4 | **−0.4** | −17 | −600 | −2 | −1 |
+| 18 | Comeback | 16–19–35 | −3 | −7.5 | +5.8 | **−1.7** | +12 | +445 | −1 | 0 |
+| 19 | Randy (CSV) | 12–17–29 | −5 | −12.5 | −11.7 | **−24.2** | −19 | −609 | −4 | +1 |
+| 20 | Guillermo (CSV) | 6–13–19 | −7 | −17.5 | −15.2 | **−32.7** | −26 | −877 | −3 | 0 |
 
-Checks: Cesar 2nds > HotWeekend 2nds; Ugly+4 > EvenBlow; Solid40 > Luis.
+Checks: Cesar 2nds > HotWeekend 2nds; Solid40 > Luis.
 Same extras score the same R at any `G` (Solid40 = Maya50).
 
 ### Agents / implementers
@@ -259,7 +259,7 @@ See `lib/analytics/parseExport.ts`, `lib/analytics/dbMeta.ts`, and
 | `id` | Always `1` |
 | `db_identifier` | Stable **16-char** alphanumeric league identity |
 | `created_at` / `updated_at` | ISO-8601; `updated_at` bumps only on meaningful writes |
-| `schema_version` | Current schema (`24`) |
+| `schema_version` | Current schema (`25`) |
 | `app_version` | Last writer (e.g. `4.5.0`) |
 | `label` | Optional display name (often the data-set name) |
 | `origin` | `local` \| `imported` \| `web` |

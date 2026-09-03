@@ -2,6 +2,7 @@
 
 import StatsDashboardCharts from "@/modules/Analytics/StatsDashboardCharts";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
+import DashboardDateRangeFilter from "@/modules/Analytics/DashboardDateRangeFilter";
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import {
   DashboardPanel,
@@ -10,6 +11,8 @@ import {
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
+import { useDashboardDateRange } from "@/lib/analytics/dashboardDateFilterState";
+import { isDateRangeActive } from "@/lib/analytics/dateRangeFilter";
 import { importErrorMessage } from "@/lib/analytics/importError";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import {
@@ -24,6 +27,7 @@ import {
 } from "@/lib/analytics/statBreakdown";
 import { formatSignedDiff } from "@/lib/analytics/signedDiff";
 import { listVisiblePlayers } from "@/lib/analytics/playerVisibility";
+import { recomputeAggregatesFromMatches } from "@/lib/analytics/recomputeFromMatches";
 import {
   getPlayerH2H,
   getPlayerStats,
@@ -109,7 +113,10 @@ export default function Analytics() {
     loading,
     setPendingCompare,
     activeDataset,
+    registry,
   } = useAnalytics();
+  const datasetId = activeDataset?.id ?? registry.activeDatasetId;
+  const dateFilter = useDashboardDateRange(datasetId);
   const [modeLabel, setModeLabel] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<number | null>(null);
 
@@ -122,9 +129,15 @@ export default function Analytics() {
     clearStatsLaunch();
   }, []);
 
+  const scopedData = useMemo(() => {
+    if (!data) return null;
+    if (!isDateRangeActive(dateFilter.range)) return data;
+    return recomputeAggregatesFromMatches(data, dateFilter.range);
+  }, [data, dateFilter.range]);
+
   const modes = useMemo(
-    () => (data ? listStatModes(data) : []),
-    [data]
+    () => (scopedData ? listStatModes(scopedData) : []),
+    [scopedData]
   );
 
   const activeMode = useMemo(() => {
@@ -133,8 +146,9 @@ export default function Analytics() {
   }, [modeLabel, modes]);
 
   const leaderboard = useMemo(
-    () => (data && activeMode ? listLeaderboard(data, activeMode) : []),
-    [data, activeMode]
+    () =>
+      scopedData && activeMode ? listLeaderboard(scopedData, activeMode) : [],
+    [scopedData, activeMode]
   );
 
   const selectedPlayerId = useMemo(() => {
@@ -150,18 +164,18 @@ export default function Analytics() {
   );
 
   const activeStats = useMemo(() => {
-    if (!data || selectedPlayerId == null || !activeMode) return null;
+    if (!scopedData || selectedPlayerId == null || !activeMode) return null;
     return (
-      getPlayerStats(data, selectedPlayerId).find(
+      getPlayerStats(scopedData, selectedPlayerId).find(
         (s) => s.modeLabel === activeMode
       ) ?? null
     );
-  }, [data, selectedPlayerId, activeMode]);
+  }, [scopedData, selectedPlayerId, activeMode]);
 
   const h2h = useMemo(() => {
-    if (!data || selectedPlayerId == null || !activeMode) return [];
-    return getPlayerH2H(data, selectedPlayerId, activeMode);
-  }, [data, selectedPlayerId, activeMode]);
+    if (!scopedData || selectedPlayerId == null || !activeMode) return [];
+    return getPlayerH2H(scopedData, selectedPlayerId, activeMode);
+  }, [scopedData, selectedPlayerId, activeMode]);
 
   const openH2HCompare = (opponentId: number) => {
     if (selectedPlayerId == null || !activeMode) return;
@@ -203,6 +217,23 @@ export default function Analytics() {
         title={t("statsTitle")}
         filtersLabel={t("statsComparePlayers")}
       >
+        <Box sx={{ px: 2, pb: 1.5 }}>
+          <Typography
+            variant="overline"
+            component="p"
+            sx={{ color: "text.secondary", mb: 0.75 }}
+          >
+            {t("dashboardDateRange")}
+          </Typography>
+          <DashboardDateRangeFilter
+            startDate={dateFilter.startDate}
+            endDate={dateFilter.endDate}
+            onStartChange={dateFilter.setStartDate}
+            onEndChange={dateFilter.setEndDate}
+            onClear={dateFilter.clear}
+          />
+        </Box>
+
         {modes.length > 0 ? (
           <Box sx={{ px: 2, pb: 1.5 }}>
             <Typography
