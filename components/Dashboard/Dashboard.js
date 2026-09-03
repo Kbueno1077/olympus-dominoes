@@ -30,8 +30,9 @@ import {
 import { alpha } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRecoilValue } from "recoil";
+import QRCode from "qrcode";
 
 // The opening hand: a spread of tiles that doubles as the hero art.
 const HERO_TILES = [
@@ -99,7 +100,6 @@ function StoreLinkRow({
   icon,
   disabled = false,
   comingSoon = false,
-  showSideQr = true,
   onShowQr,
 }) {
   const isExternal = Boolean(href) && !disabled;
@@ -147,86 +147,162 @@ function StoreLinkRow({
           ) : null}
         </Box>
       </Button>
-      {showSideQr ? (
-        <IconButton
-          onClick={onShowQr}
-          disabled={disabled}
-          aria-label={t("qrShowAria", { name: label })}
-          sx={{
-            width: 48,
-            height: 48,
-            flexShrink: 0,
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: 1.5,
-            bgcolor: (theme) => alpha(theme.palette.common.white, 0.55),
-          }}
-        >
-          <QrCode2Outlined />
-        </IconButton>
-      ) : null}
+      <IconButton
+        onClick={onShowQr}
+        disabled={disabled}
+        aria-label={t("qrShowAria", { name: label })}
+        sx={{
+          width: 48,
+          height: 48,
+          flexShrink: 0,
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 1.5,
+          bgcolor: (theme) => alpha(theme.palette.common.white, 0.55),
+        }}
+      >
+        <QrCode2Outlined />
+      </IconButton>
     </Stack>
   );
 }
 
-function AppDownloadLinks({ t }) {
-  const [qr, setQr] = useState(null);
+function InlineQrStamp({ href, label, comingSoon = false, onOpen }) {
+  const [src, setSrc] = useState(null);
+
+  useEffect(() => {
+    if (!href || comingSoon) {
+      setSrc(null);
+      return;
+    }
+    let cancelled = false;
+    void QRCode.toDataURL(href, {
+      width: 176,
+      margin: 1,
+      errorCorrectionLevel: "M",
+      color: { dark: "#241D14", light: "#FFFFFFFF" },
+    }).then((dataUrl) => {
+      if (!cancelled) setSrc(dataUrl);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [href, comingSoon]);
 
   return (
-    <>
-      <Stack spacing={1.5} sx={{ width: "100%" }}>
-        <StoreLinkRow
-          t={t}
-          href={IOS_APP_URL}
-          label={t("homeAppStore")}
-          icon={
-            <Iconify
-              icon="ion:logo-apple-appstore"
-              sx={{ width: 28, height: 28 }}
-            />
-          }
-          onShowQr={() =>
-            setQr({ title: t("qrIos"), href: IOS_APP_URL })
-          }
+    <Box
+      component="button"
+      type="button"
+      onClick={onOpen}
+      disabled={comingSoon}
+      aria-label={label}
+      sx={{
+        flexShrink: 0,
+        p: 0.75,
+        m: 0,
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 1.5,
+        bgcolor: "common.white",
+        cursor: comingSoon ? "default" : "pointer",
+        WebkitAppearance: "none",
+        appearance: "none",
+        "&:focus": { outline: "none" },
+        "&:focus-visible": {
+          outline: "2px solid",
+          outlineColor: "primary.main",
+          outlineOffset: 2,
+        },
+      }}
+    >
+      {comingSoon || !href ? (
+        <Box
+          sx={{
+            width: 88,
+            height: 88,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: 1,
+            bgcolor: (theme) => alpha(theme.palette.grey[500], 0.08),
+          }}
         />
-        <StoreLinkRow
-          t={t}
-          href={ANDROID_APP_URL ?? undefined}
-          label={t("homePlayStore")}
-          disabled={ANDROID_DISABLED}
-          comingSoon={ANDROID_DISABLED}
-          icon={
-            <Iconify
-              icon="ion:logo-google-playstore"
-              sx={{ width: 26, height: 26 }}
-            />
-          }
-          onShowQr={() =>
-            setQr({
-              title: t("qrAndroid"),
-              href: ANDROID_APP_URL,
-              comingSoon: ANDROID_DISABLED,
-            })
-          }
+      ) : src ? (
+        <Box
+          component="img"
+          src={src}
+          alt=""
+          width={88}
+          height={88}
+          sx={{ display: "block" }}
         />
-        <StoreLinkRow
-          t={t}
-          label={t("qrWebsite")}
-          icon={<QrCode2Outlined sx={{ width: 26, height: 26 }} />}
-          showSideQr={false}
-          onShowQr={() => setQr({ title: t("qrWebsite"), href: SITE_URL })}
-        />
-      </Stack>
-
-      <QrCodeDialog
-        open={qr != null}
-        onClose={() => setQr(null)}
-        title={qr?.title ?? ""}
-        href={qr?.href ?? null}
-        comingSoon={Boolean(qr?.comingSoon)}
-      />
-    </>
+      ) : (
+        <Box sx={{ width: 88, height: 88 }} />
+      )}
+    </Box>
   );
+}
+
+function SideActions({ sideId, t, onShowQr }) {
+  switch (sideId) {
+    case "phone":
+      return (
+        <Stack spacing={1} sx={{ width: "100%" }}>
+          <StoreLinkRow
+            t={t}
+            href={IOS_APP_URL}
+            label={t("homeAppStore")}
+            icon={
+              <Iconify
+                icon="ion:logo-apple-appstore"
+                sx={{ width: 28, height: 28 }}
+              />
+            }
+            onShowQr={() =>
+              onShowQr({ title: t("qrIos"), href: IOS_APP_URL })
+            }
+          />
+          <StoreLinkRow
+            t={t}
+            href={ANDROID_APP_URL ?? undefined}
+            label={t("homePlayStore")}
+            disabled={ANDROID_DISABLED}
+            comingSoon={ANDROID_DISABLED}
+            icon={
+              <Iconify
+                icon="ion:logo-google-playstore"
+                sx={{ width: 26, height: 26 }}
+              />
+            }
+            onShowQr={() =>
+              onShowQr({
+                title: t("qrAndroid"),
+                href: ANDROID_APP_URL,
+                comingSoon: ANDROID_DISABLED,
+              })
+            }
+          />
+        </Stack>
+      );
+    case "web":
+      return (
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <InlineQrStamp
+            href={SITE_URL}
+            label={t("qrShowAria", { name: t("qrWebsite") })}
+            onOpen={() =>
+              onShowQr({ title: t("qrWebsite"), href: SITE_URL })
+            }
+          />
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            {t("homeWebQrHint")}
+          </Typography>
+        </Stack>
+      );
+    default: {
+      const _exhaustive = sideId;
+      return _exhaustive;
+    }
+  }
 }
 
 function FeatureRow({ t }) {
@@ -326,6 +402,7 @@ function HowItWorks({ t }) {
 
 function AppVsWebDetails({ t }) {
   const [openId, setOpenId] = useState(null);
+  const [qr, setQr] = useState(null);
 
   return (
     <Box>
@@ -367,6 +444,20 @@ function AppVsWebDetails({ t }) {
               >
                 {t(side.blurb)}
               </Typography>
+              <Box
+                sx={{
+                  mt: 1.5,
+                  pt: 1.5,
+                  borderTop: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <SideActions
+                  sideId={side.id}
+                  t={t}
+                  onShowQr={setQr}
+                />
+              </Box>
               <Button
                 onClick={() => setOpenId(open ? null : side.id)}
                 aria-expanded={open}
@@ -382,7 +473,7 @@ function AppVsWebDetails({ t }) {
                 sx={{
                   px: 0,
                   minWidth: 0,
-                  mt: 0.25,
+                  mt: 1.25,
                   color: "primary.main",
                   textTransform: "none",
                   fontWeight: 700,
@@ -419,35 +510,13 @@ function AppVsWebDetails({ t }) {
           );
         })}
       </Stack>
-    </Box>
-  );
-}
-
-function GetTheApp({ t }) {
-  return (
-    <Box>
-      <Typography variant="overline" component="p" sx={SECTION_LABEL_SX}>
-        {t("homeGetAppTitle")}
-      </Typography>
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2,
-          alignItems: "start",
-          gridTemplateColumns: {
-            xs: "1fr",
-            md: "minmax(0, 1fr) minmax(0, 420px)",
-          },
-        }}
-      >
-        <Typography
-          variant="body2"
-          sx={{ color: "text.secondary", maxWidth: 400 }}
-        >
-          {t("homeGetAppBody")}
-        </Typography>
-        <AppDownloadLinks t={t} />
-      </Box>
+      <QrCodeDialog
+        open={qr != null}
+        onClose={() => setQr(null)}
+        title={qr?.title ?? ""}
+        href={qr?.href ?? null}
+        comingSoon={Boolean(qr?.comingSoon)}
+      />
     </Box>
   );
 }
@@ -650,8 +719,6 @@ export default function Dashboard({
           <HowItWorks t={t} />
 
           <AppVsWebDetails t={t} />
-
-          <GetTheApp t={t} />
 
           <Stack spacing={1.5} alignItems="center">
             <Typography

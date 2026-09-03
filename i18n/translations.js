@@ -179,6 +179,7 @@ const en = {
   homeGetAppTitle: "Get the app",
   homeGetAppBody:
     "Scan a code or open the store. The phone is where your real record lives.",
+  homeWebQrHint: "Scan to open this site on your phone.",
   homeAppStore: "Download on the App Store",
   homePlayStore: "Get it on Google Play",
 
@@ -1068,6 +1069,7 @@ const es = {
   homeGetAppTitle: "Consigue la app",
   homeGetAppBody:
     "Escanea un código o abre la tienda. El teléfono es donde vive tu récord de verdad.",
+  homeWebQrHint: "Escanea para abrir este sitio en el teléfono.",
   homeAppStore: "Descargar en el App Store",
   homePlayStore: "Consíguelo en Google Play",
 
