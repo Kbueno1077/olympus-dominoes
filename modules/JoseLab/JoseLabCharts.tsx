@@ -11,7 +11,8 @@ import {
 } from "@/lib/joseLab/compute";
 import { personName, type LabPlayer } from "@/lib/joseLab/data";
 import { JOSES_ACCENT } from "@/modules/Analytics/dashboardChrome";
-import { Box, Card, Chip, Stack, Typography } from "@mui/material";
+import { LabExpandable } from "@/modules/JoseLab/JoseLabExpand";
+import { Box, Chip, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { memo, useEffect, useState, type ReactNode } from "react";
 import {
@@ -532,31 +533,17 @@ function ChartCard({
   title,
   hint,
   header,
-  height = 300,
   children,
 }: {
   title: string;
   hint?: string;
   header?: ReactNode;
-  height?: number;
   children: ReactNode;
 }) {
   return (
-    <Card sx={{ p: 1.5, minWidth: 0 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: hint ? 0.25 : 0.75 }}>
-        {title}
-      </Typography>
-      {hint ? (
-        <Typography
-          variant="caption"
-          sx={{ display: "block", color: "text.secondary", mb: 0.75, lineHeight: 1.35 }}
-        >
-          {hint}
-        </Typography>
-      ) : null}
-      {header}
-      <Box sx={{ width: "100%", height, minWidth: 0 }}>{children}</Box>
-    </Card>
+    <LabExpandable title={title} hint={hint} header={header} kind="chart">
+      {children}
+    </LabExpandable>
   );
 }
 
@@ -784,6 +771,8 @@ function LeadExtraScatter({
   );
 }
 
+export type ChartsPerRow = 1 | 2 | 3 | 4 | 5;
+
 type Props = {
   formula: FormulaId;
   weightsK: WeightsK;
@@ -792,6 +781,7 @@ type Props = {
   players: LabPlayer[];
   scored: { player: LabPlayer; br: Breakdown | null }[];
   pinnedIds: string[];
+  columns?: ChartsPerRow;
 };
 
 const LINE_COLORS = [
@@ -813,6 +803,7 @@ export default memo(function JoseLabCharts({
   players,
   scored,
   pinnedIds,
+  columns = 3,
 }: Props) {
   const pinnedSet = new Set(pinnedIds);
   const pinnedPlayers = pick(players, pinnedIds);
@@ -921,13 +912,17 @@ export default memo(function JoseLabCharts({
   const sqrtYMax = Math.max(10, Math.ceil(weightsC.kSqrt * 10));
 
   return (
-    <Box
-      sx={{
-        display: "grid",
-        gap: 1.5,
-        gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
-      }}
-    >
+    <Box sx={{ width: "100%", minWidth: 0 }}>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 1.5,
+          gridTemplateColumns: {
+            xs: "minmax(0, 1fr)",
+            sm: `repeat(${columns}, minmax(0, 1fr))`,
+          },
+        }}
+      >
       <ChartCard
         title="Lead vs net games"
         hint={`Dots = ${pinLabel}`}
@@ -1248,6 +1243,7 @@ export default memo(function JoseLabCharts({
           </ResponsiveContainer>
         </ChartCard>
       ) : null}
+      </Box>
     </Box>
   );
 });

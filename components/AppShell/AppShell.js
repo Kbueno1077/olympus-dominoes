@@ -15,6 +15,7 @@ const FULL_BLEED_PATHS = new Set([
   "/leaderboard",
   "/merge",
   "/play",
+  "/f-lab",
 ]);
 
 /** Prefer dynamic viewport height on mobile browsers (URL chrome). */
