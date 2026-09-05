@@ -7,9 +7,11 @@ import {
 import type { OlympusExportData, PlayerRow, PlayerStatsRow } from "./types";
 import {
   gamesPlayedForPlayer,
+  hidePlayer,
   listHiddenPlayers,
   listVisiblePlayers,
   restoreHiddenPlayer,
+  setPlayersHidden,
 } from "./playerVisibility";
 
 function player(
@@ -88,6 +90,22 @@ describe("player visibility", () => {
 
   it("treats missing is_hidden as visible", () => {
     expect(listVisiblePlayers([player(1, "Ana")])).toHaveLength(1);
+  });
+
+  it("hides a visible player without changing public_id or stats", () => {
+    const before = data();
+    const publicId = before.players[0]?.public_id;
+    const after = hidePlayer(before, 1);
+    expect(after.players[0]?.is_hidden).toBe(1);
+    expect(after.players[0]?.public_id).toBe(publicId);
+    expect(after.player_stats).toEqual(before.player_stats);
+  });
+
+  it("hides and shows several players at once", () => {
+    const hidden = setPlayersHidden(data(), [1, 2], true);
+    expect(listVisiblePlayers(hidden.players)).toEqual([]);
+    const shown = setPlayersHidden(hidden, [1, 2], false);
+    expect(listHiddenPlayers(shown.players)).toEqual([]);
   });
 
   it("restores a hidden player without changing public_id or stats", () => {
