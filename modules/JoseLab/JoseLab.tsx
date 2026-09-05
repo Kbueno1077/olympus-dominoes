@@ -70,7 +70,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { alpha, type Theme } from "@mui/material/styles";
 import {
   memo,
   startTransition,
@@ -134,9 +134,9 @@ function ChartsPerRowStepper({
         pr: 0.4,
         py: 0.25,
         border: "1px solid",
-        borderColor: (theme) => alpha(theme.palette.grey[700], 0.28),
+        borderColor: (theme: Theme) => alpha(theme.palette.grey[700], 0.28),
         borderRadius: "10px",
-        bgcolor: (theme) => alpha(theme.palette.background.paper, 0.72),
+        bgcolor: (theme: Theme) => alpha(theme.palette.background.paper, 0.72),
       }}
     >
       <Typography
@@ -182,10 +182,11 @@ const termPaneSx = {
   p: 1.1,
   minWidth: 0,
   border: "1px solid",
-  borderColor: (theme) => alpha(theme.palette.grey[700], 0.28),
+  borderColor: (theme: Theme) => alpha(theme.palette.grey[700], 0.28),
   borderRadius: 1.5,
-  bgcolor: (theme) => alpha(theme.palette.background.paper, 0.92),
-  boxShadow: (theme) => `inset 0 0 0 1px ${alpha(theme.palette.grey[0], 0.35)}`,
+  bgcolor: (theme: Theme) => alpha(theme.palette.background.paper, 0.92),
+  boxShadow: (theme: Theme) =>
+    `inset 0 0 0 1px ${alpha(theme.palette.common.white, 0.35)}`,
 };
 
 const resetMatchToggleSx = {
