@@ -1,6 +1,9 @@
 "use client";
 
 import RestoreHiddenPlayersPanel from "@/modules/Analytics/RestoreHiddenPlayersPanel";
+import ToolsDedupePanel from "@/modules/Analytics/ToolsDedupePanel";
+import ToolsExtractPanel from "@/modules/Analytics/ToolsExtractPanel";
+import ToolsRepairPanel from "@/modules/Analytics/ToolsRepairPanel";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
 import {
   dashboardMainSx,
@@ -38,7 +41,10 @@ import {
   tallyWins,
 } from "@/utils/matchSettings";
 import { teamsFromRoster } from "@/utils/teams";
+import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
 import CallMergeOutlinedIcon from "@mui/icons-material/CallMergeOutlined";
+import ContentCutOutlinedIcon from "@mui/icons-material/ContentCutOutlined";
+import DifferenceOutlinedIcon from "@mui/icons-material/DifferenceOutlined";
 import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -73,7 +79,7 @@ const MONO =
   'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 
 type Step = "select" | "review" | "approve";
-type ToolId = "restore" | "merge";
+type ToolId = "restore" | "merge" | "dedupe" | "extract" | "repair";
 
 type ConflictSide = {
   key: string;
@@ -309,6 +315,7 @@ export default function MergeDatasets() {
         title={t("mergeNav")}
         subtitle={t("toolsHintShort")}
         filtersLabel={t("mergeNav")}
+        sx={{ width: { xs: "100%", md: 380, lg: 420 } }}
       >
         <Stack
           spacing={1.5}
@@ -325,6 +332,9 @@ export default function MergeDatasets() {
               [
                 ["restore", t("toolsRestoreSection"), PersonSearchOutlinedIcon],
                 ["merge", t("toolsMergeSection"), CallMergeOutlinedIcon],
+                ["dedupe", t("toolsDedupeSection"), DifferenceOutlinedIcon],
+                ["extract", t("toolsExtractSection"), ContentCutOutlinedIcon],
+                ["repair", t("toolsRepairSection"), BuildOutlinedIcon],
               ] as const
             ).map(([id, label, Icon]) => {
               const active = tool === id;
@@ -672,15 +682,24 @@ export default function MergeDatasets() {
       </DashboardAside>
 
       <Box sx={dashboardMainSx}>
-        {tool === "restore" ? (
-          <RestoreHiddenPlayersPanel />
-        ) : (
+        {(() => {
+          switch (tool) {
+            case "restore":
+              return <RestoreHiddenPlayersPanel />;
+            case "dedupe":
+              return <ToolsDedupePanel />;
+            case "extract":
+              return <ToolsExtractPanel />;
+            case "repair":
+              return <ToolsRepairPanel />;
+            case "merge":
+              return (
         <Stack
           spacing={2}
           sx={{
-            maxWidth: step === "select" ? 720 : 920,
-            mx: "auto",
             width: "100%",
+            maxWidth: "100%",
+            minWidth: 0,
           }}
         >
           {step === "select" ? (
@@ -737,7 +756,17 @@ export default function MergeDatasets() {
                   </Button>
                 </Box>
               ) : (
-                <Stack spacing={1}>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gap: 1.25,
+                    gridTemplateColumns: {
+                      xs: "minmax(0, 1fr)",
+                      sm: "repeat(2, minmax(0, 1fr))",
+                      xl: "repeat(3, minmax(0, 1fr))",
+                    },
+                  }}
+                >
                   {selectable.map((ds) => {
                     const checked = selectedIds.includes(ds.id);
                     const order = checked ? selectedIds.indexOf(ds.id) : -1;
@@ -870,7 +899,7 @@ export default function MergeDatasets() {
                       </Box>
                     );
                   })}
-                </Stack>
+                </Box>
               )}
 
               {localError ? (
@@ -882,10 +911,14 @@ export default function MergeDatasets() {
               <Button
                 variant="contained"
                 size="large"
-                fullWidth
                 startIcon={<CallMergeOutlinedIcon />}
                 disabled={selectedIds.length < 2}
                 onClick={goReview}
+                sx={{
+                  alignSelf: { xs: "stretch", md: "flex-start" },
+                  width: { xs: "100%", md: "auto" },
+                  minWidth: { md: 280 },
+                }}
               >
                 {t("mergeContinueReview")}
               </Button>
@@ -1184,11 +1217,15 @@ export default function MergeDatasets() {
               <Button
                 variant="contained"
                 size="large"
-                fullWidth
                 disabled={!resolved}
                 onClick={() => {
                   setLocalError(null);
                   setStep("approve");
+                }}
+                sx={{
+                  alignSelf: { xs: "stretch", md: "flex-start" },
+                  width: { xs: "100%", md: "auto" },
+                  minWidth: { md: 280 },
                 }}
               >
                 {resolved
@@ -1301,19 +1338,31 @@ export default function MergeDatasets() {
                 }}
                 error={Boolean(localError)}
                 helperText={localError || undefined}
+                sx={{ maxWidth: { md: 480 } }}
               />
               <Button
                 variant="contained"
                 disabled={busy || !mergeName.trim()}
                 startIcon={<CallMergeOutlinedIcon />}
                 onClick={create}
+                sx={{
+                  alignSelf: { xs: "stretch", md: "flex-start" },
+                  width: { xs: "100%", md: "auto" },
+                  minWidth: { md: 280 },
+                }}
               >
                 {t("mergeCreate")}
               </Button>
             </>
           ) : null}
         </Stack>
-        )}
+              );
+            default: {
+              const _never: never = tool;
+              return _never;
+            }
+          }
+        })()}
       </Box>
 
       <Dialog

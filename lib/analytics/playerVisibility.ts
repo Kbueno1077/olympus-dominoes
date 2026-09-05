@@ -34,21 +34,19 @@ export function gamesPlayedForPlayer(
   return total;
 }
 
-/**
- * Un-hide a roster row. Leaves `public_id`, stats, H2H, and seats as they are.
- */
-export function restoreHiddenPlayer(
+function setHiddenFlag(
   data: OlympusExportData,
-  playerId: number
+  playerIds: ReadonlySet<number>,
+  hidden: boolean
 ): OlympusExportData {
+  const flag = hidden ? 1 : 0;
   const players = data.players.map((player) =>
-    player.id === playerId ? { ...player, is_hidden: 0 } : player
+    playerIds.has(player.id) ? { ...player, is_hidden: flag } : player
   );
   const rawPlayers = (data.tables.players ?? []).map((row) => {
-    const id =
-      typeof row.id === "number" ? row.id : Number(row.id);
-    if (id !== playerId) return row;
-    return { ...row, is_hidden: 0 };
+    const id = typeof row.id === "number" ? row.id : Number(row.id);
+    if (!playerIds.has(id)) return row;
+    return { ...row, is_hidden: flag };
   });
   return {
     ...data,
@@ -58,4 +56,32 @@ export function restoreHiddenPlayer(
       players: rawPlayers.length > 0 ? rawPlayers : data.tables.players,
     },
   };
+}
+
+/** Hide or restore roster rows. Leaves stats, H2H, and seats as they are. */
+export function setPlayersHidden(
+  data: OlympusExportData,
+  playerIds: readonly number[],
+  hidden: boolean
+): OlympusExportData {
+  const ids = new Set(playerIds.filter((id) => id > 0));
+  if (ids.size === 0) return data;
+  return setHiddenFlag(data, ids, hidden);
+}
+
+export function hidePlayer(
+  data: OlympusExportData,
+  playerId: number
+): OlympusExportData {
+  return setPlayersHidden(data, [playerId], true);
+}
+
+/**
+ * Un-hide a roster row. Leaves `public_id`, stats, H2H, and seats as they are.
+ */
+export function restoreHiddenPlayer(
+  data: OlympusExportData,
+  playerId: number
+): OlympusExportData {
+  return setPlayersHidden(data, [playerId], false);
 }

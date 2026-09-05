@@ -52,8 +52,20 @@ import {
   backfillSeatPlayerIds,
   withEnsuredPlayerPublicIds,
 } from "./playerIdentity";
-import { restoreHiddenPlayer as unhidePlayer } from "./playerVisibility";
+import { dedupeNights as collapseDuplicateNights } from "./dedupeNights";
+import type { DedupeNightsResult } from "./dedupeNights";
+import {
+  extractDataset,
+  type ExtractDatasetOptions,
+} from "./extractDataset";
+import {
+  hidePlayer as hideRosterPlayer,
+  restoreHiddenPlayer as unhidePlayer,
+  setPlayersHidden as setRosterPlayersHidden,
+} from "./playerVisibility";
 import { recalculateAllJosesCoefficients } from "./joseCoefficient";
+import { repairSave as rebuildSave } from "./repairSave";
+import type { RepairSaveReport } from "./repairSave";
 import { withStatsFilledFromMatches } from "./recomputeFromMatches";
 import type { OlympusExportData } from "./types";
 
@@ -78,6 +90,15 @@ type AnalyticsContextValue = {
     resolutions: MergeResolutions,
     options?: { excludeMatchKeys?: Iterable<string> }
   ) => DatasetMeta;
+  /** Slice the active save into a brand-new dataset. Sources stay untouched. */
+  createExtractedDataset: (
+    displayName: string,
+    options: ExtractDatasetOptions
+  ) => DatasetMeta;
+  /** Drop same-night duplicates inside the active save. */
+  dedupeNights: () => DedupeNightsResult;
+  /** Recompute ids, seats, schema, and aggregates on the active save. */
+  repairActiveSave: () => RepairSaveReport;
   switchDataset: (id: string) => void;
   renameDataset: (id: string, displayName: string) => void;
   deleteDataset: (id: string) => void;
@@ -85,6 +106,10 @@ type AnalyticsContextValue = {
   setMyselfPlayer: (playerId: number) => void;
   /** Remove the "You" badge from every player in the active data set. */
   clearMyselfPlayer: () => void;
+  /** Hide a roster player from pickers and the leaderboard. */
+  hidePlayer: (playerId: number) => void;
+  /** Hide or restore several roster players at once. */
+  setPlayersHidden: (playerIds: readonly number[], hidden: boolean) => void;
   /** Un-hide a roster player so they show in pickers and the leaderboard again. */
   restoreHiddenPlayer: (playerId: number) => void;
   /** Recompute Jose's Coefficient for every player from saved aggregates. */
@@ -339,6 +364,34 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     [persistRegistry, registry]
   );
 
+  const createExtractedDataset = useCallback(
+    (displayName: string, options: ExtractDatasetOptions): DatasetMeta => {
+      if (!data) throw new Error("no_data");
+      const name = displayName.trim();
+      if (!name) throw new Error("empty_name");
+      const extracted = extractDataset(data, options);
+      if (!extracted.ok) throw new Error(`extract_${extracted.reason}`);
+
+      const { registry: next, dataset } = registerNewDatasetInRegistry(
+        registry,
+        name,
+        `extract-${name}.csv`
+      );
+      const prepared = withEnsuredMatchPublicIds(
+        withEnsuredDbMeta(withEnsuredPlayerPublicIds(extracted.data), {
+          origin: "web",
+          label: name,
+        })
+      );
+      saveDatasetData(dataset.id, prepared);
+      persistRegistry(next);
+      setData(prepared);
+      setError(null);
+      return dataset;
+    },
+    [data, persistRegistry, registry]
+  );
+
   const switchDataset = useCallback(
     (id: string) => {
       const next = setActiveDatasetInRegistry(registry, id);
@@ -413,6 +466,22 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     [persistRegistry, registry]
   );
 
+  const dedupeNights = useCallback((): DedupeNightsResult => {
+    if (!data) throw new Error("no_data");
+    const result = collapseDuplicateNights(data);
+    if (result.droppedCount > 0) {
+      persistActiveData(result.data);
+    }
+    return result;
+  }, [data, persistActiveData]);
+
+  const repairActiveSave = useCallback((): RepairSaveReport => {
+    if (!data) throw new Error("no_data");
+    const result = rebuildSave(data);
+    persistActiveData(result.data);
+    return result.report;
+  }, [data, persistActiveData]);
+
   const setMyselfPlayer = useCallback(
     (playerId: number) => {
       if (!data) throw new Error("no_data");
@@ -437,6 +506,22 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       })),
     });
   }, [data, persistActiveData]);
+
+  const hidePlayer = useCallback(
+    (playerId: number) => {
+      if (!data) throw new Error("no_data");
+      persistActiveData(hideRosterPlayer(data, playerId));
+    },
+    [data, persistActiveData]
+  );
+
+  const setPlayersHidden = useCallback(
+    (playerIds: readonly number[], hidden: boolean) => {
+      if (!data) throw new Error("no_data");
+      persistActiveData(setRosterPlayersHidden(data, playerIds, hidden));
+    },
+    [data, persistActiveData]
+  );
 
   const restoreHiddenPlayer = useCallback(
     (playerId: number) => {
@@ -467,11 +552,16 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       importText,
       importAsNew,
       createMergedDataset,
+      createExtractedDataset,
+      dedupeNights,
+      repairActiveSave,
       switchDataset,
       renameDataset,
       deleteDataset,
       setMyselfPlayer,
       clearMyselfPlayer,
+      hidePlayer,
+      setPlayersHidden,
       restoreHiddenPlayer,
       syncJosesCoefficients,
       setPendingCompare,
@@ -488,11 +578,16 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       importText,
       importAsNew,
       createMergedDataset,
+      createExtractedDataset,
+      dedupeNights,
+      repairActiveSave,
       switchDataset,
       renameDataset,
       deleteDataset,
       setMyselfPlayer,
       clearMyselfPlayer,
+      hidePlayer,
+      setPlayersHidden,
       restoreHiddenPlayer,
       syncJosesCoefficients,
       setPendingCompare,
