@@ -34,10 +34,22 @@ import {
   type BumpKey,
   type ExtraMap,
 } from "@/modules/JoseLab/JoseLabBump";
-import JoseLabCharts from "@/modules/JoseLab/JoseLabCharts";
+import {
+  dashboardAsideSx,
+  dashboardMainSx,
+  dashboardShellSx,
+} from "@/modules/Analytics/dashboardChrome";
+import JoseLabCharts, {
+  type ChartsPerRow,
+} from "@/modules/JoseLab/JoseLabCharts";
+import { LabExpandable } from "@/modules/JoseLab/JoseLabExpand";
+import Add from "@mui/icons-material/Add";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import PushPin from "@mui/icons-material/PushPin";
 import PushPinOutlined from "@mui/icons-material/PushPinOutlined";
+import Remove from "@mui/icons-material/Remove";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import {
   Accordion,
   AccordionDetails,
@@ -92,6 +104,99 @@ const headSx = {
   ...cellSx,
   fontWeight: 700,
   bgcolor: "background.paper",
+} as const;
+
+function isChartsPerRow(value: unknown): value is ChartsPerRow {
+  return (
+    value === 1 || value === 2 || value === 3 || value === 4 || value === 5
+  );
+}
+
+function ChartsPerRowStepper({
+  value,
+  onChange,
+}: {
+  value: ChartsPerRow;
+  onChange: (next: ChartsPerRow) => void;
+}) {
+  const step = (delta: -1 | 1) => {
+    const next = value + delta;
+    if (isChartsPerRow(next)) onChange(next);
+  };
+
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      gap={0.5}
+      sx={{
+        pl: 1.25,
+        pr: 0.4,
+        py: 0.25,
+        border: "1px solid",
+        borderColor: (theme) => alpha(theme.palette.grey[700], 0.28),
+        borderRadius: "10px",
+        bgcolor: (theme) => alpha(theme.palette.background.paper, 0.72),
+      }}
+    >
+      <Typography
+        variant="caption"
+        sx={{ fontWeight: 700, color: "text.secondary", mr: 0.5 }}
+      >
+        Charts per row
+      </Typography>
+      <IconButton
+        size="small"
+        aria-label="Fewer charts per row"
+        disabled={value <= 1}
+        onClick={() => step(-1)}
+      >
+        <Remove fontSize="small" />
+      </IconButton>
+      <Typography
+        aria-live="polite"
+        sx={{
+          minWidth: 18,
+          textAlign: "center",
+          fontWeight: 800,
+          fontVariantNumeric: "tabular-nums",
+          fontSize: 14,
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </Typography>
+      <IconButton
+        size="small"
+        aria-label="More charts per row"
+        disabled={value >= 5}
+        onClick={() => step(1)}
+      >
+        <Add fontSize="small" />
+      </IconButton>
+    </Stack>
+  );
+}
+
+const termPaneSx = {
+  p: 1.1,
+  minWidth: 0,
+  border: "1px solid",
+  borderColor: (theme) => alpha(theme.palette.grey[700], 0.28),
+  borderRadius: 1.5,
+  bgcolor: (theme) => alpha(theme.palette.background.paper, 0.92),
+  boxShadow: (theme) => `inset 0 0 0 1px ${alpha(theme.palette.grey[0], 0.35)}`,
+};
+
+const resetMatchToggleSx = {
+  textTransform: "none",
+  fontWeight: 600,
+  fontSize: 14,
+  py: 0.9,
+  px: 1.25,
+  minHeight: 0,
+  lineHeight: 1.75,
+  borderRadius: "10px",
 } as const;
 
 type ScoredRow = {
@@ -314,7 +419,13 @@ function unitTermColumns(
   ];
 }
 
-function UnitTermControls({ columns }: { columns: TermColumn[] }) {
+function UnitTermControls({
+  columns,
+  rail = false,
+}: {
+  columns: TermColumn[];
+  rail?: boolean;
+}) {
   return (
     <Box>
       <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
@@ -324,22 +435,24 @@ function UnitTermControls({ columns }: { columns: TermColumn[] }) {
       <Box
         sx={{
           display: "grid",
-          gap: { xs: 1, md: 1.25 },
-          gridTemplateColumns: {
-            xs: "1fr 1fr",
-            sm: "repeat(3, minmax(0, 1fr))",
-            md: "repeat(5, minmax(0, 1fr))",
-          },
+          gap: { xs: 1, md: 1.5 },
+          gridTemplateColumns: rail
+            ? "repeat(2, minmax(0, 1fr))"
+            : {
+                xs: "1fr 1fr",
+                sm: "repeat(3, minmax(0, 1fr))",
+                md: "repeat(5, minmax(0, 1fr))",
+              },
         }}
       >
         {columns.map((column) => (
           <Box
             key={column.id}
             sx={{
+              ...termPaneSx,
               display: "flex",
               flexDirection: "column",
               gap: 0.75,
-              minWidth: 0,
             }}
           >
             <Typography
@@ -442,7 +555,15 @@ function LabSection({
   sx?: object;
 }) {
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, ...sx }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+        minWidth: 0,
+        ...sx,
+      }}
+    >
       <Box>
         <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
           {title}
@@ -528,11 +649,13 @@ function ExchangeTable({
   weightsK,
   weightsC,
   weightsKJ,
+  compact = false,
 }: {
   formula: FormulaId;
   weightsK: WeightsK;
   weightsC: WeightsC;
   weightsKJ: WeightsK;
+  compact?: boolean;
 }) {
   const unitWeights = formula === "K" ? weightsK : weightsKJ;
   const extras = (() => {
@@ -595,7 +718,9 @@ function ExchangeTable({
         sx={{
           display: "grid",
           gap: 1.5,
-          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+          gridTemplateColumns: compact
+            ? "1fr"
+            : { xs: "1fr", md: "1fr 1fr" },
         }}
       >
         <WorthPane title="+1 of this → R">
@@ -921,18 +1046,7 @@ function ReadmeTable({
   );
 
   return (
-    <Card sx={{ p: 1.25, overflow: "hidden" }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.25 }}>
-        {title}
-      </Typography>
-      {hint ? (
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.75 }}>
-          {hint}
-        </Typography>
-      ) : (
-        <Box sx={{ mb: 0.75 }} />
-      )}
-      <Box sx={{ overflowX: "auto" }}>
+    <LabExpandable title={title} hint={hint} kind="table">
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -1014,8 +1128,7 @@ function ReadmeTable({
             })}
           </TableBody>
         </Table>
-      </Box>
-    </Card>
+    </LabExpandable>
   );
 }
 
@@ -1049,18 +1162,7 @@ function TestTable({
   );
 
   return (
-    <Card sx={{ p: 1.25, overflow: "hidden" }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.25 }}>
-        {title}
-      </Typography>
-      {hint ? (
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.75 }}>
-          {hint}
-        </Typography>
-      ) : (
-        <Box sx={{ mb: 0.75 }} />
-      )}
-      <Box sx={{ overflowX: "auto" }}>
+    <LabExpandable title={title} hint={hint} kind="table">
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -1157,8 +1259,7 @@ function TestTable({
             })}
           </TableBody>
         </Table>
-      </Box>
-    </Card>
+    </LabExpandable>
   );
 }
 
@@ -1170,6 +1271,8 @@ export default function JoseLab() {
   const [csvPins, setCsvPins] = useState<string[]>([...DEFAULT_CSV_PINS]);
   const [mockPins, setMockPins] = useState<string[]>([...DEFAULT_MOCK_PINS]);
   const [extras, setExtras] = useState<ExtraMap>({});
+  const [chartsPerRow, setChartsPerRow] = useState<ChartsPerRow>(3);
+  const [showMocks, setShowMocks] = useState(true);
 
   const deferredK = useDeferredValue(weightsK);
   const deferredC = useDeferredValue(weightsC);
@@ -1335,234 +1438,273 @@ export default function JoseLab() {
     }
   })();
 
-  return (
-    <Box
-      sx={{
-        width: "100%",
-        maxWidth: 1440,
-        mx: "auto",
-        px: { xs: 1.5, sm: 2 },
-        py: 2,
-        display: "flex",
-        flexDirection: "column",
-        gap: 1.5,
-        flex: "0 0 auto",
-      }}
-    >
-      <Stack
-        direction={{ xs: "column", md: "row" }}
-        justifyContent="space-between"
-        alignItems={{ xs: "flex-start", md: "center" }}
-        gap={1}
+  const formulaCard = (
+    <Card sx={{ p: 1.25 }}>
+      <Box
+        sx={{
+          px: 1.25,
+          py: 1,
+          mb: 1.25,
+          bgcolor: alpha("#241D14", 0.05),
+          borderRadius: 1,
+        }}
       >
-        <Box>
+        <Typography
+          variant="caption"
+          sx={{ fontWeight: 800, display: "block", mb: 0.5, letterSpacing: "0.04em" }}
+        >
+          {formulaShortName(formula)}
+        </Typography>
+        <Box
+          sx={{
+            fontFamily:
+              'ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace',
+            fontSize: 13,
+            lineHeight: 1.55,
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {equationLines(formula, weightsK, weightsC, weightsKJ).join("\n")}
+        </Box>
+      </Box>
+      {formula === "K" || formula === "KJ" ? (
+        <UnitTermControls
+          rail
+          columns={unitTermColumns(
+            formula === "K" ? weightsK : weightsKJ,
+            formula === "K" ? setWeightsK : setWeightsKJ
+          )}
+        />
+      ) : (
+        <Stack gap={1.5}>
+          {sliderGroups.map((group) => (
+            <Box key={group.id}>
+              {group.title ? (
+                <Box sx={{ mb: 0.75 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: 800, display: "block", letterSpacing: "0.04em" }}
+                  >
+                    {group.title}
+                  </Typography>
+                  {group.hint ? (
+                    <Typography variant="caption" color="text.secondary">
+                      {group.hint}
+                    </Typography>
+                  ) : null}
+                </Box>
+              ) : null}
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: { xs: 0.5, md: 1 },
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                }}
+              >
+                {group.specs.map((spec) => (
+                  <Box key={spec.id} sx={termPaneSx}>
+                    <LabSlider spec={spec} />
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          ))}
+        </Stack>
+      )}
+    </Card>
+  );
+
+  return (
+    <Box sx={dashboardShellSx}>
+      <Box
+        sx={[
+          dashboardAsideSx,
+          { width: { xs: "100%", md: 420, lg: 480 } },
+        ]}
+      >
+        <Box sx={{ px: 2, pt: 2, pb: 1.5 }}>
           <Typography variant="h5" sx={{ fontWeight: 800 }}>
             F-lab
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-            Move sliders and watch the CSV seasons first (Valhalla, Cesar,
-            Eliecer, Randy, Guillermo). Mocks are below.
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.25 }}>
+            Sliders live here. The bench uses the full pane — CSV seasons
+            first, mocks beside them when the screen is wide enough.
           </Typography>
-        </Box>
-        <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={formula}
-            onChange={(_, value: FormulaId | null) => {
-              if (value) setFormula(value);
-            }}
+          <Stack
+            direction="row"
+            gap={1}
+            alignItems="stretch"
+            flexWrap="wrap"
           >
-            <ToggleButton value="K">K(x)</ToggleButton>
-            <ToggleButton value="KJ">KJ(x)</ToggleButton>
-            <ToggleButton value="C">OG · F(x)</ToggleButton>
-          </ToggleButtonGroup>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={formula}
+              onChange={(_, value: FormulaId | null) => {
+                if (value) setFormula(value);
+              }}
+            >
+              <ToggleButton value="K">K(x)</ToggleButton>
+              <ToggleButton value="KJ">KJ(x)</ToggleButton>
+              <ToggleButton value="C">OG · F(x)</ToggleButton>
+            </ToggleButtonGroup>
+            <Button
+              size="small"
+              variant="outlined"
+              sx={resetMatchToggleSx}
+              onClick={() => {
+                resetWeights(formula, setWeightsK, setWeightsC, setWeightsKJ);
+              }}
+            >
+              Reset {formulaShortName(formula)}
+            </Button>
+          </Stack>
+        </Box>
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: { xs: "visible", md: "auto" },
+            overscrollBehavior: { md: "contain" },
+            px: 1.5,
+            pb: 2,
+          }}
+        >
+          <Stack gap={1.25}>
+            {formulaCard}
+            <LabAccordion title="Worth" defaultExpanded>
+              <ExchangeTable
+                compact
+                formula={formula}
+                weightsK={deferredK}
+                weightsC={deferredC}
+                weightsKJ={deferredKJ}
+              />
+            </LabAccordion>
+            <RulesPanel />
+            {bumpCount > 0 ? (
+              <Button size="small" color="warning" onClick={() => setExtras({})}>
+                Reset all bumps ({bumpCount})
+              </Button>
+            ) : null}
+          </Stack>
+        </Box>
+      </Box>
+
+      <Box sx={dashboardMainSx}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "stretch", sm: "center" }}
+          gap={1}
+          sx={{ mb: 2 }}
+        >
+          <ChartsPerRowStepper
+            value={chartsPerRow}
+            onChange={setChartsPerRow}
+          />
           <Button
             size="small"
             variant="outlined"
-            onClick={() => {
-              resetWeights(formula, setWeightsK, setWeightsC, setWeightsKJ);
-            }}
+            startIcon={showMocks ? <VisibilityOff /> : <Visibility />}
+            onClick={() => setShowMocks((open) => !open)}
+            sx={resetMatchToggleSx}
           >
-            Reset {formulaShortName(formula)}
+            {showMocks ? "Hide mocks" : "Show mocks"}
           </Button>
         </Stack>
-      </Stack>
-
-      <Card sx={{ p: 1.25 }}>
         <Box
           sx={{
-            px: 1.25,
-            py: 1,
-            mb: 1.25,
-            bgcolor: alpha("#241D14", 0.05),
-            borderRadius: 1,
+            opacity: liveStale ? 0.62 : 1,
+            transition: "opacity 120ms linear",
+            display: "grid",
+            gap: { xs: 3, xl: 2.5 },
+            alignItems: "start",
+            gridTemplateColumns: "minmax(0, 1fr)",
+            // Nested @media — do not mix with MUI `xs` keys or the 0px
+            // query wins at every width and the split never applies.
+            ...(showMocks
+              ? {
+                  "@media (min-width: 1920px)": {
+                    gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                  },
+                }
+              : null),
           }}
         >
-          <Typography
-            variant="caption"
-            sx={{ fontWeight: 800, display: "block", mb: 0.5, letterSpacing: "0.04em" }}
+          <LabSection
+            title="CSV · real seasons"
+            hint="Valhalla (Kevin, Jose, Raulito, Rudelys) plus Cesar, Ariel, Eliecer, Randy, Guillermo. Pin a row to put that person on the charts."
           >
-            {formulaShortName(formula)}
-          </Typography>
-          <Box
-            sx={{
-              fontFamily:
-                'ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace',
-              fontSize: 13,
-              lineHeight: 1.55,
-              whiteSpace: "pre-wrap",
-            }}
+            <JoseLabCharts
+              formula={formula}
+              weightsK={deferredK}
+              weightsC={deferredC}
+              weightsKJ={deferredKJ}
+              players={liveReadme}
+              scored={scoredReadmeCsv}
+              pinnedIds={csvPins}
+              columns={chartsPerRow}
+            />
+            <ReadmeTable
+              title="CSV seasons · T–G–P, nets, live R"
+              hint="Tap G, W, L, or a delta to age that person. Wins and losses also add to G. Pin the row to plot."
+              rows={scoredReadmeCsv}
+              failIds={EMPTY_FAIL_IDS}
+              formula={formula}
+              pinnedIds={csvPins}
+              onTogglePin={toggleCsvPin}
+              extras={deferredExtras}
+              onBump={bump}
+              onResetField={resetOneField}
+              onResetPerson={resetOnePerson}
+            />
+          </LabSection>
+
+          {showMocks ? (
+          <LabSection
+            title="Mocks · invented scenarios"
+            hint="Heaters, grinders, ugly +4, loud 0-net. Pin rows onto the mock charts — not real people."
           >
-            {equationLines(formula, weightsK, weightsC, weightsKJ).join("\n")}
-          </Box>
+            <JoseLabCharts
+              formula={formula}
+              weightsK={deferredK}
+              weightsC={deferredC}
+              weightsKJ={deferredKJ}
+              players={liveMockPlayers}
+              scored={scoredMockCharts}
+              pinnedIds={mockPins}
+              columns={chartsPerRow}
+            />
+            <ReadmeTable
+              title="Mock scenarios · T–G–P, nets, live R"
+              hint="Same bumpers. Pin a row onto the graphs above."
+              rows={scoredReadmeMock}
+              failIds={EMPTY_FAIL_IDS}
+              formula={formula}
+              pinnedIds={mockPins}
+              onTogglePin={toggleMockPin}
+              extras={deferredExtras}
+              onBump={bump}
+              onResetField={resetOneField}
+              onResetPerson={resetOnePerson}
+            />
+            <TestTable
+              title="Mock fixtures · full stocks"
+              hint="W/L still add to G. Stock cells bump the matching delta (HF−HA, PF−PA, …)."
+              rows={scoredTestMock}
+              failIds={EMPTY_FAIL_IDS}
+              formula={formula}
+              pinnedIds={mockPins}
+              onTogglePin={toggleMockPin}
+              extras={deferredExtras}
+              onBump={bump}
+              onResetField={resetOneField}
+              onResetPerson={resetOnePerson}
+            />
+          </LabSection>
+          ) : null}
         </Box>
-        {formula === "K" || formula === "KJ" ? (
-          <UnitTermControls
-            columns={unitTermColumns(
-              formula === "K" ? weightsK : weightsKJ,
-              formula === "K" ? setWeightsK : setWeightsKJ
-            )}
-          />
-        ) : (
-          <Stack gap={1.5}>
-            {sliderGroups.map((group) => (
-              <Box key={group.id}>
-                {group.title ? (
-                  <Box sx={{ mb: 0.75 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{ fontWeight: 800, display: "block", letterSpacing: "0.04em" }}
-                    >
-                      {group.title}
-                    </Typography>
-                    {group.hint ? (
-                      <Typography variant="caption" color="text.secondary">
-                        {group.hint}
-                      </Typography>
-                    ) : null}
-                  </Box>
-                ) : null}
-                <Box
-                  sx={{
-                    display: "grid",
-                    gap: { xs: 0.5, md: 1 },
-                    gridTemplateColumns: {
-                      xs: "1fr 1fr",
-                      md: "repeat(4, 1fr)",
-                    },
-                  }}
-                >
-                  {group.specs.map((spec) => (
-                    <LabSlider key={spec.id} spec={spec} />
-                  ))}
-                </Box>
-              </Box>
-            ))}
-          </Stack>
-        )}
-      </Card>
-
-      <Box
-        sx={{
-          opacity: liveStale ? 0.62 : 1,
-          transition: "opacity 120ms linear",
-        }}
-      >
-      <Stack gap={1}>
-        <LabAccordion title="Worth" defaultExpanded>
-          <ExchangeTable
-            formula={formula}
-            weightsK={deferredK}
-            weightsC={deferredC}
-            weightsKJ={deferredKJ}
-          />
-        </LabAccordion>
-        <RulesPanel />
-        {bumpCount > 0 ? (
-          <Box>
-            <Button size="small" color="warning" onClick={() => setExtras({})}>
-              Reset all bumps ({bumpCount})
-            </Button>
-          </Box>
-        ) : null}
-      </Stack>
-
-      <LabSection
-        title="CSV · real seasons"
-        hint="Valhalla (Kevin, Jose, Raulito, Rudelys) plus Cesar, Ariel, Eliecer, Randy, Guillermo. Pin a row to put that person on the charts."
-        sx={{ mt: 4 }}
-      >
-        <JoseLabCharts
-          formula={formula}
-          weightsK={deferredK}
-          weightsC={deferredC}
-          weightsKJ={deferredKJ}
-          players={liveReadme}
-          scored={scoredReadmeCsv}
-          pinnedIds={csvPins}
-        />
-        <ReadmeTable
-          title="CSV seasons · T–G–P, nets, live R"
-          hint="Tap G, W, L, or a delta to age that person. Wins and losses also add to G. Pin the row to plot."
-          rows={scoredReadmeCsv}
-          failIds={EMPTY_FAIL_IDS}
-          formula={formula}
-          pinnedIds={csvPins}
-          onTogglePin={toggleCsvPin}
-          extras={deferredExtras}
-          onBump={bump}
-          onResetField={resetOneField}
-          onResetPerson={resetOnePerson}
-        />
-      </LabSection>
-
-      <LabSection
-        title="Mocks · invented scenarios"
-        hint="Heaters, grinders, ugly +4, loud 0-net. Pin rows onto the mock charts — not real people."
-        sx={{
-          mt: 4,
-          pt: 3,
-          borderTop: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <JoseLabCharts
-          formula={formula}
-          weightsK={deferredK}
-          weightsC={deferredC}
-          weightsKJ={deferredKJ}
-          players={liveMockPlayers}
-          scored={scoredMockCharts}
-          pinnedIds={mockPins}
-        />
-        <ReadmeTable
-          title="Mock scenarios · T–G–P, nets, live R"
-          hint="Same bumpers. Pin a row onto the graphs above."
-          rows={scoredReadmeMock}
-          failIds={EMPTY_FAIL_IDS}
-          formula={formula}
-          pinnedIds={mockPins}
-          onTogglePin={toggleMockPin}
-          extras={deferredExtras}
-          onBump={bump}
-          onResetField={resetOneField}
-          onResetPerson={resetOnePerson}
-        />
-        <TestTable
-          title="Mock fixtures · full stocks"
-          hint="W/L still add to G. Stock cells bump the matching delta (HF−HA, PF−PA, …)."
-          rows={scoredTestMock}
-          failIds={EMPTY_FAIL_IDS}
-          formula={formula}
-          pinnedIds={mockPins}
-          onTogglePin={toggleMockPin}
-          extras={deferredExtras}
-          onBump={bump}
-          onResetField={resetOneField}
-          onResetPerson={resetOnePerson}
-        />
-      </LabSection>
       </Box>
     </Box>
   );
