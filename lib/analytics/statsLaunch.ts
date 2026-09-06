@@ -3,6 +3,7 @@
 export type StatsLaunch = {
   modeLabel: string;
   playerId: number;
+  tileSet?: "55" | "28";
 };
 
 /** Survives React Strict Mode remounts until Stats consumes it. */

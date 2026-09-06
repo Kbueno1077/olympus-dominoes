@@ -68,7 +68,7 @@ export const JOSES_ACCENT = "#6B4F8A";
 
 /** Left chrome — content-sized on mobile; height-locked on desktop. */
 export const dashboardAsideSx = {
-  width: { xs: "100%", md: 300 },
+  width: { xs: "100%", md: 360 },
   maxWidth: "100%",
   flexShrink: 0,
   borderRight: { xs: "none", md: "1px solid #C0C0C0" },

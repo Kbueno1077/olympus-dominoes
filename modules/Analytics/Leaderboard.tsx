@@ -10,7 +10,15 @@ import {
 import { importErrorMessage } from "@/lib/analytics/importError";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
-import { listLeaderboard, listStatModes } from "@/lib/analytics/selectors";
+import {
+  DEFAULT_FORMAT_LABEL,
+  DEFAULT_TILE_SET,
+  isFormatLabel,
+  isTileSet,
+  type TileSet,
+} from "@/lib/analytics/modeFormat";
+import { listLeaderboard } from "@/lib/analytics/selectors";
+import ModeFormatFilters from "@/modules/Analytics/ModeFormatFilters";
 import { stashStatsLaunch } from "@/lib/analytics/statsLaunch";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
@@ -18,8 +26,6 @@ import {
   Chip,
   CircularProgress,
   Stack,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -30,28 +36,26 @@ import { useMemo, useState } from "react";
  * Full-page ranking by Jose's Coefficient. Row click opens Stats for that player.
  */
 export default function Leaderboard() {
-  const { t, modeName } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
   const { data, error, loading, activeDataset } = useAnalytics();
-  const [modeLabel, setModeLabel] = useState<string | null>(null);
+  const [modeLabel, setModeLabel] = useState<string>(DEFAULT_FORMAT_LABEL);
+  const [tileSet, setTileSet] = useState<TileSet>(DEFAULT_TILE_SET);
 
-  const modes = useMemo(() => (data ? listStatModes(data) : []), [data]);
-
-  const activeMode = useMemo(() => {
-    if (modeLabel && modes.includes(modeLabel)) return modeLabel;
-    return modes[0] ?? null;
-  }, [modeLabel, modes]);
+  const activeMode = isFormatLabel(modeLabel)
+    ? modeLabel
+    : DEFAULT_FORMAT_LABEL;
 
   const leaderboard = useMemo(
-    () => (data && activeMode ? listLeaderboard(data, activeMode) : []),
-    [data, activeMode]
+    () => (data ? listLeaderboard(data, activeMode, tileSet) : []),
+    [data, activeMode, tileSet]
   );
 
   const errorMessage = error ? importErrorMessage(t, error) : null;
 
   const openPlayerStats = (playerId: number) => {
     if (!activeMode) return;
-    stashStatsLaunch({ modeLabel: activeMode, playerId });
+    stashStatsLaunch({ modeLabel: activeMode, playerId, tileSet });
     router.push("/stats");
   };
 
@@ -76,39 +80,20 @@ export default function Leaderboard() {
         <DashboardAside
           title={t("leaderboardTitle")}
           subtitle={t("leaderboardSubtitle")}
-          filtersLabel={t("format")}
+          filtersLabel={t("modeFormatTitle")}
         >
-          {modes.length > 0 ? (
-            <Box sx={{ px: 2, pb: 1.5 }}>
-              <Typography
-                variant="overline"
-                component="p"
-                sx={{ color: "text.secondary", mb: 0.75 }}
-              >
-                {t("format")}
-              </Typography>
-              <ToggleButtonGroup
-                exclusive
-                size="small"
-                fullWidth
-                value={activeMode}
-                onChange={(_, value) => {
-                  if (value) setModeLabel(value);
-                }}
-                sx={{ flexWrap: "wrap" }}
-              >
-                {modes.map((mode) => (
-                  <ToggleButton
-                    key={mode}
-                    value={mode}
-                    sx={{ flex: "1 1 auto" }}
-                  >
-                    {modeName(mode)}
-                  </ToggleButton>
-                ))}
-              </ToggleButtonGroup>
-            </Box>
-          ) : null}
+          <Box sx={{ px: 2, pb: 1.5 }}>
+            <ModeFormatFilters
+              tileSet={tileSet}
+              onTileSet={(next) => {
+                if (isTileSet(next)) setTileSet(next);
+              }}
+              modeLabel={activeMode}
+              onModeLabel={(next) => {
+                if (isFormatLabel(next)) setModeLabel(next);
+              }}
+            />
+          </Box>
         </DashboardAside>
 
         <Box component="main" sx={dashboardMainSx}>

@@ -18,6 +18,22 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { Fragment } from "react";
 
 import { useTranslation } from "@/i18n/useTranslation";
+import {
+  formatIcon,
+  tileSetFromDominoSetId,
+  tileSetIcon,
+} from "@/lib/analytics/modeFormat";
+import {
+  FORMAT_SECTION_ICON,
+  MODE_SECTION_ICON,
+  ModeFormatMeta,
+  ModeFormatSectionTitle,
+  ModeFormatToggleLabel,
+  PLAYERS_SECTION_ICON,
+  TARGET_SECTION_ICON,
+  modeFormatToggleGroupSx,
+  useModeFormatCopy,
+} from "@/modules/Analytics/ModeFormatMark";
 import { DOMINO_SETS, getDominoSet } from "@/utils/dominoSets";
 import { gameModes2, gameModes3, gameModes4 } from "@/utils/matchSettings";
 import { buildRandomRoster } from "@/utils/randomNames";
@@ -76,7 +92,7 @@ function buildTeams(playersAmount, isFreeForAll, slots) {
  * dot.
  */
 export function MatchSummary() {
-  const { t, teamName, modeName, setName } = useTranslation();
+  const { t, teamName } = useTranslation();
 
   const [playersAmount] = useRecoilState(playersAmountRecoil);
   const [gameMode] = useRecoilState(gameModeRecoil);
@@ -98,10 +114,15 @@ export function MatchSummary() {
 
   const facts = [
     { key: "players", text: t("playersCount", { n: playersAmount }) },
-    { key: "set", text: setName(dominoSet) },
-    ...(gameMode?.label
-      ? [{ key: "mode", text: modeName(gameMode.label) }]
-      : []),
+    {
+      key: "modeFormat",
+      node: (
+        <ModeFormatMeta
+          tileSet={tileSetFromDominoSetId(dominoSet)}
+          modeLabel={gameMode?.label ?? null}
+        />
+      ),
+    },
     { key: "target", text: t("firstTo", { n: maxPoints }) },
     ...teams.map((team) => ({
       key: team.key,
@@ -140,7 +161,7 @@ export function MatchSummary() {
                 fontWeight: fact.teamKey ? 600 : 400,
               }}
             >
-              {fact.text}
+              {fact.node ?? fact.text}
             </Box>
             {index < facts.length - 1 && (
               <Box component="span" sx={{ color: "text.disabled" }}>
@@ -155,16 +176,20 @@ export function MatchSummary() {
   );
 }
 
-function FieldGroup({ label, children, sx }) {
+function FieldGroup({ label, icon, children, sx }) {
   return (
     <Box sx={sx}>
-      <Typography
-        variant="overline"
-        component="p"
-        sx={{ color: "text.secondary", mb: 1 }}
-      >
-        {label}
-      </Typography>
+      {icon ? (
+        <ModeFormatSectionTitle icon={icon} label={label} />
+      ) : (
+        <Typography
+          variant="overline"
+          component="p"
+          sx={{ color: "text.secondary", mb: 1 }}
+        >
+          {label}
+        </Typography>
+      )}
       {children}
     </Box>
   );
@@ -327,7 +352,8 @@ function TeamBlock({ team }) {
 export default function MatchSettings() {
   const theme = useTheme();
   const isNarrow = useMediaQuery(theme.breakpoints.down("sm"));
-  const { t, modeName, setName } = useTranslation();
+  const { t } = useTranslation();
+  const { formatLabel, tileLabel } = useModeFormatCopy();
 
   const [playersAmount, setPlayersAmount] = useRecoilState(playersAmountRecoil);
   const [renderGameModes, setRenderGamesModes] = useRecoilState(
@@ -448,7 +474,7 @@ export default function MatchSettings() {
               },
             }}
           >
-            <FieldGroup label={t("dominoSet")}>
+            <FieldGroup icon={MODE_SECTION_ICON} label={t("mode")}>
               <ToggleButtonGroup
                 exclusive
                 fullWidth
@@ -456,17 +482,27 @@ export default function MatchSettings() {
                 disabled={isGameStarted}
                 value={dominoSet}
                 onChange={handleDominoSetChange}
-                aria-label={t("setAria")}
+                aria-label={t("mode")}
+                sx={modeFormatToggleGroupSx}
               >
-                {DOMINO_SETS.map((set) => (
-                  <ToggleButton key={set.id} value={set.id}>
-                    {setName(set.id)}
-                  </ToggleButton>
-                ))}
+                {DOMINO_SETS.map((set) => {
+                  const tiles = tileSetFromDominoSetId(set.id);
+                  return (
+                    <ToggleButton
+                      key={set.id}
+                      value={set.id}
+                      aria-label={tileLabel(tiles)}
+                    >
+                      <ModeFormatToggleLabel icon={tileSetIcon(tiles)}>
+                        {tileLabel(tiles)}
+                      </ModeFormatToggleLabel>
+                    </ToggleButton>
+                  );
+                })}
               </ToggleButtonGroup>
             </FieldGroup>
 
-            <FieldGroup label={t("playersAtTable")}>
+            <FieldGroup icon={PLAYERS_SECTION_ICON} label={t("playersAtTable")}>
               <ToggleButtonGroup
                 exclusive
                 fullWidth
@@ -488,7 +524,7 @@ export default function MatchSettings() {
               </ToggleButtonGroup>
             </FieldGroup>
 
-            <FieldGroup label={t("playMode")}>
+            <FieldGroup icon={FORMAT_SECTION_ICON} label={t("format")}>
               <ToggleButtonGroup
                 exclusive
                 fullWidth
@@ -496,17 +532,24 @@ export default function MatchSettings() {
                 disabled={isGameStarted}
                 value={gameMode?.label ?? null}
                 onChange={handleModeChange}
-                aria-label={t("playMode")}
+                aria-label={t("format")}
+                sx={modeFormatToggleGroupSx}
               >
                 {renderGameModes.map((mode) => (
-                  <ToggleButton key={mode.label} value={mode.label}>
-                    {modeName(mode.label)}
+                  <ToggleButton
+                    key={mode.label}
+                    value={mode.label}
+                    aria-label={formatLabel(mode.label)}
+                  >
+                    <ModeFormatToggleLabel icon={formatIcon(mode.label)}>
+                      {formatLabel(mode.label)}
+                    </ModeFormatToggleLabel>
                   </ToggleButton>
                 ))}
               </ToggleButtonGroup>
             </FieldGroup>
 
-            <FieldGroup label={t("pointsToWin")}>
+            <FieldGroup icon={TARGET_SECTION_ICON} label={t("pointsToWin")}>
               <Stack
                 direction={isNarrow ? "column" : "row"}
                 spacing={1.5}

@@ -7,6 +7,11 @@ import {
   gameModeRecoil,
   playersAmountRecoil,
 } from "@/recoil/recoilState";
+import {
+  tileSetFromDominoSetId,
+  tileSetIcon,
+} from "@/lib/analytics/modeFormat";
+import { ModeFormatIcon } from "@/modules/Analytics/ModeFormatMark";
 import { getDominoSet } from "@/utils/dominoSets";
 import { Box, Card, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -330,8 +335,20 @@ export default function TableDraw() {
       <Typography
         variant="caption"
         component="p"
-        sx={{ mt: 1.5, textAlign: "center", color: "text.secondary" }}
+        sx={{
+          mt: 1.5,
+          textAlign: "center",
+          color: "text.secondary",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 0.5,
+        }}
       >
+        <ModeFormatIcon
+          icon={tileSetIcon(tileSetFromDominoSetId(dominoSetId))}
+          size={14}
+        />
         {t("tableCaption", {
           total: dominoSet.tilesInSet,
           perHand: dominoSet.tilesPerHand,

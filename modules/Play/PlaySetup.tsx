@@ -2,6 +2,20 @@
 
 import type { BotBrainId } from "@/lib/play/botBrain";
 import type { DominoSetId, DrawRuleId, PlayModeId } from "@/lib/play/types";
+import {
+  formatIcon,
+  formatLabelFromPlayModeId,
+  tileSetFromDominoSetId,
+  tileSetIcon,
+} from "@/lib/analytics/modeFormat";
+import {
+  FORMAT_SECTION_ICON,
+  MODE_SECTION_ICON,
+  ModeFormatSectionTitle,
+  ModeFormatToggleLabel,
+  TARGET_SECTION_ICON,
+  modeFormatToggleGroupSx,
+} from "@/modules/Analytics/ModeFormatMark";
 import { useTranslation } from "@/i18n/useTranslation";
 import PlayPaceSliders from "@/modules/Play/PlayPaceSliders";
 import { pressableSx, tapFeedback } from "@/modules/Play/pressFeedback";
@@ -255,19 +269,34 @@ export default function PlaySetup({
           }}
         >
           <Box>
-            <SectionLabel>{t("playSet")}</SectionLabel>
+            <ModeFormatSectionTitle icon={MODE_SECTION_ICON} label={t("mode")} />
             <ToggleButtonGroup
               exclusive
               fullWidth
               size="small"
               value={setId}
               onChange={(_e, next) => next && onSet(next)}
+              sx={modeFormatToggleGroupSx}
             >
-              <ToggleButton value="double_six">
-                {t("playSetDoubleSixShort")}
+              <ToggleButton
+                value="double_nine"
+                aria-label={t("tileSetOption", { n: "55" })}
+              >
+                <ModeFormatToggleLabel
+                  icon={tileSetIcon(tileSetFromDominoSetId("double_nine"))}
+                >
+                  {t("tileSetOption", { n: "55" })}
+                </ModeFormatToggleLabel>
               </ToggleButton>
-              <ToggleButton value="double_nine">
-                {t("playSetDoubleNineShort")}
+              <ToggleButton
+                value="double_six"
+                aria-label={t("tileSetOption", { n: "28" })}
+              >
+                <ModeFormatToggleLabel
+                  icon={tileSetIcon(tileSetFromDominoSetId("double_six"))}
+                >
+                  {t("tileSetOption", { n: "28" })}
+                </ModeFormatToggleLabel>
               </ToggleButton>
             </ToggleButtonGroup>
 
@@ -328,24 +357,39 @@ export default function PlaySetup({
           </Box>
 
           <Box>
-            <SectionLabel>{t("playMode")}</SectionLabel>
+            <ModeFormatSectionTitle
+              icon={FORMAT_SECTION_ICON}
+              label={t("format")}
+            />
             <ToggleButtonGroup
               exclusive
               fullWidth
               size="small"
               value={modeId}
               onChange={(_e, next) => next && onMode(next)}
+              sx={modeFormatToggleGroupSx}
             >
               {MODE_IDS.map((id) => (
-                <ToggleButton key={id} value={id}>
-                  {t(modeTitleKey(id))}
+                <ToggleButton
+                  key={id}
+                  value={id}
+                  aria-label={t(modeTitleKey(id))}
+                >
+                  <ModeFormatToggleLabel
+                    icon={formatIcon(formatLabelFromPlayModeId(id))}
+                  >
+                    {t(modeTitleKey(id))}
+                  </ModeFormatToggleLabel>
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
           </Box>
 
           <Box>
-            <SectionLabel>{t("playFirstToLabel")}</SectionLabel>
+            <ModeFormatSectionTitle
+              icon={TARGET_SECTION_ICON}
+              label={t("playFirstToLabel")}
+            />
             <Stack
               direction="row"
               spacing={0.75}
