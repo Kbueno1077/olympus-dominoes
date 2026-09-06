@@ -29,13 +29,18 @@ import {
 import { computeMatchupStats } from "@/lib/analytics/matchupStats";
 import { listVisiblePlayers } from "@/lib/analytics/playerVisibility";
 import {
-  getPlayerStats,
-  listStatModes,
-  listStatTileSets,
+  ALL_FORMAT_LABELS,
+  DEFAULT_FORMAT_LABEL,
+  DEFAULT_TILE_SET,
+  TILE_SET_OPTIONS,
+  isFormatLabel,
+  isTileSet,
   type TileSet,
-} from "@/lib/analytics/selectors";
+} from "@/lib/analytics/modeFormat";
+import { getPlayerStats } from "@/lib/analytics/selectors";
 import type { CompareLaunch } from "@/lib/analytics/datasets";
 import type { OlympusExportData, PlayerStatsView } from "@/lib/analytics/types";
+import ModeFormatFilters from "@/modules/Analytics/ModeFormatFilters";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   Box,
@@ -45,8 +50,6 @@ import {
   CircularProgress,
   Stack,
   Switch,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -85,18 +88,16 @@ function seedMatchupTeams(
 
 type Props = {
   data: OlympusExportData;
-  modes: string[];
   initialMode?: string | null;
   initialLaunch?: CompareLaunch | null;
 };
 
 export default function AnalyticsCompare({
   data,
-  modes,
   initialMode,
   initialLaunch = null,
 }: Props) {
-  const { t, modeName } = useTranslation();
+  const { t } = useTranslation();
   const { activeDataset, registry } = useAnalytics();
   const datasetId = activeDataset?.id ?? registry.activeDatasetId;
   const dateFilter = useDashboardDateRange(datasetId);
@@ -117,10 +118,14 @@ export default function AnalyticsCompare({
     [visiblePlayers]
   );
 
-  const tileSets = useMemo(() => listStatTileSets(data), [data]);
-
   const stored = useMemo(
-    () => loadCompareUiFilters(datasetId, playerIds, modes, tileSets),
+    () =>
+      loadCompareUiFilters(
+        datasetId,
+        playerIds,
+        ALL_FORMAT_LABELS,
+        TILE_SET_OPTIONS
+      ),
     // Seed once per dataset; sanitize against players separately.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [datasetId]
@@ -128,29 +133,17 @@ export default function AnalyticsCompare({
 
   const [tileSet, setTileSet] = useState<TileSet>(() => {
     const launch = launchFromLocation() ?? initialLaunch;
-    if (launch?.tileSet && tileSets.includes(launch.tileSet)) {
-      return launch.tileSet;
-    }
-    if (stored.tileSet && tileSets.includes(stored.tileSet)) {
-      return stored.tileSet;
-    }
-    return tileSets[0] ?? "55";
+    if (isTileSet(launch?.tileSet)) return launch.tileSet;
+    if (isTileSet(stored.tileSet)) return stored.tileSet;
+    return DEFAULT_TILE_SET;
   });
-  const modesForSet = useMemo(
-    () => (tileSets.length > 0 ? listStatModes(data, tileSet) : modes),
-    [data, tileSet, tileSets, modes]
-  );
 
-  const [modeLabel, setModeLabel] = useState<string | null>(() => {
+  const [modeLabel, setModeLabel] = useState<string>(() => {
     const launch = launchFromLocation() ?? initialLaunch;
-    if (launch?.modeLabel && modesForSet.includes(launch.modeLabel)) {
-      return launch.modeLabel;
-    }
-    if (stored.modeLabel && modesForSet.includes(stored.modeLabel)) {
-      return stored.modeLabel;
-    }
-    if (initialMode && modesForSet.includes(initialMode)) return initialMode;
-    return modesForSet[0] ?? null;
+    if (isFormatLabel(launch?.modeLabel)) return launch.modeLabel;
+    if (isFormatLabel(stored.modeLabel)) return stored.modeLabel;
+    if (isFormatLabel(initialMode)) return initialMode;
+    return DEFAULT_FORMAT_LABEL;
   });
   const [selectedIds, setSelectedIds] = useState<number[]>(() => {
     const launch = launchFromLocation() ?? initialLaunch;
@@ -195,15 +188,8 @@ export default function AnalyticsCompare({
       setSelectedIds([...launch.playerIds]);
       setTeams(launch.teams ?? {});
       setMatchupMode(Boolean(launch.matchupMode));
-      const nextTile =
-        launch.tileSet && tileSets.includes(launch.tileSet)
-          ? launch.tileSet
-          : null;
-      if (nextTile) setTileSet(nextTile);
-      const nextModes = listStatModes(data, nextTile ?? tileSet);
-      if (launch.modeLabel && nextModes.includes(launch.modeLabel)) {
-        setModeLabel(launch.modeLabel);
-      }
+      if (isTileSet(launch.tileSet)) setTileSet(launch.tileSet);
+      if (isFormatLabel(launch.modeLabel)) setModeLabel(launch.modeLabel);
       setFiltersHydratedFor(datasetId);
       return;
     }
@@ -211,19 +197,12 @@ export default function AnalyticsCompare({
     const loaded = loadCompareUiFilters(
       datasetId,
       playerIds,
-      undefined,
-      tileSets
+      ALL_FORMAT_LABELS,
+      TILE_SET_OPTIONS
     );
-    const nextTile =
-      loaded.tileSet && tileSets.includes(loaded.tileSet)
-        ? loaded.tileSet
-        : (tileSets[0] ?? "55");
-    const nextModes = listStatModes(data, nextTile);
-    setTileSet(nextTile);
+    setTileSet(isTileSet(loaded.tileSet) ? loaded.tileSet : DEFAULT_TILE_SET);
     setModeLabel(
-      loaded.modeLabel && nextModes.includes(loaded.modeLabel)
-        ? loaded.modeLabel
-        : (nextModes[0] ?? null)
+      isFormatLabel(loaded.modeLabel) ? loaded.modeLabel : DEFAULT_FORMAT_LABEL
     );
     setSelectedIds(loaded.selectedIds);
     setTeams(loaded.teams);
@@ -274,11 +253,6 @@ export default function AnalyticsCompare({
       return changed ? next : current;
     });
   }, [playerIdKey]);
-
-  useEffect(() => {
-    if (modeLabel && modesForSet.includes(modeLabel)) return;
-    setModeLabel(modesForSet[0] ?? null);
-  }, [modesForSet, modeLabel]);
 
   useEffect(() => {
     if (!scanFromMatches) {
@@ -437,52 +411,16 @@ export default function AnalyticsCompare({
           />
         </ControlSection>
 
-        {tileSets.length > 0 ? (
-          <ControlSection label={t("dominoSet")}>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              fullWidth
-              value={tileSet}
-              onChange={(_, value: TileSet | null) => {
-                if (value) setTileSet(value);
-              }}
-              sx={{ flexWrap: "wrap" }}
-            >
-              {tileSets.map((set) => (
-                <ToggleButton
-                  key={set}
-                  value={set}
-                  sx={{ flex: 1 }}
-                  aria-label={t("tileSetOption", { n: set })}
-                >
-                  {t("tileSetOption", { n: set })}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </ControlSection>
-        ) : null}
-
-        {modesForSet.length > 0 ? (
-          <ControlSection label={t("format")}>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              fullWidth
-              value={modeLabel}
-              onChange={(_, value) => {
-                if (value) setModeLabel(value);
-              }}
-              sx={{ flexWrap: "wrap" }}
-            >
-              {modesForSet.map((mode) => (
-                <ToggleButton key={mode} value={mode} sx={{ flex: 1 }}>
-                  {modeName(mode)}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </ControlSection>
-        ) : null}
+        <ModeFormatFilters
+          tileSet={tileSet}
+          onTileSet={(next) => {
+            if (isTileSet(next)) setTileSet(next);
+          }}
+          modeLabel={modeLabel}
+          onModeLabel={(next) => {
+            if (isFormatLabel(next)) setModeLabel(next);
+          }}
+        />
 
         <ControlSection
           label={t("statsComparePlayers")}

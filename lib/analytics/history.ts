@@ -36,6 +36,7 @@ export type MatchListItem = {
   endedAt: string;
   playersAmount: number;
   modeLabel: string;
+  tileSet: "55" | "28";
   maxPoints: number;
   gameCount: number;
   isClosed: boolean;
@@ -331,6 +332,7 @@ export function listMatches(data: OlympusExportData): MatchListItem[] {
         endedAt: asString(row.ended_at),
         playersAmount,
         modeLabel,
+        tileSet: normalizeImportedTileSet(row.tile_set),
         maxPoints: asNumber(row.max_points),
         gameCount: gameCountByMatch.get(id) ?? 0,
         isClosed,
@@ -444,15 +446,22 @@ export function seatNamesFromDetail(detail: MatchDetail): string[] {
 }
 
 export function playerNamesFromDetail(detail: MatchDetail): string[] {
-  if (!detail.isClosed) {
-    return uniqueNamesPreserveOrder(
-      detail.games.flatMap((game) => game.seats.map((s) => s.displayName))
-    );
-  }
-  return detail.seats
-    .filter((s) => s.seat >= 1 && s.seat <= detail.playersAmount)
-    .map((s) => s.displayName)
+  return sessionSeatsFromDetail(detail)
+    .map((seat) => seat.displayName)
     .filter(Boolean);
+}
+
+/** People who sat this night — closed seats, or unique sitters across open games. */
+export function sessionSeatsFromDetail(detail: MatchDetail): HistorySeat[] {
+  if (detail.isClosed) {
+    return detail.seats
+      .filter((seat) => seat.seat >= 1 && seat.seat <= detail.playersAmount)
+      .slice()
+      .sort((a, b) => a.seat - b.seat);
+  }
+  return uniqueSeatsPreserveOrder(
+    detail.games.flatMap((game) => game.seats)
+  );
 }
 
 export function teamLabelsForDetail(

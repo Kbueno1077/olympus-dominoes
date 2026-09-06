@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  formatLabelFromPlayModeId,
+  tileSetFromDominoSetId,
+} from "@/lib/analytics/modeFormat";
+import { ModeFormatMeta } from "@/modules/Analytics/ModeFormatMark";
 import { teamLabels } from "@/lib/play/engine";
 import type {
   CompletedPlayGame,
@@ -383,6 +388,11 @@ function Standing({
         sx={{ color: "text.secondary", display: "block", mb: 1.25 }}
       >
         {t("matchStanding")}
+        {" · "}
+        <ModeFormatMeta
+          tileSet={tileSetFromDominoSetId(match.setId)}
+          modeLabel={formatLabelFromPlayModeId(match.modeId)}
+        />
       </Typography>
       <Stack direction="row" spacing={1}>
         {teams.map((team) => {

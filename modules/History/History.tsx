@@ -5,6 +5,7 @@ import DashboardDateRangeFilter from "@/modules/Analytics/DashboardDateRangeFilt
 import DashboardEmptyState from "@/modules/Analytics/DashboardEmptyState";
 import PlayerPickDialog from "@/modules/Analytics/PlayerPickDialog";
 import HistoryGamesNotes from "@/modules/History/HistoryGamesNotes";
+import HistorySessionStats from "@/modules/History/HistorySessionStats";
 import OpenTableBoard from "@/modules/History/OpenTableBoard";
 import {
   dashboardMainSx,
@@ -35,9 +36,14 @@ import {
 import {
   loadHistoryUiFilters,
   saveHistoryUiFilters,
+  type HistoryTileSetFilter,
 } from "@/lib/analytics/historyFilterState";
+import { isFormatLabel, isTileSet } from "@/lib/analytics/modeFormat";
+import ModeFormatFilters from "@/modules/Analytics/ModeFormatFilters";
+import { ModeFormatMeta } from "@/modules/Analytics/ModeFormatMark";
 import { tallyOpenTablePlayers } from "@/lib/analytics/openTableBoard";
 import { listVisiblePlayers } from "@/lib/analytics/playerVisibility";
+import { sessionStatsFromDetail } from "@/lib/analytics/sessionStats";
 import {
   formatSignedDiff,
   signedDiffColor,
@@ -57,8 +63,6 @@ import {
   CircularProgress,
   Stack,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -103,7 +107,7 @@ function HistoryList({
   language: string;
   onOpen: (id: number) => void;
 }) {
-  const { t, modeName, teamName } = useTranslation();
+  const { t, teamName } = useTranslation();
   const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -208,8 +212,11 @@ function HistoryList({
               component="p"
               sx={{ color: "text.secondary", mb: 0.75, lineHeight: 1.4 }}
             >
-              {modeName(item.modeLabel)} ·{" "}
-              <HistoryKindLabel isClosed={item.isClosed} /> ·{" "}
+              <ModeFormatMeta
+                tileSet={item.tileSet}
+                modeLabel={item.modeLabel}
+              />{" "}
+              · <HistoryKindLabel isClosed={item.isClosed} /> ·{" "}
               {t("historyGames", { n: item.gameCount })} ·{" "}
               {t("firstTo", { n: item.maxPoints })}
             </Typography>
@@ -251,7 +258,7 @@ function HistoryDetailView({
   onCompare: () => void;
   canCompare: boolean;
 }) {
-  const { t, modeName, teamName } = useTranslation();
+  const { t, teamName } = useTranslation();
   const seatNames = seatNamesFromDetail(detail);
   const headerNames = playerNamesFromDetail(detail);
   const teamLabels = teamLabelsForDetail(detail);
@@ -324,8 +331,11 @@ function HistoryDetailView({
           component="p"
           sx={{ color: "text.secondary", mb: 0.75, lineHeight: 1.4 }}
         >
-          {modeName(detail.modeLabel)} ·{" "}
-          <HistoryKindLabel isClosed={detail.isClosed} /> ·{" "}
+          <ModeFormatMeta
+            tileSet={detail.tileSet}
+            modeLabel={detail.modeLabel}
+          />{" "}
+          · <HistoryKindLabel isClosed={detail.isClosed} /> ·{" "}
           {t("playersCount", { n: detail.playersAmount })} ·{" "}
           {t("firstTo", { n: detail.maxPoints })} ·{" "}
           {t("historyGames", { n: detail.games.length })}
@@ -444,6 +454,9 @@ export default function History() {
   const [modeFilter, setModeFilter] = useState(
     () => loadHistoryUiFilters(datasetId).modeFilter
   );
+  const [tileSetFilter, setTileSetFilter] = useState<HistoryTileSetFilter>(
+    () => loadHistoryUiFilters(datasetId).tileSetFilter
+  );
   const [rosterFilter, setRosterFilter] = useState<HistoryFilterPlayer[]>(
     () => loadHistoryUiFilters(datasetId).rosterFilter
   );
@@ -461,14 +474,6 @@ export default function History() {
   }, [params]);
 
   const items = useMemo(() => (data ? listMatches(data) : []), [data]);
-
-  const modes = useMemo(() => {
-    const set = new Set<string>();
-    for (const item of items) {
-      if (item.modeLabel) set.add(item.modeLabel);
-    }
-    return Array.from(set);
-  }, [items]);
 
   const players = useMemo(() => {
     if (!data) return [];
@@ -494,6 +499,7 @@ export default function History() {
     const loaded = loadHistoryUiFilters(datasetId);
     setQuery(loaded.query);
     setModeFilter(loaded.modeFilter);
+    setTileSetFilter(loaded.tileSetFilter);
     setRosterFilter(loaded.rosterFilter);
     setFiltersHydratedFor(datasetId);
   }, [datasetId]);
@@ -516,16 +522,10 @@ export default function History() {
       datasetId,
       query,
       modeFilter,
+      tileSetFilter,
       rosterFilter,
     });
-  }, [datasetId, query, modeFilter, rosterFilter, filtersHydratedFor]);
-
-  // Drop a saved format that this data set no longer has.
-  useEffect(() => {
-    if (modeFilter === "all") return;
-    if (modes.length === 0) return;
-    if (!modes.includes(modeFilter)) setModeFilter("all");
-  }, [modes, modeFilter]);
+  }, [datasetId, query, modeFilter, tileSetFilter, rosterFilter, filtersHydratedFor]);
 
   const filteredItems = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -533,6 +533,9 @@ export default function History() {
     return items.filter((item) => {
       if (!matchInDateRange(item.endedAt, dateFilter.range)) return false;
       if (modeFilter !== "all" && item.modeLabel !== modeFilter) return false;
+      if (tileSetFilter !== "all" && item.tileSet !== tileSetFilter) {
+        return false;
+      }
 
       if (
         !matchPassesHistoryFilter(
@@ -558,13 +561,15 @@ export default function History() {
         formatMatchDate(language, item.endedAt),
         item.modeLabel,
         modeName(item.modeLabel),
+        item.modeLabel === "Free For All" ? t("playModeFfaShort") : "",
+        t("tileSetOption", { n: item.tileSet }),
         item.playerNames.join(" "),
       ]
         .join(" ")
         .toLowerCase();
       return haystack.includes(needle);
     });
-  }, [items, query, modeFilter, rosterFilter, language, modeName, dateFilter.range]);
+  }, [items, query, modeFilter, tileSetFilter, rosterFilter, language, modeName, t, dateFilter.range]);
 
   const setPlayerTeam = (playerId: number, team: HistoryFilterTeam) => {
     setRosterFilter((current) =>
@@ -595,6 +600,11 @@ export default function History() {
     if (!data || routeMatchId == null) return null;
     return getMatchDetail(data, routeMatchId);
   }, [data, routeMatchId]);
+
+  const sessionStats = useMemo(
+    () => (detail ? sessionStatsFromDetail(detail) : null),
+    [detail]
+  );
 
   const openMatch = (id: number) => {
     startTransition(() => router.push(`/history/${id}`));
@@ -700,38 +710,21 @@ export default function History() {
                   fullWidth
                   helperText={t("historySearchHint")}
                 />
-                <Box>
-                  <Typography
-                    variant="overline"
-                    component="p"
-                    sx={{ color: "text.secondary", mb: 0.75 }}
-                  >
-                    {t("format")}
-                  </Typography>
-                  <ToggleButtonGroup
-                    exclusive
-                    size="small"
-                    fullWidth
-                    value={modeFilter}
-                    onChange={(_, value) => {
-                      if (value) setModeFilter(value);
-                    }}
-                    sx={{ flexWrap: "wrap" }}
-                  >
-                    <ToggleButton value="all" sx={{ flex: "1 1 auto" }}>
-                      {t("historyFilterAll")}
-                    </ToggleButton>
-                    {modes.map((mode) => (
-                      <ToggleButton
-                        key={mode}
-                        value={mode}
-                        sx={{ flex: "1 1 auto" }}
-                      >
-                        {modeName(mode)}
-                      </ToggleButton>
-                    ))}
-                  </ToggleButtonGroup>
-                </Box>
+                <ModeFormatFilters
+                  includeAll
+                  tileSet={tileSetFilter}
+                  onTileSet={(next) => {
+                    if (next === "all" || isTileSet(next)) {
+                      setTileSetFilter(next);
+                    }
+                  }}
+                  modeLabel={modeFilter}
+                  onModeLabel={(next) => {
+                    if (next === "all" || isFormatLabel(next)) {
+                      setModeFilter(next);
+                    }
+                  }}
+                />
               </Stack>
             </Box>
 
@@ -965,6 +958,8 @@ export default function History() {
           </Stack>
         )}
       </Box>
+
+      {sessionStats ? <HistorySessionStats session={sessionStats} /> : null}
 
       <PlayerPickDialog
         open={pickerOpen}

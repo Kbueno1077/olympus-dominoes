@@ -91,13 +91,17 @@ export function listStatModes(
 
 export function listLeaderboard(
   data: OlympusExportData,
-  modeLabel: string
+  modeLabel: string,
+  tileSet?: TileSet
 ): LeaderboardRow[] {
   const playersById = new Map(data.players.map((p) => [p.id, p]));
 
   return data.player_stats
     .filter((row) => {
       if (row.mode_label !== modeLabel || row.games_played <= 0) return false;
+      if (tileSet && normalizeImportedTileSet(row.tile_set) !== tileSet) {
+        return false;
+      }
       return !isPlayerHidden(playersById.get(row.player_id));
     })
     .map((row) => {
@@ -129,13 +133,17 @@ export function getPlayerStats(
 export function getPlayerH2H(
   data: OlympusExportData,
   playerId: number,
-  modeLabel: string
+  modeLabel: string,
+  tileSet?: TileSet
 ): H2HView[] {
   const playersById = new Map(data.players.map((p) => [p.id, p]));
 
   return data.player_h2h
     .filter((row) => {
       if (row.player_id !== playerId || row.mode_label !== modeLabel) {
+        return false;
+      }
+      if (tileSet && normalizeImportedTileSet(row.tile_set) !== tileSet) {
         return false;
       }
       return !isPlayerHidden(playersById.get(row.opponent_id));

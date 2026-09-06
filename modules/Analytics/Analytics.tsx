@@ -29,11 +29,19 @@ import { formatSignedDiff } from "@/lib/analytics/signedDiff";
 import { listVisiblePlayers } from "@/lib/analytics/playerVisibility";
 import { recomputeAggregatesFromMatches } from "@/lib/analytics/recomputeFromMatches";
 import {
+  DEFAULT_FORMAT_LABEL,
+  DEFAULT_TILE_SET,
+  isFormatLabel,
+  isTileSet,
+  type TileSet,
+} from "@/lib/analytics/modeFormat";
+import {
   getPlayerH2H,
   getPlayerStats,
   listLeaderboard,
-  listStatModes,
 } from "@/lib/analytics/selectors";
+import ModeFormatFilters from "@/modules/Analytics/ModeFormatFilters";
+import { ModeFormatMeta } from "@/modules/Analytics/ModeFormatMark";
 import {
   clearStatsLaunch,
   peekStatsLaunch,
@@ -41,11 +49,8 @@ import {
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   Box,
-  Card,
   CircularProgress,
   Stack,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -105,7 +110,7 @@ function StatLine({
 }
 
 export default function Analytics() {
-  const { t, modeName } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
   const {
     data,
@@ -117,14 +122,16 @@ export default function Analytics() {
   } = useAnalytics();
   const datasetId = activeDataset?.id ?? registry.activeDatasetId;
   const dateFilter = useDashboardDateRange(datasetId);
-  const [modeLabel, setModeLabel] = useState<string | null>(null);
+  const [modeLabel, setModeLabel] = useState<string>(DEFAULT_FORMAT_LABEL);
+  const [tileSet, setTileSet] = useState<TileSet>(DEFAULT_TILE_SET);
   const [playerId, setPlayerId] = useState<number | null>(null);
 
   // Leaderboard (and similar) stash a player before routing here.
   useEffect(() => {
     const launch = peekStatsLaunch();
     if (!launch) return;
-    setModeLabel(launch.modeLabel);
+    if (isFormatLabel(launch.modeLabel)) setModeLabel(launch.modeLabel);
+    if (isTileSet(launch.tileSet)) setTileSet(launch.tileSet);
     setPlayerId(launch.playerId);
     clearStatsLaunch();
   }, []);
@@ -135,20 +142,14 @@ export default function Analytics() {
     return recomputeAggregatesFromMatches(data, dateFilter.range);
   }, [data, dateFilter.range]);
 
-  const modes = useMemo(
-    () => (scopedData ? listStatModes(scopedData) : []),
-    [scopedData]
-  );
-
-  const activeMode = useMemo(() => {
-    if (modeLabel && modes.includes(modeLabel)) return modeLabel;
-    return modes[0] ?? null;
-  }, [modeLabel, modes]);
+  const activeMode = isFormatLabel(modeLabel)
+    ? modeLabel
+    : DEFAULT_FORMAT_LABEL;
 
   const leaderboard = useMemo(
     () =>
-      scopedData && activeMode ? listLeaderboard(scopedData, activeMode) : [],
-    [scopedData, activeMode]
+      scopedData ? listLeaderboard(scopedData, activeMode, tileSet) : [],
+    [scopedData, activeMode, tileSet]
   );
 
   const selectedPlayerId = useMemo(() => {
@@ -167,15 +168,15 @@ export default function Analytics() {
     if (!scopedData || selectedPlayerId == null || !activeMode) return null;
     return (
       getPlayerStats(scopedData, selectedPlayerId).find(
-        (s) => s.modeLabel === activeMode
+        (s) => s.modeLabel === activeMode && s.tileSet === tileSet
       ) ?? null
     );
-  }, [scopedData, selectedPlayerId, activeMode]);
+  }, [scopedData, selectedPlayerId, activeMode, tileSet]);
 
   const h2h = useMemo(() => {
-    if (!scopedData || selectedPlayerId == null || !activeMode) return [];
-    return getPlayerH2H(scopedData, selectedPlayerId, activeMode);
-  }, [scopedData, selectedPlayerId, activeMode]);
+    if (!scopedData || selectedPlayerId == null) return [];
+    return getPlayerH2H(scopedData, selectedPlayerId, activeMode, tileSet);
+  }, [scopedData, selectedPlayerId, activeMode, tileSet]);
 
   const openH2HCompare = (opponentId: number) => {
     if (selectedPlayerId == null || !activeMode) return;
@@ -183,7 +184,7 @@ export default function Analytics() {
       modeLabel: activeMode,
       playerId: selectedPlayerId,
       opponentId,
-      tileSet: activeStats?.tileSet,
+      tileSet,
     });
     setPendingCompare(launch);
     router.push(`/compare?${compareLaunchToSearchParams(launch).toString()}`);
@@ -234,33 +235,18 @@ export default function Analytics() {
           />
         </Box>
 
-        {modes.length > 0 ? (
-          <Box sx={{ px: 2, pb: 1.5 }}>
-            <Typography
-              variant="overline"
-              component="p"
-              sx={{ color: "text.secondary", mb: 0.75 }}
-            >
-              {t("format")}
-            </Typography>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              fullWidth
-              value={activeMode}
-              onChange={(_, value) => {
-                if (value) setModeLabel(value);
-              }}
-              sx={{ flexWrap: "wrap" }}
-            >
-              {modes.map((mode) => (
-                <ToggleButton key={mode} value={mode} sx={{ flex: 1 }}>
-                  {modeName(mode)}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </Box>
-        ) : null}
+        <Box sx={{ px: 2, pb: 1.5 }}>
+          <ModeFormatFilters
+            tileSet={tileSet}
+            onTileSet={(next) => {
+              if (isTileSet(next)) setTileSet(next);
+            }}
+            modeLabel={activeMode}
+            onModeLabel={(next) => {
+              if (isFormatLabel(next)) setModeLabel(next);
+            }}
+          />
+        </Box>
 
         <Box
           sx={{
@@ -378,14 +364,7 @@ export default function Analytics() {
           </Typography>
         ) : null}
 
-        {modes.length === 0 ? (
-          <Card sx={{ p: 3 }}>
-            <Typography sx={{ color: "text.secondary" }}>
-              {t("statsNoData")}
-            </Typography>
-          </Card>
-        ) : (
-          <Stack spacing={2.5} sx={{ minWidth: 0, width: "100%", maxWidth: "100%" }}>
+        <Stack spacing={2.5} sx={{ minWidth: 0, width: "100%", maxWidth: "100%" }}>
             {selectedPlayer && activeStats ? (
               <Box>
                 <Stack
@@ -412,7 +391,11 @@ export default function Analytics() {
                       variant="body2"
                       sx={{ color: "text.secondary" }}
                     >
-                      {modeName(activeMode ?? "")} ·{" "}
+                      <ModeFormatMeta
+                        tileSet={tileSet}
+                        modeLabel={activeMode}
+                      />{" "}
+                      ·{" "}
                       {t("analyticsLoadedMeta", {
                         name: datasetLabel,
                         players: listVisiblePlayers(data.players).length,
@@ -575,7 +558,6 @@ export default function Analytics() {
               </Box>
             ) : null}
           </Stack>
-        )}
       </Box>
     </Box>
   );

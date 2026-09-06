@@ -1,5 +1,6 @@
 "use client";
 
+import { ModeFormatMeta } from "@/modules/Analytics/ModeFormatMark";
 import RestoreHiddenPlayersPanel from "@/modules/Analytics/RestoreHiddenPlayersPanel";
 import ToolsDedupePanel from "@/modules/Analytics/ToolsDedupePanel";
 import ToolsExtractPanel from "@/modules/Analytics/ToolsExtractPanel";
@@ -1785,7 +1786,7 @@ function MatchGamesCard({
           {t("mergeMatchMetaWhen", { value: fmt(candidate.endedAt) })}
         </Typography>
         <Typography variant="caption" component="div">
-          {t("mergeMatchMetaMode", { value: candidate.modeLabel })}
+          <ModeFormatMeta modeLabel={candidate.modeLabel} />
         </Typography>
         <Typography variant="caption" component="div">
           {t("mergeMatchMetaMax", { value: candidate.maxPoints })}
@@ -1996,7 +1997,7 @@ function MatchAuditRow({
   actions?: ReactNode;
   dimmed?: boolean;
 }) {
-  const { t, modeName } = useTranslation();
+  const { t } = useTranslation();
   const detail = source
     ? getMatchDetail(source.data, candidate.matchId)
     : null;
@@ -2051,7 +2052,11 @@ function MatchAuditRow({
                 sx={{ color: "text.secondary", fontWeight: 500 }}
               >
                 {" "}
-                · {modeName(candidate.modeLabel)}
+                ·{" "}
+                <ModeFormatMeta
+                  tileSet={detail?.tileSet}
+                  modeLabel={candidate.modeLabel}
+                />
                 {gameCount > 0
                   ? ` · ${t("historyGames", { n: gameCount })}`
                   : ""}

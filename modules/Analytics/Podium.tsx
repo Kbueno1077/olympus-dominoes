@@ -15,7 +15,15 @@ import {
   type PodiumCategoryResult,
   type PodiumKind,
 } from "@/lib/analytics/podium";
-import { listLeaderboard, listStatModes } from "@/lib/analytics/selectors";
+import {
+  DEFAULT_FORMAT_LABEL,
+  DEFAULT_TILE_SET,
+  isFormatLabel,
+  isTileSet,
+  type TileSet,
+} from "@/lib/analytics/modeFormat";
+import { listLeaderboard } from "@/lib/analytics/selectors";
+import ModeFormatFilters from "@/modules/Analytics/ModeFormatFilters";
 import { useTranslation } from "@/i18n/useTranslation";
 import { usePodiumPunchlines } from "@/hooks/usePodiumPunchlines";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
@@ -23,8 +31,6 @@ import {
   Box,
   CircularProgress,
   Stack,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -200,22 +206,20 @@ function TrophyCard({
 }
 
 export default function Podium() {
-  const { t, modeName } = useTranslation();
+  const { t } = useTranslation();
   const { data, error, loading, activeDataset } = useAnalytics();
   const { ready: punchlinesReady, punchlineKey } = usePodiumPunchlines();
-  const [modeLabel, setModeLabel] = useState<string | null>(null);
+  const [modeLabel, setModeLabel] = useState<string>(DEFAULT_FORMAT_LABEL);
+  const [tileSet, setTileSet] = useState<TileSet>(DEFAULT_TILE_SET);
 
-  const modes = useMemo(() => (data ? listStatModes(data) : []), [data]);
-
-  const activeMode = useMemo(() => {
-    if (modeLabel && modes.includes(modeLabel)) return modeLabel;
-    return modes[0] ?? null;
-  }, [modeLabel, modes]);
+  const activeMode = isFormatLabel(modeLabel)
+    ? modeLabel
+    : DEFAULT_FORMAT_LABEL;
 
   const podium = useMemo(() => {
-    if (!data || !activeMode) return [];
-    return buildPodium(listLeaderboard(data, activeMode));
-  }, [data, activeMode]);
+    if (!data) return [];
+    return buildPodium(listLeaderboard(data, activeMode, tileSet));
+  }, [data, activeMode, tileSet]);
 
   const byKind = useMemo(() => {
     const map: Record<PodiumKind, PodiumCategoryResult[]> = {
@@ -252,35 +256,20 @@ export default function Podium() {
       <DashboardAside
         title={t("podiumTitle")}
         subtitle={t("podiumSubtitle")}
-        filtersLabel={t("format")}
+        filtersLabel={t("modeFormatTitle")}
       >
-        {modes.length > 0 ? (
-          <Box sx={{ px: 2, pb: 1.5 }}>
-            <Typography
-              variant="overline"
-              component="p"
-              sx={{ color: "text.secondary", mb: 0.75 }}
-            >
-              {t("format")}
-            </Typography>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              fullWidth
-              value={activeMode}
-              onChange={(_, value) => {
-                if (value) setModeLabel(value);
-              }}
-              sx={{ flexWrap: "wrap" }}
-            >
-              {modes.map((mode) => (
-                <ToggleButton key={mode} value={mode} sx={{ flex: "1 1 auto" }}>
-                  {modeName(mode)}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </Box>
-        ) : null}
+        <Box sx={{ px: 2, pb: 1.5 }}>
+          <ModeFormatFilters
+            tileSet={tileSet}
+            onTileSet={(next) => {
+              if (isTileSet(next)) setTileSet(next);
+            }}
+            modeLabel={activeMode}
+            onModeLabel={(next) => {
+              if (isFormatLabel(next)) setModeLabel(next);
+            }}
+          />
+        </Box>
       </DashboardAside>
 
       <Box component="main" sx={dashboardMainSx}>
@@ -291,7 +280,7 @@ export default function Podium() {
           {t("dashboardViewingDataset", { name: datasetLabel })}
         </Typography>
 
-        {modes.length === 0 || podium.every((c) => !c.winner) ? (
+        {podium.every((c) => !c.winner) ? (
           <DashboardPanel title={t("podiumTitle")}>
             <Typography sx={{ color: "text.secondary" }}>
               {t("podiumEmpty")}
