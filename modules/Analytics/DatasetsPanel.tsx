@@ -13,15 +13,14 @@ import {
   exportBasenameForDataset,
   serializeOlympusExport,
 } from "@/lib/analytics/serializeExport";
+import Iconify from "@/components/Iconify";
 import { useTranslation } from "@/i18n/useTranslation";
 import useToast from "@/hooks/useToast";
-import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import SyncIcon from "@mui/icons-material/Sync";
 import {
   Box,
   Button,
   Card,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -29,10 +28,81 @@ import {
   DialogTitle,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import type { Theme } from "@mui/material/styles";
 import { useRef, useState } from "react";
+
+function DatasetAction({
+  icon,
+  label,
+  onClick,
+  disabled,
+  danger,
+}: {
+  icon: string;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  const action = (
+    <Box
+      component="button"
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      sx={{
+        width: 40,
+        height: 40,
+        borderRadius: "10px",
+        border: "1px solid",
+        borderColor: (theme: Theme) =>
+          danger
+            ? alpha(theme.palette.error.main, 0.35)
+            : theme.palette.divider,
+        backgroundColor: (theme: Theme) =>
+          danger
+            ? alpha(theme.palette.error.main, 0.06)
+            : theme.palette.background.paper,
+        color: danger ? "error.main" : "primary.main",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.45 : 1,
+        appearance: "none",
+        WebkitAppearance: "none",
+        p: 0,
+        "&:hover": disabled
+          ? undefined
+          : {
+              backgroundColor: (theme: Theme) =>
+                danger
+                  ? alpha(theme.palette.error.main, 0.1)
+                  : alpha(theme.palette.primary.main, 0.06),
+            },
+      }}
+    >
+      <Iconify icon={icon} sx={{ width: 18, height: 18 }} />
+    </Box>
+  );
+
+  return (
+    <Tooltip title={label} enterDelay={400}>
+      {disabled ? (
+        <Box component="span" sx={{ display: "inline-flex" }}>
+          {action}
+        </Box>
+      ) : (
+        action
+      )}
+    </Tooltip>
+  );
+}
 
 function formatMetaTimestamp(value: string, locale: string): string {
   const date = new Date(value);
@@ -135,159 +205,268 @@ export default function DatasetsPanel({
   };
 
   const content = (
-    <>
-      {!embedded ? (
-        <Typography
-          variant="overline"
-          component="p"
-          sx={{ color: "text.secondary", mb: 0.75 }}
-        >
-          {t("datasetsTitle")}
-        </Typography>
-      ) : null}
-      <Typography
-        variant="body2"
-        sx={{ color: "text.secondary", mb: 1.5 }}
-      >
+    <Stack spacing={1.5}>
+      {embedded ? null : (
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Iconify
+            icon="ion:folder-outline"
+            sx={{ width: 20, height: 20, color: "primary.main", flexShrink: 0 }}
+          />
+          <Typography sx={{ fontWeight: 700, fontSize: 17, lineHeight: 1.4 }}>
+            {t("datasetsTitle")}
+          </Typography>
+        </Stack>
+      )}
+      <Typography variant="body2" sx={{ color: "text.secondary" }}>
         {t("datasetsHint")}
       </Typography>
 
-      <Stack spacing={1} sx={{ mb: 1.5 }}>
-        {registry.datasets.map((ds) => {
-          const active = ds.id === registry.activeDatasetId;
-          return (
-            <Box
-              key={ds.id}
-              sx={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                gap: 1,
-                px: 1.25,
-                py: 1,
-                borderRadius: 1.5,
-                border: "1px solid",
-                borderColor: active ? "primary.main" : "divider",
-                backgroundColor: active
-                  ? (theme) => alpha(theme.palette.primary.main, 0.06)
-                  : "transparent",
-              }}
-            >
-              <Box sx={{ flex: 1, minWidth: 120 }}>
-                <Typography sx={{ fontWeight: 600 }}>
-                  {ds.displayName}
+      {registry.datasets.length === 0 ? (
+        <Typography variant="body2" sx={{ color: "text.secondary" }}>
+          {t("datasetsEmpty")}
+        </Typography>
+      ) : (
+        <Stack spacing={1.25}>
+          {registry.datasets.map((ds) => {
+            const active = ds.id === registry.activeDatasetId;
+            return (
+              <Box
+                key={ds.id}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1.25,
+                  p: 1.5,
+                  borderRadius: "12px",
+                  border: "1px solid",
+                  borderColor: (theme: Theme) =>
+                    active ? theme.palette.primary.main : theme.palette.divider,
+                  backgroundColor: (theme: Theme) =>
+                    active
+                      ? alpha(theme.palette.primary.main, 0.08)
+                      : theme.palette.background.default,
+                }}
+              >
+                <Box
+                  component={active ? "div" : "button"}
+                  type={active ? undefined : "button"}
+                  aria-label={
+                    active
+                      ? ds.displayName
+                      : `${ds.displayName}. ${t("datasetsSwitch")}`
+                  }
+                  disabled={busy || active}
+                  onClick={
+                    active
+                      ? undefined
+                      : () =>
+                          setConfirm({
+                            type: "switch",
+                            id: ds.id,
+                            name: ds.displayName,
+                          })
+                  }
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.25,
+                    minWidth: 0,
+                    border: 0,
+                    p: 0,
+                    background: "none",
+                    textAlign: "left",
+                    color: "inherit",
+                    font: "inherit",
+                    cursor: active || busy ? "default" : "pointer",
+                    width: "100%",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "10px",
+                      display: "grid",
+                      placeItems: "center",
+                      flexShrink: 0,
+                      backgroundColor: (theme: Theme) =>
+                        active
+                          ? alpha(theme.palette.primary.main, 0.14)
+                          : alpha(theme.palette.text.secondary, 0.08),
+                      color: active ? "primary.main" : "text.secondary",
+                    }}
+                  >
+                    <Iconify
+                      icon="ion:albums-outline"
+                      sx={{ width: 18, height: 18 }}
+                    />
+                  </Box>
+                  <Typography
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      fontWeight: active ? 700 : 500,
+                      color: active ? "primary.dark" : "text.primary",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {ds.displayName}
+                  </Typography>
                   {active ? (
-                    <Typography
-                      component="span"
-                      variant="caption"
-                      sx={{ ml: 1, color: "primary.main" }}
-                    >
-                      {t("datasetsActive")}
-                    </Typography>
+                    <Chip
+                      size="small"
+                      label={t("datasetsActive")}
+                      sx={{
+                        flexShrink: 0,
+                        height: 24,
+                        fontWeight: 600,
+                        color: "primary.dark",
+                        backgroundColor: (theme: Theme) =>
+                          alpha(theme.palette.primary.main, 0.16),
+                      }}
+                    />
                   ) : null}
-                </Typography>
-              </Box>
-              <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                {!active ? (
-                  <Button
-                    size="small"
+                </Box>
+
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  flexWrap="wrap"
+                  useFlexGap
+                  alignItems="center"
+                >
+                  <DatasetAction
+                    icon="ion:information-circle-outline"
+                    label={t("datasetsInfo")}
                     disabled={busy}
+                    onClick={() => openDatasetInfo(ds.id, ds.displayName)}
+                  />
+                  <DatasetAction
+                    icon="ion:pencil-outline"
+                    label={t("datasetsRename")}
+                    disabled={busy}
+                    onClick={() => {
+                      setLocalError(null);
+                      setRenameId(ds.id);
+                      setRenameValue(ds.displayName);
+                    }}
+                  />
+                  <DatasetAction
+                    icon="ion:download-outline"
+                    label={t("datasetsExport")}
+                    disabled={busy}
+                    onClick={() => exportDataset(ds.id, ds.displayName)}
+                  />
+                  {active ? (
+                    <DatasetAction
+                      icon="ion:document-outline"
+                      label={t("datasetsReplace")}
+                      disabled={busy}
+                      onClick={() => replaceInputRef.current?.click()}
+                    />
+                  ) : null}
+                  <DatasetAction
+                    icon="ion:trash-outline"
+                    label={t("datasetsDelete")}
+                    disabled={busy}
+                    danger
                     onClick={() =>
                       setConfirm({
-                        type: "switch",
+                        type: "delete",
                         id: ds.id,
                         name: ds.displayName,
                       })
                     }
-                  >
-                    {t("datasetsSwitch")}
-                  </Button>
-                ) : null}
-                <Button
-                  size="small"
-                  disabled={busy}
-                  startIcon={<InfoOutlinedIcon sx={{ fontSize: 16 }} />}
-                  onClick={() => openDatasetInfo(ds.id, ds.displayName)}
-                >
-                  {t("datasetsInfo")}
-                </Button>
-                <Button
-                  size="small"
-                  disabled={busy}
-                  startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
-                  onClick={() => exportDataset(ds.id, ds.displayName)}
-                >
-                  {t("datasetsExport")}
-                </Button>
-                <Button
-                  size="small"
-                  disabled={busy}
-                  onClick={() => {
-                    setLocalError(null);
-                    setRenameId(ds.id);
-                    setRenameValue(ds.displayName);
-                  }}
-                >
-                  {t("datasetsRename")}
-                </Button>
-                {active ? (
-                  <Button
-                    size="small"
-                    disabled={busy}
-                    onClick={() => replaceInputRef.current?.click()}
-                  >
-                    {t("datasetsReplace")}
-                  </Button>
-                ) : null}
-                <Button
-                  size="small"
-                  color="error"
-                  disabled={busy}
-                  onClick={() =>
-                    setConfirm({
-                      type: "delete",
-                      id: ds.id,
-                      name: ds.displayName,
-                    })
-                  }
-                >
-                  {t("datasetsDelete")}
-                </Button>
-              </Stack>
-            </Box>
-          );
-        })}
-      </Stack>
+                  />
+                </Stack>
+              </Box>
+            );
+          })}
+        </Stack>
+      )}
 
-      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-        <Button
-          variant="outlined"
-          size="small"
-          disabled={busy}
-          onClick={() => newInputRef.current?.click()}
-        >
-          {t("datasetsImportNew")}
-        </Button>
-        {data ? (
-          <Button
-            variant="outlined"
-            size="small"
-            disabled={busy}
-            startIcon={<SyncIcon sx={{ fontSize: 16 }} />}
-            onClick={handleSyncJoses}
-          >
-            {t("syncJosesCoefficientShort")}
-          </Button>
-        ) : null}
-      </Stack>
+      <Box
+        component="button"
+        type="button"
+        aria-label={t("datasetsImportNew")}
+        disabled={busy}
+        onClick={() => newInputRef.current?.click()}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 0.75,
+          minHeight: 44,
+          px: 1.5,
+          borderRadius: "10px",
+          border: "1px solid",
+          borderColor: "primary.main",
+          backgroundColor: (theme: Theme) =>
+            alpha(theme.palette.primary.main, 0.08),
+          color: "primary.dark",
+          font: "inherit",
+          fontWeight: 600,
+          fontSize: 14,
+          appearance: "none",
+          WebkitAppearance: "none",
+          cursor: busy ? "default" : "pointer",
+          opacity: busy ? 0.45 : 1,
+          width: "100%",
+          "&:hover": busy
+            ? undefined
+            : {
+                backgroundColor: (theme: Theme) =>
+                  alpha(theme.palette.primary.main, 0.12),
+              },
+        }}
+      >
+        <Iconify icon="ion:download-outline" sx={{ width: 18, height: 18 }} />
+        {t("datasetsImportNew")}
+      </Box>
 
       {data ? (
-        <Typography
-          variant="caption"
-          sx={{ color: "text.secondary", display: "block", mt: 1 }}
-        >
-          {t("syncJosesCoefficientHint")}
-        </Typography>
+        <>
+          <Box
+            sx={{
+              height: "1px",
+              backgroundColor: "divider",
+              my: 0.25,
+            }}
+          />
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Iconify
+              icon="ion:sync-outline"
+              sx={{
+                width: 20,
+                height: 20,
+                color: "primary.main",
+                flexShrink: 0,
+              }}
+            />
+            <Typography sx={{ fontWeight: 700, fontSize: 17, lineHeight: 1.4 }}>
+              {t("syncJosesCoefficient")}
+            </Typography>
+          </Stack>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            {t("syncJosesCoefficientHint")}
+          </Typography>
+          <Button
+            variant="outlined"
+            disabled={busy}
+            fullWidth
+            onClick={handleSyncJoses}
+            sx={{
+              minHeight: 44,
+              borderRadius: "10px",
+              textTransform: "none",
+              fontWeight: 600,
+            }}
+          >
+            {t("syncJosesCoefficient")}
+          </Button>
+        </>
       ) : null}
 
       {localError ? (
@@ -449,7 +628,14 @@ export default function DatasetsPanel({
                   ],
                 ] as const
               ).map(([labelKey, value]) => (
-                <Box key={labelKey}>
+                <Box
+                  key={labelKey}
+                  sx={{
+                    py: 1.25,
+                    borderTop: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
                   <Typography
                     variant="caption"
                     sx={{ color: "text.secondary", display: "block" }}
@@ -507,7 +693,7 @@ export default function DatasetsPanel({
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Stack>
   );
 
   if (embedded) return content;
