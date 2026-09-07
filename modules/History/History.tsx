@@ -44,6 +44,7 @@ import { ModeFormatMeta } from "@/modules/Analytics/ModeFormatMark";
 import { tallyOpenTablePlayers } from "@/lib/analytics/openTableBoard";
 import { listVisiblePlayers } from "@/lib/analytics/playerVisibility";
 import { sessionStatsFromDetail } from "@/lib/analytics/sessionStats";
+import { stylePointsFromDetail } from "@/lib/analytics/stylePoints";
 import {
   formatSignedDiff,
   signedDiffColor,
@@ -605,6 +606,10 @@ export default function History() {
     () => (detail ? sessionStatsFromDetail(detail) : null),
     [detail]
   );
+  const sessionStyle = useMemo(
+    () => (detail ? stylePointsFromDetail(detail) : null),
+    [detail]
+  );
 
   const openMatch = (id: number) => {
     startTransition(() => router.push(`/history/${id}`));
@@ -959,7 +964,12 @@ export default function History() {
         )}
       </Box>
 
-      {sessionStats ? <HistorySessionStats session={sessionStats} /> : null}
+      {sessionStats ? (
+        <HistorySessionStats
+          session={sessionStats}
+          styleByPlayerId={sessionStyle}
+        />
+      ) : null}
 
       <PlayerPickDialog
         open={pickerOpen}

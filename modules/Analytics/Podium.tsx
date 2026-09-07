@@ -23,6 +23,7 @@ import {
   type TileSet,
 } from "@/lib/analytics/modeFormat";
 import { listLeaderboard } from "@/lib/analytics/selectors";
+import { styleRowsForPodium } from "@/lib/analytics/stylePoints";
 import ModeFormatFilters from "@/modules/Analytics/ModeFormatFilters";
 import { useTranslation } from "@/i18n/useTranslation";
 import { usePodiumPunchlines } from "@/hooks/usePodiumPunchlines";
@@ -36,7 +37,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import { useMemo, useState } from "react";
 
-const SECTION_ORDER: PodiumKind[] = ["glory", "grind", "shame"];
+const SECTION_ORDER: PodiumKind[] = ["glory", "style", "grind", "shame"];
 
 function categoryTitleKey(id: PodiumCategoryId): string {
   const map: Record<PodiumCategoryId, string> = {
@@ -48,12 +49,18 @@ function categoryTitleKey(id: PodiumCategoryId): string {
     polloRate: "podiumPolloRateTitle",
     zapatos: "podiumZapatosTitle",
     zapatoRate: "podiumZapatoRateTitle",
+    maxDataFor: "podiumMaxDataForTitle",
+    minDatasToWin: "podiumMinDatasToWinTitle",
+    maxDatasToWin: "podiumMaxDatasToWinTitle",
+    maxDatasToLose: "podiumMaxDatasToLoseTitle",
     games: "podiumGamesTitle",
     hands: "podiumHandsTitle",
     bestLoser: "podiumBestLoserTitle",
     keepsComing: "podiumKeepsComingTitle",
     pollosEaten: "podiumPollosEatenTitle",
     zapatosEaten: "podiumZapatosEatenTitle",
+    minDatasToLose: "podiumMinDatasToLoseTitle",
+    maxDataAgainst: "podiumMaxDataAgainstTitle",
   };
   return map[id];
 }
@@ -64,6 +71,8 @@ function sectionTitleKey(kind: PodiumKind): string {
       return "podiumSectionGlory";
     case "grind":
       return "podiumSectionGrind";
+    case "style":
+      return "podiumSectionStyle";
     case "shame":
       return "podiumSectionShame";
     default: {
@@ -218,12 +227,16 @@ export default function Podium() {
 
   const podium = useMemo(() => {
     if (!data) return [];
-    return buildPodium(listLeaderboard(data, activeMode, tileSet));
+    return buildPodium(
+      listLeaderboard(data, activeMode, tileSet),
+      styleRowsForPodium(data, activeMode, tileSet)
+    );
   }, [data, activeMode, tileSet]);
 
   const byKind = useMemo(() => {
     const map: Record<PodiumKind, PodiumCategoryResult[]> = {
       glory: [],
+      style: [],
       grind: [],
       shame: [],
     };

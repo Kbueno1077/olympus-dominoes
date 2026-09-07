@@ -10,12 +10,12 @@ import {
   formatBreakdownValue,
 } from "@/lib/analytics/statBreakdown";
 import {
-  h2hForPlayer,
-  type SessionH2HRow,
   type SessionPlayerRow,
   type SessionStats,
   type SessionTeamGroup,
 } from "@/lib/analytics/sessionStats";
+import type { StylePoints } from "@/lib/analytics/stylePoints";
+import { StylePointsLines } from "@/modules/Analytics/StylePointsLines";
 import {
   formatSignedDiff,
   signedDiffColor,
@@ -24,10 +24,11 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { TEAM_KEYS } from "@/utils/matchSettings";
 import { Box, Stack, Typography } from "@mui/material";
 import { alpha, type Theme } from "@mui/material/styles";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Props = {
   session: SessionStats;
+  styleByPlayerId?: Map<number, StylePoints> | null;
 };
 
 function teamPaletteKey(teamNumber: number): string {
@@ -37,7 +38,10 @@ function teamPaletteKey(teamNumber: number): string {
 /**
  * Right rail for /history/[id]: this night only, these seats, full breakdown.
  */
-export default function HistorySessionStats({ session }: Props) {
+export default function HistorySessionStats({
+  session,
+  styleByPlayerId,
+}: Props) {
   const { t } = useTranslation();
   const [selectedKey, setSelectedKey] = useState(
     () => session.players[0]?.key ?? ""
@@ -52,10 +56,6 @@ export default function HistorySessionStats({ session }: Props) {
     session.players.find((row) => row.key === selectedKey) ??
     session.players[0] ??
     null;
-  const h2h = useMemo(
-    () => (selected ? h2hForPlayer(session.h2h, selected.playerId) : []),
-    [selected, session.h2h]
-  );
 
   return (
     <Box
@@ -107,7 +107,16 @@ export default function HistorySessionStats({ session }: Props) {
               ))}
             </Stack>
 
-            {selected ? <SelectedBreakdown player={selected} h2h={h2h} /> : null}
+            {selected ? (
+              <SelectedBreakdown
+                player={selected}
+                style={
+                  selected.playerId != null
+                    ? (styleByPlayerId?.get(selected.playerId) ?? null)
+                    : null
+                }
+              />
+            ) : null}
           </Stack>
         )}
       </Box>
@@ -227,10 +236,10 @@ function TeamBlock({
 
 function SelectedBreakdown({
   player,
-  h2h,
+  style,
 }: {
   player: SessionPlayerRow;
-  h2h: SessionH2HRow[];
+  style: StylePoints | null;
 }) {
   const { t } = useTranslation();
   const stats = player.stats;
@@ -272,60 +281,18 @@ function SelectedBreakdown({
         </Typography>
       )}
 
-      <Box sx={{ px: 0.5, pt: 0.5 }}>
-        <Typography
-          variant="overline"
-          component="p"
-          sx={{ color: "text.secondary", mb: 0.5 }}
-        >
-          {t("statsH2HTitle")}
-        </Typography>
-        {h2h.length === 0 ? (
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            {t("statsNoData")}
+      {player.playerId != null ? (
+        <Box sx={{ px: 0.5, pt: 0.5 }}>
+          <Typography
+            variant="overline"
+            component="p"
+            sx={{ color: "text.secondary", mb: 0.5 }}
+          >
+            {t("statsStylePointsTitle")}
           </Typography>
-        ) : (
-          <Stack>
-            {h2h.map((row) => {
-              const oppKey =
-                row.opponentTeamNumber != null
-                  ? teamPaletteKey(row.opponentTeamNumber)
-                  : null;
-              return (
-                <Box
-                  key={`${row.playerId}-${row.opponentId}`}
-                  sx={{
-                    py: 0.85,
-                    borderTop: "1px solid",
-                    borderColor: "divider",
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      color: oppKey
-                        ? (theme: Theme) => (theme.palette as any)[oppKey].dark
-                        : "text.primary",
-                    }}
-                  >
-                    {row.opponentName}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "text.secondary" }}
-                  >
-                    {t("statsH2HRecord", {
-                      total: row.wins + row.losses,
-                      wins: row.wins,
-                      losses: row.losses,
-                    })}
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Stack>
-        )}
-      </Box>
+          <StylePointsLines points={style} />
+        </Box>
+      ) : null}
     </Stack>
   );
 }
