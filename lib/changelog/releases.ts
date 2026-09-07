@@ -23,11 +23,16 @@ export const CHANGELOG: ChangelogRelease[] = [
     version: "4.8.0",
     date: "2026-09-02",
     schema: 25,
-    summary: "Jose ranking uses KJ, a date range on Stats and History, and a recast home.",
+    summary:
+      "Jose ranking uses KJ, a date range on Stats and History, Tools for the save, and Mode/Format that always match the phone app.",
     highlights: [
       "Jose’s Coefficient on Stats, Compare, Leaderboard, and Podium uses the KJ ranking.",
       "Stats, Compare, and History share a start/end date filter.",
       "Home and How to use follow the phone app: accordions, optional CSV import, and store / QR on the Phone and Web cards.",
+      "Tools: hide or restore players, fold duplicate nights, extract a slice into a new dataset, and repair a save.",
+      "History match detail has This night — only the people who sat that match, with numbers from that session.",
+      "Mode and Format always list every option (55 tiles, 28 tiles, 1 vs 1, 2 vs 2, 2 vs 1, FFA), even when the save has no games there yet.",
+      "Those Mode and Format names and icons match the phone app on the score notepad, Play, History cards, and the stats pages.",
     ],
   },
   {

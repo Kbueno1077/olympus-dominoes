@@ -1,5 +1,6 @@
 "use client";
 
+import Iconify from "@/components/Iconify";
 import ActiveDatasetPlayersAccordion from "@/modules/Analytics/ActiveDatasetPlayersAccordion";
 import DatasetsPanel from "@/modules/Analytics/DatasetsPanel";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -56,9 +57,18 @@ export default function StatsDataDrawer({ open, onClose }: Props) {
         }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h5" sx={{ mb: 0.25 }}>
-            {t("statsDataTitle")}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.25 }}>
+            <Iconify
+              icon="ion:folder-outline"
+              sx={{
+                width: 22,
+                height: 22,
+                color: "primary.main",
+                flexShrink: 0,
+              }}
+            />
+            <Typography variant="h5">{t("statsDataTitle")}</Typography>
+          </Stack>
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
             {t("statsDataHint")}
           </Typography>

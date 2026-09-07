@@ -360,6 +360,7 @@ const en = {
   datasetsTitle: "Data sets",
   datasetsHint:
     "Keep several backups in this browser (your league, a friend’s file, …). Switch anytime — history and stats all swap.",
+  datasetsEmpty: "No saved data sets yet.",
   datasetsActive: "Active",
   datasetsSwitch: "Switch",
   datasetsRename: "Rename",
@@ -1319,6 +1320,7 @@ const es = {
   datasetsTitle: "Conjuntos de datos",
   datasetsHint:
     "Guarda varios respaldos en este navegador (tu liga, el archivo de un amigo, …). Cambia cuando quieras: historial y estadísticas se reemplazan.",
+  datasetsEmpty: "Aún no hay conjuntos guardados.",
   datasetsActive: "Activo",
   datasetsSwitch: "Cambiar",
   datasetsRename: "Renombrar",
