@@ -30,8 +30,7 @@ import {
   tallyWins,
   TEAM_KEYS,
 } from "@/utils/matchSettings";
-import { PlayArrow } from "@mui/icons-material";
-import { Box, Button, Card, Stack, Typography } from "@mui/material";
+import { Box, Card, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useMemo } from "react";
 import { useRecoilState } from "recoil";
@@ -259,17 +258,7 @@ export default function NewMatch() {
           </Stack>
         ) : (
           <Stack spacing={1.75}>
-            <MatchSettings />
-
-            <Button
-              onClick={handleStartGame}
-              variant="contained"
-              size="large"
-              fullWidth
-              startIcon={<PlayArrow />}
-            >
-              {t("startPlaying")}
-            </Button>
+            <MatchSettings onStart={handleStartGame} />
           </Stack>
         )}
 

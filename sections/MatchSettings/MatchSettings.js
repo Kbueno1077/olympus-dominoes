@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   Card,
-  Chip,
   IconButton,
   InputAdornment,
   Stack,
@@ -12,9 +11,8 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
-  useMediaQuery,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
 import { Fragment } from "react";
 
 import { useTranslation } from "@/i18n/useTranslation";
@@ -27,11 +25,10 @@ import {
   FORMAT_SECTION_ICON,
   MODE_SECTION_ICON,
   ModeFormatMeta,
-  ModeFormatSectionTitle,
+  ModeFormatIcon,
   ModeFormatToggleLabel,
   PLAYERS_SECTION_ICON,
   TARGET_SECTION_ICON,
-  modeFormatToggleGroupSx,
   useModeFormatCopy,
 } from "@/modules/Analytics/ModeFormatMark";
 import { DOMINO_SETS, getDominoSet } from "@/utils/dominoSets";
@@ -176,20 +173,60 @@ export function MatchSummary() {
   );
 }
 
+const setupChoiceGroupSx = {
+  display: "flex",
+  flexWrap: "nowrap",
+  gap: 1,
+  width: "100%",
+  "& .MuiToggleButton-root": {
+    flex: "1 1 0",
+    minWidth: 0,
+    minHeight: 40,
+    gap: 0.75,
+    px: 1.25,
+    py: 0.875,
+    border: "1px solid",
+    borderColor: (theme) => alpha(theme.palette.text.secondary, 0.16),
+    borderRadius: "10px !important",
+    color: "text.secondary",
+    backgroundColor: "background.default",
+    "&:not(:first-of-type)": {
+      borderLeft: "1px solid",
+      borderLeftColor: (theme) => alpha(theme.palette.text.secondary, 0.16),
+      ml: 0,
+    },
+    "&:hover": {
+      backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.07),
+    },
+    "&.Mui-selected": {
+      color: "primary.dark",
+      borderColor: "primary.main",
+      backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.12),
+      fontWeight: 700,
+      "&:hover": {
+        backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.16),
+      },
+    },
+  },
+};
+
 function FieldGroup({ label, icon, children, sx }) {
   return (
-    <Box sx={sx}>
-      {icon ? (
-        <ModeFormatSectionTitle icon={icon} label={label} />
-      ) : (
+    <Box sx={{ minWidth: 0, ...sx }}>
+      <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }}>
+        {icon ? (
+          <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+            <ModeFormatIcon icon={icon} />
+          </Box>
+        ) : null}
         <Typography
           variant="overline"
           component="p"
-          sx={{ color: "text.secondary", mb: 1 }}
+          sx={{ color: "primary.dark", lineHeight: 1.2 }}
         >
           {label}
         </Typography>
-      )}
+      </Stack>
       {children}
     </Box>
   );
@@ -198,146 +235,127 @@ function FieldGroup({ label, icon, children, sx }) {
 function PlayerNameField({ member, teamKey }) {
   const { t } = useTranslation();
   const isSelf = member.number === 1;
-  // Seat badge width + row gap — keeps the label over the input only.
-  const labelIndent = "46px";
 
   return (
-    <Box>
-      <Stack
-        direction="row"
-        spacing={1}
-        alignItems="center"
-        sx={{ ml: labelIndent, mb: 0.625 }}
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Box
+        sx={{
+          width: 36,
+          height: 36,
+          borderRadius: "10px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "3px",
+          backgroundColor: (theme) => alpha(theme.palette[teamKey].main, 0.16),
+          flexShrink: 0,
+        }}
       >
-        <Typography
-          variant="caption"
-          component="label"
-          htmlFor={member.id}
-          sx={{ color: "text.secondary", lineHeight: 1.2 }}
-        >
-          {isSelf ? t("selfPlaceholder") : t("player", { n: member.number })}
-        </Typography>
-        {isSelf && (
-          <Typography
-            component="span"
-            sx={{
-              fontWeight: 500,
-              fontSize: 10,
-              letterSpacing: 0.6,
-              textTransform: "uppercase",
-              color: (theme) => theme.palette[teamKey].main,
-              lineHeight: 1.2,
-            }}
-          >
-            {t("youBadge")}
-          </Typography>
-        )}
-      </Stack>
-
-      <Stack direction="row" spacing={1.25} alignItems="center">
         <Box
           sx={{
-            width: 36,
-            height: 40,
-            borderRadius: "10px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "3px",
-            backgroundColor: (theme) =>
-              alpha(theme.palette[teamKey].main, 0.14),
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            backgroundColor: (theme) => theme.palette[teamKey].main,
+          }}
+        />
+        <Typography
+          component="span"
+          sx={{
+            fontWeight: 700,
+            fontSize: 13,
+            lineHeight: 1,
+            color: (theme) => theme.palette[teamKey].main,
+          }}
+        >
+          {member.number}
+        </Typography>
+      </Box>
+
+      <TextField
+        id={member.id}
+        placeholder={isSelf ? t("selfPlaceholder") : t("namePlaceholder")}
+        fullWidth
+        size="small"
+        value={member.value}
+        onChange={(event) => member.onChange(event.target.value)}
+        inputProps={{
+          maxLength: 24,
+          "aria-label": isSelf
+            ? t("selfPlaceholder")
+            : t("player", { n: member.number }),
+        }}
+        sx={{
+          flex: 1,
+          "& .MuiOutlinedInput-root": { minHeight: 40 },
+        }}
+        InputProps={{
+          endAdornment: member.value ? (
+            <InputAdornment position="end">
+              <IconButton
+                aria-label={t("clearName")}
+                edge="end"
+                size="small"
+                onClick={() => member.onChange("")}
+                sx={{
+                  width: 28,
+                  height: 28,
+                  backgroundColor: (theme) =>
+                    alpha(theme.palette.text.secondary, 0.12),
+                  "&:hover": {
+                    backgroundColor: (theme) =>
+                      alpha(theme.palette.text.secondary, 0.2),
+                  },
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{
+                    fontSize: 18,
+                    lineHeight: 1,
+                    color: "text.secondary",
+                    mt: "-1px",
+                  }}
+                >
+                  ×
+                </Box>
+              </IconButton>
+            </InputAdornment>
+          ) : null,
+        }}
+      />
+      {isSelf ? (
+        <Typography
+          component="span"
+          sx={{
+            fontWeight: 500,
+            fontSize: 10,
+            letterSpacing: 0.6,
+            textTransform: "uppercase",
+            color: (theme) => theme.palette[teamKey].main,
+            lineHeight: 1.2,
             flexShrink: 0,
           }}
         >
-          <Box
-            sx={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              backgroundColor: (theme) => theme.palette[teamKey].main,
-            }}
-          />
-          <Typography
-            component="span"
-            sx={{
-              fontWeight: 700,
-              fontSize: 13,
-              lineHeight: 1,
-              color: (theme) => theme.palette[teamKey].main,
-            }}
-          >
-            {member.number}
-          </Typography>
-        </Box>
-
-        <TextField
-          id={member.id}
-          placeholder={isSelf ? t("selfPlaceholder") : t("namePlaceholder")}
-          fullWidth
-          size="small"
-          value={member.value}
-          onChange={(event) => member.onChange(event.target.value)}
-          inputProps={{ maxLength: 24 }}
-          sx={{
-            flex: 1,
-            "& .MuiOutlinedInput-root": { minHeight: 40 },
-          }}
-          InputProps={{
-            endAdornment: member.value ? (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label={t("clearName")}
-                  edge="end"
-                  size="small"
-                  onClick={() => member.onChange("")}
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    backgroundColor: (theme) =>
-                      alpha(theme.palette.text.secondary, 0.12),
-                    "&:hover": {
-                      backgroundColor: (theme) =>
-                        alpha(theme.palette.text.secondary, 0.2),
-                    },
-                  }}
-                >
-                  <Box
-                    component="span"
-                    sx={{
-                      fontSize: 18,
-                      lineHeight: 1,
-                      color: "text.secondary",
-                      mt: "-1px",
-                    }}
-                  >
-                    ×
-                  </Box>
-                </IconButton>
-              </InputAdornment>
-            ) : null,
-          }}
-        />
-      </Stack>
-    </Box>
+          {t("youBadge")}
+        </Typography>
+      ) : null}
+    </Stack>
   );
 }
 
 function TeamBlock({ team }) {
-  const { teamName } = useTranslation();
-
   return (
-    <Stack spacing={1.75}>
-      <Chip
-        label={teamName(team.number)}
-        size="small"
-        sx={{
-          alignSelf: "flex-start",
-          color: (theme) => theme.palette[team.key].dark,
-          backgroundColor: (theme) => alpha(theme.palette[team.key].main, 0.12),
-        }}
-      />
-
+    <Stack
+      spacing={1}
+      sx={{
+        minWidth: 0,
+        borderRadius: "12px",
+        p: 1.25,
+        backgroundColor: (theme) => alpha(theme.palette[team.key].main, 0.1),
+      }}
+    >
       {team.members.map((member) => (
         <PlayerNameField
           key={member.id}
@@ -349,9 +367,7 @@ function TeamBlock({ team }) {
   );
 }
 
-export default function MatchSettings() {
-  const theme = useTheme();
-  const isNarrow = useMediaQuery(theme.breakpoints.down("sm"));
+export default function MatchSettings({ onStart }) {
   const { t } = useTranslation();
   const { formatLabel, tileLabel } = useModeFormatCopy();
 
@@ -452,11 +468,11 @@ export default function MatchSettings() {
       : { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" };
 
   return (
-    <Stack spacing={2}>
-      <Card sx={{ p: { xs: 2.5, sm: 3 } }}>
-        <Stack spacing={3}>
+    <Stack spacing={1.75}>
+      <Card sx={{ p: { xs: 2.25, sm: 2.5 } }}>
+        <Stack spacing={2.25}>
           <Box>
-            <Typography variant="h5" sx={{ color: "text.primary" }}>
+            <Typography variant="h3" sx={{ color: "primary.dark" }}>
               {t("setupTitle")}
             </Typography>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
@@ -464,16 +480,33 @@ export default function MatchSettings() {
             </Typography>
           </Box>
 
-          <Box
-            sx={{
-              display: "grid",
-              gap: 3,
-              gridTemplateColumns: {
-                xs: "1fr",
-                md: "1fr 1fr",
-              },
-            }}
-          >
+          <Stack spacing={2.25}>
+            <FieldGroup
+              icon={PLAYERS_SECTION_ICON}
+              label={t("playersAtTable")}
+            >
+              <ToggleButtonGroup
+                exclusive
+                fullWidth
+                size="small"
+                disabled={isGameStarted}
+                value={playersAmount}
+                onChange={handlePlayerCountChange}
+                aria-label={t("playersAtTable")}
+                sx={setupChoiceGroupSx}
+              >
+                {PLAYER_COUNTS.map((count) => (
+                  <ToggleButton
+                    key={count}
+                    value={count}
+                    aria-label={t("playerCountAria", { n: count })}
+                  >
+                    {count}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </FieldGroup>
+
             <FieldGroup icon={MODE_SECTION_ICON} label={t("mode")}>
               <ToggleButtonGroup
                 exclusive
@@ -483,7 +516,7 @@ export default function MatchSettings() {
                 value={dominoSet}
                 onChange={handleDominoSetChange}
                 aria-label={t("mode")}
-                sx={modeFormatToggleGroupSx}
+                sx={setupChoiceGroupSx}
               >
                 {DOMINO_SETS.map((set) => {
                   const tiles = tileSetFromDominoSetId(set.id);
@@ -502,28 +535,6 @@ export default function MatchSettings() {
               </ToggleButtonGroup>
             </FieldGroup>
 
-            <FieldGroup icon={PLAYERS_SECTION_ICON} label={t("playersAtTable")}>
-              <ToggleButtonGroup
-                exclusive
-                fullWidth
-                size="small"
-                disabled={isGameStarted}
-                value={playersAmount}
-                onChange={handlePlayerCountChange}
-                aria-label={t("playersAtTable")}
-              >
-                {PLAYER_COUNTS.map((count) => (
-                  <ToggleButton
-                    key={count}
-                    value={count}
-                    aria-label={t("playerCountAria", { n: count })}
-                  >
-                    {count}
-                  </ToggleButton>
-                ))}
-              </ToggleButtonGroup>
-            </FieldGroup>
-
             <FieldGroup icon={FORMAT_SECTION_ICON} label={t("format")}>
               <ToggleButtonGroup
                 exclusive
@@ -533,7 +544,7 @@ export default function MatchSettings() {
                 value={gameMode?.label ?? null}
                 onChange={handleModeChange}
                 aria-label={t("format")}
-                sx={modeFormatToggleGroupSx}
+                sx={setupChoiceGroupSx}
               >
                 {renderGameModes.map((mode) => (
                   <ToggleButton
@@ -551,73 +562,90 @@ export default function MatchSettings() {
 
             <FieldGroup icon={TARGET_SECTION_ICON} label={t("pointsToWin")}>
               <Stack
-                direction={isNarrow ? "column" : "row"}
-                spacing={1.5}
-                alignItems={isNarrow ? "stretch" : "center"}
+                direction="row"
+                spacing={1}
+                alignItems="stretch"
+                sx={{ minWidth: 0 }}
               >
-                <TextField
-                  id="max-points"
-                  label={t("target")}
+                <ToggleButtonGroup
+                  exclusive
+                  fullWidth
                   size="small"
                   disabled={isGameStarted}
-                  value={maxPoints}
+                  value={TARGET_PRESETS.includes(Number(maxPoints)) ? Number(maxPoints) : null}
+                  onChange={(_event, nextPoints) => {
+                    if (nextPoints !== null) setMaxPoints(String(nextPoints));
+                  }}
+                  aria-label={t("pointsToWin")}
+                  sx={{ ...setupChoiceGroupSx, flex: 3, minWidth: 0 }}
+                >
+                  {TARGET_PRESETS.map((preset) => (
+                    <ToggleButton
+                      key={preset}
+                      value={preset}
+                    >
+                      {preset}
+                    </ToggleButton>
+                  ))}
+                </ToggleButtonGroup>
+                <TextField
+                  id="max-points"
+                  placeholder={t("playFirstToCustom")}
+                  size="small"
+                  disabled={isGameStarted}
+                  value={
+                    TARGET_PRESETS.includes(Number(maxPoints)) ? "" : maxPoints
+                  }
                   onChange={(event) => handleMaxPointsInput(event.target.value)}
                   type="number"
-                  InputLabelProps={{ shrink: true }}
-                  inputProps={{ inputMode: "numeric", pattern: "[0-9]*", min: 1 }}
-                  sx={{ width: isNarrow ? "100%" : 130 }}
+                  inputProps={{
+                    "aria-label": t("target"),
+                    inputMode: "numeric",
+                    pattern: "[0-9]*",
+                    min: 1,
+                  }}
+                  sx={{
+                    flex: 1.1,
+                    minWidth: 72,
+                    "& .MuiOutlinedInput-root": {
+                      minHeight: 40,
+                      backgroundColor: (theme) =>
+                        TARGET_PRESETS.includes(Number(maxPoints))
+                          ? theme.palette.background.default
+                          : alpha(theme.palette.primary.main, 0.08),
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: (theme) =>
+                        TARGET_PRESETS.includes(Number(maxPoints))
+                          ? alpha(theme.palette.text.secondary, 0.16)
+                          : theme.palette.primary.main,
+                    },
+                  }}
                 />
-
-                <Stack direction="row" spacing={1}>
-                  {TARGET_PRESETS.map((preset) => (
-                    <Chip
-                      key={preset}
-                      label={preset}
-                      size="small"
-                      clickable={!isGameStarted}
-                      disabled={isGameStarted}
-                      variant={
-                        Number(maxPoints) === preset ? "filled" : "outlined"
-                      }
-                      color={
-                        Number(maxPoints) === preset ? "primary" : "default"
-                      }
-                      onClick={() => setMaxPoints(String(preset))}
-                    />
-                  ))}
-                </Stack>
               </Stack>
             </FieldGroup>
-          </Box>
+          </Stack>
         </Stack>
       </Card>
 
-      <Card sx={{ p: { xs: 2.5, sm: 3 } }}>
-        <Stack spacing={2.25}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1.5}
-            alignItems={{ xs: "stretch", sm: "center" }}
-          >
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography
-                variant="subtitle1"
-                sx={{ color: "text.primary", fontWeight: 600, lineHeight: 1.3 }}
-              >
-                {t("rosterTitle")}
-              </Typography>
-              <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                {t("rosterSubtitle")}
-              </Typography>
-            </Box>
+      <Card sx={{ p: { xs: 2, sm: 2.25 } }}>
+        <Stack spacing={2}>
+          <Box>
+            <Typography variant="subtitle1" sx={{ color: "text.primary" }}>
+              {t("rosterTitle")}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              {t("rosterSubtitle")}
+            </Typography>
+          </Box>
 
+          <Stack direction="row" spacing={1.25}>
             <Button
               variant="outlined"
               size="small"
               onClick={handleRandomNames}
               sx={{
-                alignSelf: { xs: "stretch", sm: "center" },
-                flexShrink: 0,
+                flex: 1,
                 minHeight: 38,
                 px: 1.5,
                 fontSize: 13,
@@ -639,6 +667,17 @@ export default function MatchSettings() {
               <TeamBlock key={team.key} team={team} />
             ))}
           </Box>
+
+          {onStart ? (
+            <Button
+              onClick={onStart}
+              variant="contained"
+              size="large"
+              fullWidth
+            >
+              {t("startPlaying")}
+            </Button>
+          ) : null}
         </Stack>
       </Card>
 

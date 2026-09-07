@@ -11,8 +11,10 @@ import {
 import {
   FORMAT_SECTION_ICON,
   MODE_SECTION_ICON,
+  ModeFormatIcon,
   ModeFormatSectionTitle,
   ModeFormatToggleLabel,
+  PLAYERS_SECTION_ICON,
   TARGET_SECTION_ICON,
   modeFormatToggleGroupSx,
 } from "@/modules/Analytics/ModeFormatMark";
@@ -81,6 +83,21 @@ function modeTitleKey(id: PlayModeId): string {
   }
 }
 
+function modeBodyKey(id: PlayModeId): string {
+  switch (id) {
+    case "1v1":
+      return "playMode1v1Body";
+    case "2v2":
+      return "playMode2v2Body";
+    case "ffa4":
+      return "playModeFfaBody";
+    default: {
+      const _exhaustive: never = id;
+      return _exhaustive;
+    }
+  }
+}
+
 function drawRuleCopy(
   id: DrawRuleId
 ): { titleKey: string; bodyKey: string } {
@@ -107,6 +124,99 @@ function drawRuleCopy(
       };
     default: {
       const _exhaustive: never = id;
+      return _exhaustive;
+    }
+  }
+}
+
+function brainBodyKey(id: BotBrainId): string {
+  switch (id) {
+    case "table_sense":
+      return "playBotBrainTableSenseBlurb";
+    case "pimc":
+      return "playBotBrainPimcBlurb";
+    default: {
+      const _exhaustive: never = id;
+      return _exhaustive;
+    }
+  }
+}
+
+const setupChoiceGroupSx = {
+  display: "flex",
+  flexWrap: "nowrap",
+  gap: 1,
+  width: "100%",
+  "& .MuiToggleButton-root": {
+    flex: "1 1 0",
+    minWidth: 0,
+    minHeight: 40,
+    gap: 0.75,
+    px: 1.25,
+    py: 0.875,
+    border: "1px solid",
+    borderColor: (theme: any) => alpha(theme.palette.text.secondary, 0.16),
+    borderRadius: "10px !important",
+    color: "text.secondary",
+    backgroundColor: "background.default",
+    "&:not(:first-of-type)": {
+      borderLeft: "1px solid",
+      borderLeftColor: (theme: any) =>
+        alpha(theme.palette.text.secondary, 0.16),
+      ml: 0,
+    },
+    "&:hover": {
+      backgroundColor: (theme: any) => alpha(theme.palette.primary.main, 0.07),
+    },
+    "&.Mui-selected": {
+      color: "primary.dark",
+      borderColor: "primary.main",
+      backgroundColor: (theme: any) => alpha(theme.palette.primary.main, 0.12),
+      fontWeight: 700,
+      "&:hover": {
+        backgroundColor: (theme: any) =>
+          alpha(theme.palette.primary.main, 0.16),
+      },
+    },
+  },
+};
+
+function SetupSection({
+  icon,
+  label,
+  children,
+}: {
+  icon: string;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }}>
+        <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+          <ModeFormatIcon icon={icon} />
+        </Box>
+        <Typography
+          variant="overline"
+          component="p"
+          sx={{ color: "primary.dark", lineHeight: 1.2 }}
+        >
+          {label}
+        </Typography>
+      </Stack>
+      {children}
+    </Box>
+  );
+}
+
+function setTitleKey(id: DominoSetId): string {
+  switch (setId) {
+    case "double_six":
+      return "playSetDoubleSix";
+    case "double_nine":
+      return "playSetDoubleNine";
+    default: {
+      const _exhaustive: never = setId;
       return _exhaustive;
     }
   }
@@ -150,10 +260,10 @@ function SectionLabel({ children }: { children: ReactNode }) {
     <Typography
       variant="body2"
       sx={{
-        color: "text.secondary",
+        color: "primary.dark",
         mb: 0.75,
         display: "block",
-        fontWeight: 600,
+        fontWeight: 700,
       }}
     >
       {children}
