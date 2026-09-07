@@ -26,6 +26,8 @@ import {
   formatBreakdownValue,
 } from "@/lib/analytics/statBreakdown";
 import { formatSignedDiff } from "@/lib/analytics/signedDiff";
+import { stylePointsFromData } from "@/lib/analytics/stylePoints";
+import { StylePointsLines } from "@/modules/Analytics/StylePointsLines";
 import { listVisiblePlayers } from "@/lib/analytics/playerVisibility";
 import { recomputeAggregatesFromMatches } from "@/lib/analytics/recomputeFromMatches";
 import {
@@ -177,6 +179,17 @@ export default function Analytics() {
     if (!scopedData || selectedPlayerId == null) return [];
     return getPlayerH2H(scopedData, selectedPlayerId, activeMode, tileSet);
   }, [scopedData, selectedPlayerId, activeMode, tileSet]);
+
+  const stylePoints = useMemo(() => {
+    if (!data || selectedPlayerId == null) return null;
+    return (
+      stylePointsFromData(data, {
+        modeLabel: activeMode,
+        tileSet,
+        dateRange: dateFilter.range,
+      }).get(selectedPlayerId) ?? null
+    );
+  }, [data, selectedPlayerId, activeMode, tileSet, dateFilter.range]);
 
   const openH2HCompare = (opponentId: number) => {
     if (selectedPlayerId == null || !activeMode) return;
@@ -556,6 +569,12 @@ export default function Analytics() {
                   )}
                 </DashboardPanel>
               </Box>
+            ) : null}
+
+            {selectedPlayer && activeStats ? (
+              <DashboardPanel title={t("statsStylePointsTitle")}>
+                <StylePointsLines points={stylePoints} />
+              </DashboardPanel>
             ) : null}
           </Stack>
       </Box>

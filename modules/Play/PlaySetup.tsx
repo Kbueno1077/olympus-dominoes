@@ -12,11 +12,8 @@ import {
   FORMAT_SECTION_ICON,
   MODE_SECTION_ICON,
   ModeFormatIcon,
-  ModeFormatSectionTitle,
   ModeFormatToggleLabel,
-  PLAYERS_SECTION_ICON,
   TARGET_SECTION_ICON,
-  modeFormatToggleGroupSx,
 } from "@/modules/Analytics/ModeFormatMark";
 import { useTranslation } from "@/i18n/useTranslation";
 import PlayPaceSliders from "@/modules/Play/PlayPaceSliders";
@@ -30,7 +27,6 @@ import {
   Box,
   Button,
   Card,
-  Chip,
   Stack,
   TextField,
   ToggleButton,
@@ -38,6 +34,7 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import type { Theme } from "@mui/material/styles";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 type Props = {
@@ -83,21 +80,6 @@ function modeTitleKey(id: PlayModeId): string {
   }
 }
 
-function modeBodyKey(id: PlayModeId): string {
-  switch (id) {
-    case "1v1":
-      return "playMode1v1Body";
-    case "2v2":
-      return "playMode2v2Body";
-    case "ffa4":
-      return "playModeFfaBody";
-    default: {
-      const _exhaustive: never = id;
-      return _exhaustive;
-    }
-  }
-}
-
 function drawRuleCopy(
   id: DrawRuleId
 ): { titleKey: string; bodyKey: string } {
@@ -129,18 +111,9 @@ function drawRuleCopy(
   }
 }
 
-function brainBodyKey(id: BotBrainId): string {
-  switch (id) {
-    case "table_sense":
-      return "playBotBrainTableSenseBlurb";
-    case "pimc":
-      return "playBotBrainPimcBlurb";
-    default: {
-      const _exhaustive: never = id;
-      return _exhaustive;
-    }
-  }
-}
+const BOT_SECTION_ICON = "mdi:robot-outline";
+const DRAW_SECTION_ICON = "mdi:shuffle-variant";
+const PACE_SECTION_ICON = "mdi:timer-outline";
 
 const setupChoiceGroupSx = {
   display: "flex",
@@ -155,26 +128,28 @@ const setupChoiceGroupSx = {
     px: 1.25,
     py: 0.875,
     border: "1px solid",
-    borderColor: (theme: any) => alpha(theme.palette.text.secondary, 0.16),
+    borderColor: (theme: Theme) => alpha(theme.palette.text.secondary, 0.16),
     borderRadius: "10px !important",
     color: "text.secondary",
     backgroundColor: "background.default",
     "&:not(:first-of-type)": {
       borderLeft: "1px solid",
-      borderLeftColor: (theme: any) =>
+      borderLeftColor: (theme: Theme) =>
         alpha(theme.palette.text.secondary, 0.16),
       ml: 0,
     },
     "&:hover": {
-      backgroundColor: (theme: any) => alpha(theme.palette.primary.main, 0.07),
+      backgroundColor: (theme: Theme) =>
+        alpha(theme.palette.primary.main, 0.07),
     },
     "&.Mui-selected": {
       color: "primary.dark",
       borderColor: "primary.main",
-      backgroundColor: (theme: any) => alpha(theme.palette.primary.main, 0.12),
+      backgroundColor: (theme: Theme) =>
+        alpha(theme.palette.primary.main, 0.12),
       fontWeight: 700,
       "&:hover": {
-        backgroundColor: (theme: any) =>
+        backgroundColor: (theme: Theme) =>
           alpha(theme.palette.primary.main, 0.16),
       },
     },
@@ -209,19 +184,6 @@ function SetupSection({
   );
 }
 
-function setTitleKey(id: DominoSetId): string {
-  switch (setId) {
-    case "double_six":
-      return "playSetDoubleSix";
-    case "double_nine":
-      return "playSetDoubleNine";
-    default: {
-      const _exhaustive: never = setId;
-      return _exhaustive;
-    }
-  }
-}
-
 function setRuleKeys(setId: DominoSetId): string[] {
   switch (setId) {
     case "double_six":
@@ -253,22 +215,6 @@ function setRuleKeys(setId: DominoSetId): string[] {
       return _exhaustive;
     }
   }
-}
-
-function SectionLabel({ children }: { children: ReactNode }) {
-  return (
-    <Typography
-      variant="body2"
-      sx={{
-        color: "primary.dark",
-        mb: 0.75,
-        display: "block",
-        fontWeight: 700,
-      }}
-    >
-      {children}
-    </Typography>
-  );
 }
 
 export default function PlaySetup({
@@ -378,15 +324,14 @@ export default function PlaySetup({
             alignItems: "start",
           }}
         >
-          <Box>
-            <ModeFormatSectionTitle icon={MODE_SECTION_ICON} label={t("mode")} />
+          <SetupSection icon={MODE_SECTION_ICON} label={t("mode")}>
             <ToggleButtonGroup
               exclusive
               fullWidth
               size="small"
               value={setId}
               onChange={(_e, next) => next && onSet(next)}
-              sx={modeFormatToggleGroupSx}
+              sx={setupChoiceGroupSx}
             >
               <ToggleButton
                 value="double_nine"
@@ -464,20 +409,16 @@ export default function PlaySetup({
                 </Stack>
               </AccordionDetails>
             </Accordion>
-          </Box>
+          </SetupSection>
 
-          <Box>
-            <ModeFormatSectionTitle
-              icon={FORMAT_SECTION_ICON}
-              label={t("format")}
-            />
+          <SetupSection icon={FORMAT_SECTION_ICON} label={t("format")}>
             <ToggleButtonGroup
               exclusive
               fullWidth
               size="small"
               value={modeId}
               onChange={(_e, next) => next && onMode(next)}
-              sx={modeFormatToggleGroupSx}
+              sx={setupChoiceGroupSx}
             >
               {MODE_IDS.map((id) => (
                 <ToggleButton
@@ -493,31 +434,32 @@ export default function PlaySetup({
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
-          </Box>
+          </SetupSection>
 
-          <Box>
-            <ModeFormatSectionTitle
-              icon={TARGET_SECTION_ICON}
-              label={t("playFirstToLabel")}
-            />
+          <SetupSection icon={TARGET_SECTION_ICON} label={t("playFirstToLabel")}>
             <Stack
               direction="row"
-              spacing={0.75}
-              useFlexGap
-              alignItems="center"
+              spacing={1}
+              alignItems="stretch"
+              sx={{ minWidth: 0 }}
             >
-              {TARGETS.map((preset) => (
-                <Chip
-                  key={preset}
-                  label={preset}
-                  clickable
-                  onPointerDown={tapFeedback}
-                  variant={maxPoints === preset ? "filled" : "outlined"}
-                  color={maxPoints === preset ? "primary" : "default"}
-                  onClick={() => onMaxPoints(preset)}
-                  sx={{ ...pressableSx, flex: 1 }}
-                />
-              ))}
+              <ToggleButtonGroup
+                exclusive
+                fullWidth
+                size="small"
+                value={isPresetTarget ? maxPoints : null}
+                onChange={(_e, next) => {
+                  if (next !== null) onMaxPoints(next);
+                }}
+                aria-label={t("playFirstToLabel")}
+                sx={{ ...setupChoiceGroupSx, flex: 3, minWidth: 0 }}
+              >
+                {TARGETS.map((preset) => (
+                  <ToggleButton key={preset} value={preset}>
+                    {preset}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
               <TextField
                 size="small"
                 type="number"
@@ -536,19 +478,35 @@ export default function PlaySetup({
                     (event.target as HTMLInputElement).blur();
                   }
                 }}
-                sx={{ width: 96, flexShrink: 0 }}
+                sx={{
+                  flex: 1.1,
+                  minWidth: 72,
+                  "& .MuiOutlinedInput-root": {
+                    minHeight: 40,
+                    backgroundColor: (theme: Theme) =>
+                      isPresetTarget
+                        ? theme.palette.background.default
+                        : alpha(theme.palette.primary.main, 0.08),
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: (theme: Theme) =>
+                      isPresetTarget
+                        ? alpha(theme.palette.text.secondary, 0.16)
+                        : theme.palette.primary.main,
+                  },
+                }}
               />
             </Stack>
-          </Box>
+          </SetupSection>
 
-          <Box>
-            <SectionLabel>{t("playConfigBotBrain")}</SectionLabel>
+          <SetupSection icon={BOT_SECTION_ICON} label={t("playConfigBotBrain")}>
             <ToggleButtonGroup
               exclusive
               fullWidth
               size="small"
               value={botBrain}
               onChange={(_e, next) => next && onBotBrain(next)}
+              sx={setupChoiceGroupSx}
             >
               {difficultyOptions.map((option) => (
                 <ToggleButton key={option.id} value={option.id}>
@@ -556,85 +514,43 @@ export default function PlaySetup({
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
-          </Box>
+          </SetupSection>
         </Box>
 
-        <Accordion
-          disableGutters
-          elevation={0}
-          sx={{
-            border: "1px solid",
-            borderColor: alpha("#241D14", 0.1),
-            borderRadius: "12px !important",
-            overflow: "hidden",
-            bgcolor: alpha("#fff", 0.35),
-            "&:before": { display: "none" },
-          }}
-        >
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            sx={{
-              minHeight: 48,
-              px: 1.5,
-              "&.Mui-expanded": { minHeight: 48 },
-              "& .MuiAccordionSummary-content": {
-                my: 1,
-                "&.Mui-expanded": { my: 1 },
-              },
-            }}
+        <SetupSection icon={DRAW_SECTION_ICON} label={t("playDrawRule")}>
+          <ToggleButtonGroup
+            exclusive
+            fullWidth
+            size="small"
+            value={drawRule}
+            onChange={(_e, next) => next && onDrawRule(next)}
+            sx={{ ...setupChoiceGroupSx, flexWrap: "wrap" }}
           >
-            <Box sx={{ minWidth: 0 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {t("playDrawRule")}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: "text.secondary", display: "block" }}
-              >
-                {t(selectedDraw.titleKey)} — {t(selectedDraw.bodyKey)}
-              </Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails sx={{ px: 1.5, pt: 0, pb: 1.5 }}>
-            <Stack
-              direction="row"
-              spacing={0.75}
-              useFlexGap
-              flexWrap="wrap"
-              sx={{ mb: 1 }}
-            >
-              {DRAW_RULE_IDS.map((id) => {
-                const { titleKey } = drawRuleCopy(id);
-                const active = drawRule === id;
-                return (
-                  <Chip
-                    key={id}
-                    label={t(titleKey)}
-                    clickable
-                    onPointerDown={tapFeedback}
-                    variant={active ? "filled" : "outlined"}
-                    color={active ? "primary" : "default"}
-                    onClick={() => onDrawRule(id)}
-                    sx={pressableSx}
-                  />
-                );
-              })}
-            </Stack>
-            <Typography variant="caption" sx={{ color: "text.secondary" }}>
-              {t(selectedDraw.bodyKey)}
-            </Typography>
-          </AccordionDetails>
-        </Accordion>
+            {DRAW_RULE_IDS.map((id) => {
+              const { titleKey } = drawRuleCopy(id);
+              return (
+                <ToggleButton key={id} value={id}>
+                  {t(titleKey)}
+                </ToggleButton>
+              );
+            })}
+          </ToggleButtonGroup>
+          <Typography
+            variant="caption"
+            sx={{ color: "text.secondary", display: "block", mt: 1 }}
+          >
+            {t(selectedDraw.titleKey)} — {t(selectedDraw.bodyKey)}
+          </Typography>
+        </SetupSection>
 
-        <Box>
-          <SectionLabel>{t("playConfigPace")}</SectionLabel>
+        <SetupSection icon={PACE_SECTION_ICON} label={t("playConfigPace")}>
           <PlayPaceSliders
             botDelayMs={botDelayMs}
             onBotDelay={onBotDelay}
             animMs={animMs}
             onAnimMs={onAnimMs}
           />
-        </Box>
+        </SetupSection>
 
         <Button
           variant="contained"

@@ -20,6 +20,18 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "unreleased",
+    date: null,
+    schema: 25,
+    summary:
+      "Play setup matches the score notepad, and Style points track the wildest datas.",
+    highlights: [
+      "Play vs bots setup uses the same choice pills as the score notepad.",
+      "Style points: biggest and smallest single datas, and fewest or most datas to win or lose a game. They do not change Jose.",
+      "Those extremes show on Stats, on a History night, and as extra Podium trophies.",
+    ],
+  },
+  {
     version: "4.8.0",
     date: "2026-09-02",
     schema: 25,

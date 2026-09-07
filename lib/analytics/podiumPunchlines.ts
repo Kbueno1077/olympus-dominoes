@@ -30,6 +30,12 @@ const SUBTITLE_STEM: Record<PodiumCategoryId, string> = {
   keepsComing: "podiumKeepsComingSubtitle",
   pollosEaten: "podiumPollosEatenSubtitle",
   zapatosEaten: "podiumZapatosEatenSubtitle",
+  maxDataFor: "podiumMaxDataForSubtitle",
+  minDatasToWin: "podiumMinDatasToWinSubtitle",
+  maxDatasToWin: "podiumMaxDatasToWinSubtitle",
+  maxDatasToLose: "podiumMaxDatasToLoseSubtitle",
+  minDatasToLose: "podiumMinDatasToLoseSubtitle",
+  maxDataAgainst: "podiumMaxDataAgainstSubtitle",
 };
 
 export function podiumPunchlineKey(

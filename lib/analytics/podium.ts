@@ -4,6 +4,7 @@ import {
   formatSignedDiff,
   perHandAverage,
 } from "./signedDiff";
+import type { StylePodiumRow } from "./stylePoints";
 
 /** Minimum games for rate trophies (pollo/zapato rates). */
 export const PODIUM_RATE_MIN_GAMES = 5;
@@ -11,7 +12,7 @@ export const PODIUM_RATE_MIN_GAMES = 5;
 /** Minimum games for count / net / volume trophies. */
 export const PODIUM_COUNT_MIN_GAMES = 1;
 
-export type PodiumKind = "glory" | "grind" | "shame";
+export type PodiumKind = "glory" | "style" | "grind" | "shame";
 
 export type PodiumCategoryId =
   | "jose"
@@ -22,12 +23,18 @@ export type PodiumCategoryId =
   | "polloRate"
   | "zapatos"
   | "zapatoRate"
+  | "maxDataFor"
+  | "minDatasToWin"
+  | "maxDatasToWin"
+  | "maxDatasToLose"
   | "games"
   | "hands"
   | "bestLoser"
   | "keepsComing"
   | "pollosEaten"
-  | "zapatosEaten";
+  | "zapatosEaten"
+  | "minDatasToLose"
+  | "maxDataAgainst";
 
 /** Minimal row shape shared by app LeaderboardRow and web analytics. */
 export type PodiumPlayerRow = {
@@ -188,15 +195,73 @@ const CATEGORIES: CategoryDef[] = [
   },
 ];
 
-export const PODIUM_CATEGORY_IDS: PodiumCategoryId[] = CATEGORIES.map(
-  (c) => c.id
-);
+type StyleCategoryDef = {
+  id: PodiumCategoryId;
+  kind: PodiumKind;
+  direction: "higher" | "lower";
+  metric: (row: StylePodiumRow) => number | null;
+};
+
+const STYLE_CATEGORIES: StyleCategoryDef[] = [
+  {
+    id: "maxDataFor",
+    kind: "style",
+    direction: "higher",
+    metric: (row) => row.maxDataFor,
+  },
+  {
+    id: "minDatasToWin",
+    kind: "style",
+    direction: "lower",
+    metric: (row) => row.minDatasToWin,
+  },
+  {
+    id: "maxDatasToWin",
+    kind: "style",
+    direction: "higher",
+    metric: (row) => row.maxDatasToWin,
+  },
+  {
+    id: "maxDatasToLose",
+    kind: "style",
+    direction: "higher",
+    metric: (row) => row.maxDatasToLose,
+  },
+  {
+    id: "minDatasToLose",
+    kind: "style",
+    direction: "lower",
+    metric: (row) => row.minDatasToLose,
+  },
+  {
+    id: "maxDataAgainst",
+    kind: "style",
+    direction: "higher",
+    metric: (row) => row.maxDataAgainst,
+  },
+];
+
+export const PODIUM_CATEGORY_IDS: PodiumCategoryId[] = [
+  ...CATEGORIES.filter((c) => c.kind === "glory").map((c) => c.id),
+  ...STYLE_CATEGORIES.map((c) => c.id),
+  ...CATEGORIES.filter((c) => c.kind === "grind").map((c) => c.id),
+  ...CATEGORIES.filter((c) => c.kind === "shame").map((c) => c.id),
+];
+
+type Rankable = {
+  playerId: number;
+  playerName: string;
+  gamesPlayed: number;
+};
 
 function compareCandidates(
-  a: { row: PodiumPlayerRow; value: number },
-  b: { row: PodiumPlayerRow; value: number }
+  a: { row: Rankable; value: number },
+  b: { row: Rankable; value: number },
+  direction: "higher" | "lower" = "higher"
 ): number {
-  if (b.value !== a.value) return b.value - a.value;
+  if (b.value !== a.value) {
+    return direction === "higher" ? b.value - a.value : a.value - b.value;
+  }
   if (b.row.gamesPlayed !== a.row.gamesPlayed) {
     return b.row.gamesPlayed - a.row.gamesPlayed;
   }
@@ -204,15 +269,15 @@ function compareCandidates(
 }
 
 function toPlace(
-  candidate: { row: PodiumPlayerRow; value: number } | undefined,
-  format: CategoryDef["format"]
+  candidate: { row: Rankable; value: number } | undefined,
+  format: (value: number) => string
 ): PodiumPlace {
   if (!candidate) return null;
   return {
     playerId: candidate.row.playerId,
     playerName: candidate.row.playerName,
     value: candidate.value,
-    display: format(candidate.value, candidate.row),
+    display: format(candidate.value),
   };
 }
 
@@ -229,17 +294,54 @@ function rankCategory(
       return { row, value };
     })
     .filter((c): c is { row: PodiumPlayerRow; value: number } => c != null)
-    .sort(compareCandidates);
+    .sort((a, b) => compareCandidates(a, b));
 
   return {
     id: def.id,
     kind: def.kind,
-    winner: toPlace(candidates[0], def.format),
-    runnerUp: toPlace(candidates[1], def.format),
+    winner: toPlace(candidates[0], (value) => def.format(value, candidates[0]!.row)),
+    runnerUp: toPlace(candidates[1], (value) =>
+      def.format(value, candidates[1]!.row)
+    ),
   };
 }
 
-/** Build all podium categories for a mode's leaderboard rows. */
-export function buildPodium(rows: PodiumPlayerRow[]): PodiumCategoryResult[] {
-  return CATEGORIES.map((def) => rankCategory(rows, def));
+function rankStyleCategory(
+  rows: StylePodiumRow[],
+  def: StyleCategoryDef
+): PodiumCategoryResult {
+  const candidates = rows
+    .map((row) => {
+      const value = def.metric(row);
+      if (value == null || Number.isNaN(value)) return null;
+      return { row, value };
+    })
+    .filter((c): c is { row: StylePodiumRow; value: number } => c != null)
+    .sort((a, b) => compareCandidates(a, b, def.direction));
+
+  return {
+    id: def.id,
+    kind: def.kind,
+    winner: toPlace(candidates[0], (value) => String(value)),
+    runnerUp: toPlace(candidates[1], (value) => String(value)),
+  };
+}
+
+/** Build all podium categories for a mode's leaderboard + style extrema. */
+export function buildPodium(
+  rows: PodiumPlayerRow[],
+  styleRows: StylePodiumRow[] = []
+): PodiumCategoryResult[] {
+  return [
+    ...CATEGORIES.filter((def) => def.kind === "glory").map((def) =>
+      rankCategory(rows, def)
+    ),
+    ...STYLE_CATEGORIES.map((def) => rankStyleCategory(styleRows, def)),
+    ...CATEGORIES.filter((def) => def.kind === "grind").map((def) =>
+      rankCategory(rows, def)
+    ),
+    ...CATEGORIES.filter((def) => def.kind === "shame").map((def) =>
+      rankCategory(rows, def)
+    ),
+  ];
 }
