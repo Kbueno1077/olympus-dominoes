@@ -84,8 +84,9 @@ export const dashboardAsideSx = {
   minHeight: 0,
   minWidth: 0,
   overflowX: "hidden",
-  // Mobile: flow with page scroll. Desktop: inner panels own scroll.
-  overflowY: { xs: "visible", md: "hidden" },
+  // Mobile: flow with page scroll. Desktop: this column scrolls when
+  // filters + lists are taller than the pane (Collapse does not pass a height).
+  overflowY: { xs: "visible", md: "auto" },
   overscrollBehavior: { md: "contain" },
 };
 
