@@ -125,15 +125,42 @@ export default function DashboardAside({
       </Box>
 
       {hasFilters ? (
-        <Collapse in={filtersOpen} timeout={isDesktop ? 0 : 200} unmountOnExit={!isDesktop}>
+        <Collapse
+          in={filtersOpen}
+          timeout={isDesktop ? 0 : 200}
+          unmountOnExit={!isDesktop}
+          sx={{
+            flex: { xs: "0 0 auto", md: 1 },
+            minHeight: { md: 0 },
+            display: { md: "flex" },
+            flexDirection: "column",
+            // MUI's entered state is overflow:visible, which would clip under
+            // a height-locked aside. Keep this pane as the desktop scroller.
+            overflow: { xs: "visible", md: "auto" },
+            "&.MuiCollapse-entered": {
+              overflow: { xs: "visible", md: "auto" },
+            },
+            "& .MuiCollapse-wrapper": {
+              flex: { md: 1 },
+              minHeight: { md: 0 },
+              display: { md: "flex" },
+              flexDirection: "column",
+            },
+            "& .MuiCollapse-wrapperInner": {
+              flex: { md: 1 },
+              minHeight: { md: 0 },
+              display: { md: "flex" },
+              flexDirection: "column",
+            },
+          }}
+        >
           <Box
             sx={{
               display: "flex",
               flexDirection: "column",
               flex: 1,
               minHeight: 0,
-              // Mobile: flow with page. Desktop: fill aside and scroll inside.
-              overflow: { xs: "visible", md: "hidden" },
+              overflow: { xs: "visible", md: "visible" },
             }}
           >
             {children}
