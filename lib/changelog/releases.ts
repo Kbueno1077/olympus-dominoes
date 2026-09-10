@@ -20,24 +20,15 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
-    version: "unreleased",
-    date: null,
-    schema: 25,
-    summary:
-      "Play setup matches the score notepad, and Style points track the wildest datas.",
-    highlights: [
-      "Play vs bots setup uses the same choice pills as the score notepad.",
-      "Style points: biggest and smallest single datas, and fewest or most datas to win or lose a game. They do not change Jose.",
-      "Those extremes show on Stats, on a History night, and as extra Podium trophies.",
-    ],
-  },
-  {
     version: "4.8.0",
     date: "2026-09-02",
     schema: 25,
     summary:
-      "Jose ranking uses KJ, a date range on Stats and History, Tools for the save, and Mode/Format that always match the phone app.",
+      "Play setup matches the score notepad, Style points track the wildest datas, Jose ranking uses KJ, a date range on Stats and History, and Tools for the save.",
     highlights: [
+      "Play vs bots setup uses the same choice pills as the score notepad.",
+      "Style points: biggest and smallest single datas, and fewest or most datas to win or lose a game. They do not change Jose.",
+      "Those extremes show on Stats, on a History night, and as extra Podium trophies.",
       "Jose’s Coefficient on Stats, Compare, Leaderboard, and Podium uses the KJ ranking.",
       "Stats, Compare, and History share a start/end date filter.",
       "Home and How to use follow the phone app: accordions, optional CSV import, and store / QR on the Phone and Web cards.",

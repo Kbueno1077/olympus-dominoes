@@ -4,7 +4,7 @@ import type { OlympusExportData, PlayerStatsView } from "./types";
  * Jose's Coefficient — ranking score from aggregated player_stats.
  * Keep in sync with the mobile app:
  * olympus-dominoes-app/src/domain/joseCoefficient.ts
- * and README § Jose's Coefficient.
+ * and docs/joses-coefficient.md.
  *
  * Production ranking is KJ(x):
  * R = 2.5 × ΔG + ΔDW / 3.5 + ΔPF / 150 + 2.5 × (ΔPo / 4 + 0.4 × ΔZap / 4)
@@ -26,7 +26,7 @@ export type JosesCoefficientInput = Pick<
   | "zapatosAgainst"
 >;
 
-/** Weights for Jose's Coefficient — KJ(x) (see README). */
+/** Weights for Jose's Coefficient — KJ(x) (see docs/joses-coefficient.md). */
 export const JOSES_COEFFICIENT_WEIGHTS = {
   /** Multiplier on net games ΔG = W − L. */
   games: 2.5,
