@@ -202,7 +202,7 @@ describe("computeJosesCoefficient", () => {
     expect(cesar!).toBeGreaterThan(hotWeekend!);
   });
 
-  it("anchors README Cesar / Pedro / HotWeekend values", () => {
+  it("anchors docs Cesar / Pedro / HotWeekend values", () => {
     const fromDeltas = (
       net: number,
       deltaDW: number,

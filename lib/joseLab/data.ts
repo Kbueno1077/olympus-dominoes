@@ -1,4 +1,4 @@
-/** README + unit-test fixtures from the Jose lab brief. Do not ship as product data. */
+/** docs/joses-coefficient.md + unit-test fixtures. Do not ship as product data. */
 
 export type LabKind = "csv" | "mock";
 
