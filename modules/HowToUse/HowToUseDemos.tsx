@@ -11,6 +11,7 @@ export type HowToUseDemoId =
   | "notepad"
   | "play"
   | "save"
+  | "liveWatch"
   | "history"
   | "stats"
   | "leaderboard"
@@ -452,6 +453,60 @@ function PhoneDemo() {
   );
 }
 
+function LiveWatchDemo() {
+  const { t } = useTranslation();
+  return (
+    <DemoFrame caption={t("howToUseDemoLiveWatchCaption")}>
+      <Stack spacing={1} alignItems="center">
+        <Chip
+          size="small"
+          label={t("liveWatchLive")}
+          sx={{
+            fontWeight: 700,
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.16),
+            color: "primary.dark",
+          }}
+        />
+        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+          KJ 1 – 0 PR
+        </Typography>
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: 220,
+            borderRadius: 1.5,
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: alpha("#FDF8EE", 0.95),
+            px: 1.5,
+            py: 1,
+          }}
+        >
+          <Stack direction="row" justifyContent="space-between">
+            <Typography variant="caption" color="text.secondary">
+              KJ
+            </Typography>
+            <Typography variant="caption" fontWeight={700}>
+              55
+            </Typography>
+          </Stack>
+          <Stack direction="row" justifyContent="space-between">
+            <Typography variant="caption" color="text.secondary">
+              PR
+            </Typography>
+            <Typography variant="caption" fontWeight={700}>
+              40
+            </Typography>
+          </Stack>
+        </Box>
+        <Typography variant="caption" color="text.secondary" textAlign="center">
+          {t("liveWatchViewers", { n: 3 })}
+        </Typography>
+      </Stack>
+    </DemoFrame>
+  );
+}
+
 export function HowToUseDemo({ id }: { id: HowToUseDemoId }) {
   switch (id) {
     case "intro":
@@ -462,6 +517,8 @@ export function HowToUseDemo({ id }: { id: HowToUseDemoId }) {
       return <PlayDemo />;
     case "save":
       return <SaveDemo />;
+    case "liveWatch":
+      return <LiveWatchDemo />;
     case "history":
       return <HistoryDemo />;
     case "stats":

@@ -20,6 +20,20 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "4.9.0",
+    date: "2026-09-11",
+    schema: 25,
+    summary:
+      "Live watch: follow a phone scorepad in the browser, with Tools to monitor viewers.",
+    highlights: [
+      "Watch live from a phone QR — open /watch for a read-only scoreboard that updates as hands are scored.",
+      "This night session stats and style points recompute in the browser for the people at that table.",
+      "Guests can stop watching; Tools → Live watch lists shares, kicks individual viewers, or removes a share.",
+      "LIVE_WATCH_ENABLED=false turns the feature off (phone shows that live matches are disabled for now).",
+      "How to use covers Watch live.",
+    ],
+  },
+  {
     version: "4.8.0",
     date: "2026-09-02",
     schema: 25,

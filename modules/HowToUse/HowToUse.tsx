@@ -12,6 +12,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import LeaderboardOutlined from "@mui/icons-material/LeaderboardOutlined";
+import LiveTvOutlined from "@mui/icons-material/LiveTvOutlined";
 import PhoneIphoneOutlined from "@mui/icons-material/PhoneIphoneOutlined";
 import SmartToyOutlined from "@mui/icons-material/SmartToyOutlined";
 import {
@@ -63,6 +64,13 @@ const SECTIONS: Section[] = [
     title: "howToUseSaveTitle",
     blurb: "howToUseSaveBody",
     detail: "howToUseSaveDetail",
+  },
+  {
+    id: "liveWatch",
+    icon: LiveTvOutlined,
+    title: "howToUseLiveWatchTitle",
+    blurb: "howToUseLiveWatchBody",
+    detail: "howToUseLiveWatchDetail",
   },
   {
     id: "history",

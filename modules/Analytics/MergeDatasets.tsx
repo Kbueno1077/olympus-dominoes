@@ -5,6 +5,7 @@ import RestoreHiddenPlayersPanel from "@/modules/Analytics/RestoreHiddenPlayersP
 import ToolsDedupePanel from "@/modules/Analytics/ToolsDedupePanel";
 import ToolsExtractPanel from "@/modules/Analytics/ToolsExtractPanel";
 import ToolsRepairPanel from "@/modules/Analytics/ToolsRepairPanel";
+import ToolsLiveWatchPanel from "@/modules/Analytics/ToolsLiveWatchPanel";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
 import {
   dashboardMainSx,
@@ -46,6 +47,7 @@ import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
 import CallMergeOutlinedIcon from "@mui/icons-material/CallMergeOutlined";
 import ContentCutOutlinedIcon from "@mui/icons-material/ContentCutOutlined";
 import DifferenceOutlinedIcon from "@mui/icons-material/DifferenceOutlined";
+import LiveTvOutlinedIcon from "@mui/icons-material/LiveTvOutlined";
 import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -80,7 +82,7 @@ const MONO =
   'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 
 type Step = "select" | "review" | "approve";
-type ToolId = "restore" | "merge" | "dedupe" | "extract" | "repair";
+type ToolId = "restore" | "merge" | "dedupe" | "extract" | "repair" | "livewatch";
 
 type ConflictSide = {
   key: string;
@@ -336,6 +338,7 @@ export default function MergeDatasets() {
                 ["dedupe", t("toolsDedupeSection"), DifferenceOutlinedIcon],
                 ["extract", t("toolsExtractSection"), ContentCutOutlinedIcon],
                 ["repair", t("toolsRepairSection"), BuildOutlinedIcon],
+                ["livewatch", t("toolsLiveWatchSection"), LiveTvOutlinedIcon],
               ] as const
             ).map(([id, label, Icon]) => {
               const active = tool === id;
@@ -693,6 +696,8 @@ export default function MergeDatasets() {
               return <ToolsExtractPanel />;
             case "repair":
               return <ToolsRepairPanel />;
+            case "livewatch":
+              return <ToolsLiveWatchPanel />;
             case "merge":
               return (
         <Stack
