@@ -2,8 +2,8 @@ import { createHash, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import {
   GATE_COOKIE,
+  GATE_COOKIE_PATH,
   GATE_ENV,
-  GATE_PATH,
   type GateId,
 } from "./config";
 
@@ -56,7 +56,7 @@ export function setGateCookie(gate: GateId): void {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: GATE_PATH[gate],
+    path: GATE_COOKIE_PATH[gate],
     maxAge: 60 * 60 * 24 * 30,
   });
 }
