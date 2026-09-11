@@ -29,7 +29,6 @@ export const SET_LABEL_KEYS = {
 };
 
 const en = {
-  tagline: "Score · Double nine · 55 tiles",
   language: "Language",
 
   team: "Team {n}",
@@ -1086,7 +1085,6 @@ const en = {
 };
 
 const es = {
-  tagline: "Anota · Doble nueve · 55 fichas",
   language: "Idioma",
 
   team: "Equipo {n}",

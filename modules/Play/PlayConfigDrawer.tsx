@@ -215,9 +215,9 @@ export default function PlayConfigDrawer({
         Icon: EmojiEventsOutlined,
       },
       {
-        href: "/merge",
+        href: "/tools",
         label: t("mergeNav"),
-        match: (p: string) => p === "/merge" || p.startsWith("/merge/"),
+        match: (p: string) => p === "/tools" || p.startsWith("/tools/"),
         Icon: CallMergeOutlined,
         gated: true,
       },

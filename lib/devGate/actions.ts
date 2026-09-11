@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { assertGateId, GATE_PATH } from "./config";
-import { passwordMatches, setGateCookie } from "./server";
+import { isGateOpen, passwordMatches, setGateCookie } from "./server";
 
 export async function unlockDevGate(
   gateId: string,
@@ -19,5 +19,20 @@ export async function unlockDevGate(
   }
   setGateCookie(gate);
   revalidatePath(GATE_PATH[gate]);
+  return { ok: true };
+}
+
+/** Rewrite the gate cookie (path `/`) after Tools is already unlocked. */
+export async function refreshDevGateCookie(
+  gateId: string
+): Promise<{ ok: boolean }> {
+  let gate;
+  try {
+    gate = assertGateId(gateId);
+  } catch {
+    return { ok: false };
+  }
+  if (!isGateOpen(gate)) return { ok: false };
+  setGateCookie(gate);
   return { ok: true };
 }

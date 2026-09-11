@@ -24,13 +24,11 @@ export const CHANGELOG: ChangelogRelease[] = [
     date: "2026-09-11",
     schema: 25,
     summary:
-      "Live watch: follow a phone scorepad in the browser, with Tools to monitor viewers.",
+      "Watch a live table in the browser from the phone QR.",
     highlights: [
-      "Watch live from a phone QR — open /watch for a read-only scoreboard that updates as hands are scored.",
-      "This night session stats and style points recompute in the browser for the people at that table.",
-      "Guests can stop watching; Tools → Live watch lists shares, kicks individual viewers, or removes a share.",
-      "LIVE_WATCH_ENABLED=false turns the feature off (phone shows that live matches are disabled for now).",
-      "How to use covers Watch live.",
+      "Scan the QR on the phone scorepad to follow the game here. Scores update as hands are entered.",
+      "This night and Style points show for the people at that table.",
+      "Stop watching anytime. From Tools you can see who is on a share and kick them off.",
     ],
   },
   {

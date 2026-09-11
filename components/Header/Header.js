@@ -155,19 +155,6 @@ export default function Header() {
                   >
                     Olympus Dominoes
                   </Typography>
-                  <Typography
-                    variant="overline"
-                    noWrap
-                    sx={{
-                      display: { xs: "none", sm: "block" },
-                      color: "text.disabled",
-                      fontSize: 9,
-                      lineHeight: 1.35,
-                      letterSpacing: "0.06em",
-                    }}
-                  >
-                    {t("tagline")}
-                  </Typography>
                 </Box>
               </Stack>
             </motion.div>

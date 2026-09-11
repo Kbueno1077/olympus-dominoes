@@ -13,7 +13,7 @@ const FULL_BLEED_PATHS = new Set([
   "/history",
   "/podium",
   "/leaderboard",
-  "/merge",
+  "/tools",
   "/play",
   "/f-lab",
 ]);
