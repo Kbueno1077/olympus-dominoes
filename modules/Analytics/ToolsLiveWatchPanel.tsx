@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  LIVE_WATCH_ADMIN_POLL_MS,
   LIVE_WATCH_MAX_SHARES,
   LIVE_WATCH_VIEWER_MAX,
   LIVE_WATCH_VIEWER_WARN,
@@ -26,6 +27,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useRef, useState, Fragment } from "react";
@@ -97,7 +99,7 @@ export default function ToolsLiveWatchPanel() {
     void refresh();
     const timer = setInterval(() => {
       void refresh();
-    }, 4000);
+    }, LIVE_WATCH_ADMIN_POLL_MS);
     return () => clearInterval(timer);
   }, [refresh]);
 
@@ -151,6 +153,11 @@ export default function ToolsLiveWatchPanel() {
           cap: LIVE_WATCH_VIEWER_MAX,
           hours: 10,
         })}
+        extra={
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            {t("liveWatchAdminPollHint", { minutes: 5 })}
+          </Typography>
+        }
         trailing={
           <Button
             startIcon={<RefreshIcon />}
@@ -195,22 +202,34 @@ export default function ToolsLiveWatchPanel() {
                 <Fragment key={s.id}>
                   <TableRow hover>
                     <TableCell>
-                      <IconButton
-                        size="small"
-                        aria-label={t("liveWatchAdminToggleViewers")}
-                        onClick={() =>
-                          setExpanded((prev) => ({
-                            ...prev,
-                            [s.id]: !prev[s.id],
-                          }))
+                      <Tooltip
+                        title={
+                          open
+                            ? t("liveWatchAdminHideViewers")
+                            : t("liveWatchAdminToggleViewers")
                         }
                       >
-                        {open ? (
-                          <ExpandLessIcon fontSize="small" />
-                        ) : (
-                          <ExpandMoreIcon fontSize="small" />
-                        )}
-                      </IconButton>
+                        <IconButton
+                          size="small"
+                          aria-label={
+                            open
+                              ? t("liveWatchAdminHideViewers")
+                              : t("liveWatchAdminToggleViewers")
+                          }
+                          onClick={() =>
+                            setExpanded((prev) => ({
+                              ...prev,
+                              [s.id]: !prev[s.id],
+                            }))
+                          }
+                        >
+                          {open ? (
+                            <ExpandLessIcon fontSize="small" />
+                          ) : (
+                            <ExpandMoreIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </Tooltip>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontFamily="monospace">
@@ -252,25 +271,29 @@ export default function ToolsLiveWatchPanel() {
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        aria-label={t("liveWatchAdminClearViewers")}
-                        onClick={() => {
-                          void clearViewers(s.id);
-                        }}
-                      >
-                        <PersonOffOutlinedIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        aria-label={t("liveWatchAdminRemove")}
-                        onClick={() => {
-                          void removeShare(s.id);
-                        }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
+                      <Tooltip title={t("liveWatchAdminClearViewers")}>
+                        <IconButton
+                          size="small"
+                          aria-label={t("liveWatchAdminClearViewers")}
+                          onClick={() => {
+                            void clearViewers(s.id);
+                          }}
+                        >
+                          <PersonOffOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={t("liveWatchAdminRemove")}>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          aria-label={t("liveWatchAdminRemove")}
+                          onClick={() => {
+                            void removeShare(s.id);
+                          }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       <Button
                         size="small"
                         href={`/watch/${s.id}`}
