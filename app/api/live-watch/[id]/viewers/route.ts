@@ -35,40 +35,46 @@ export async function POST(req: Request, { params }: Ctx) {
 
   const action = body.action ?? "join";
 
-  if (action === "join") {
-    const result = joinLiveWatchViewer(params.id, body.viewerId);
-    if (!result.ok) {
-      const status =
-        result.error === "full" ? 403 : result.error === "expired" ? 410 : 404;
-      return liveWatchJson({ error: result.error }, status);
+  switch (action) {
+    case "join": {
+      const result = await joinLiveWatchViewer(params.id, body.viewerId);
+      if (!result.ok) {
+        const status =
+          result.error === "full"
+            ? 403
+            : result.error === "expired"
+              ? 410
+              : 404;
+        return liveWatchJson({ error: result.error }, status);
+      }
+      return liveWatchJson({
+        viewerId: result.viewer.id,
+        viewerCount: result.session.viewers.length,
+      });
     }
-    return liveWatchJson({
-      viewerId: result.viewer.id,
-      viewerCount: result.session.viewers.length,
-    });
+    case "heartbeat": {
+      if (!body.viewerId) {
+        return liveWatchJson({ error: "missing_viewer" }, 400);
+      }
+      const result = await heartbeatLiveWatchViewer(params.id, body.viewerId);
+      if (!result.ok) {
+        return liveWatchJson({ error: result.error }, 404);
+      }
+      return liveWatchJson({
+        ok: true,
+        viewerCount: result.session.viewers.length,
+      });
+    }
+    case "leave": {
+      if (!body.viewerId) {
+        return liveWatchJson({ error: "missing_viewer" }, 400);
+      }
+      await leaveLiveWatchViewer(params.id, body.viewerId);
+      return liveWatchJson({ ok: true });
+    }
+    default: {
+      const _never: never = action;
+      return liveWatchJson({ error: "bad_action", detail: _never }, 400);
+    }
   }
-
-  if (action === "heartbeat") {
-    if (!body.viewerId) {
-      return liveWatchJson({ error: "missing_viewer" }, 400);
-    }
-    const result = heartbeatLiveWatchViewer(params.id, body.viewerId);
-    if (!result.ok) {
-      return liveWatchJson({ error: result.error }, 404);
-    }
-    return liveWatchJson({
-      ok: true,
-      viewerCount: result.session.viewers.length,
-    });
-  }
-
-  if (action === "leave") {
-    if (!body.viewerId) {
-      return liveWatchJson({ error: "missing_viewer" }, 400);
-    }
-    leaveLiveWatchViewer(params.id, body.viewerId);
-    return liveWatchJson({ ok: true });
-  }
-
-  return liveWatchJson({ error: "bad_action" }, 400);
 }

@@ -21,7 +21,9 @@ export async function DELETE(req: Request, { params }: Ctx) {
   if (!isLiveWatchAdmin(req)) {
     return liveWatchJson({ error: "unauthorized" }, 401);
   }
-  const ok = deleteLiveWatchSession(params.id, undefined, { admin: true });
+  const ok = await deleteLiveWatchSession(params.id, undefined, {
+    admin: true,
+  });
   if (!ok) return liveWatchJson({ error: "not_found" }, 404);
   return liveWatchJson({ ok: true });
 }
@@ -35,7 +37,8 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!isLiveWatchAdmin(req)) {
     return liveWatchJson({ error: "unauthorized" }, 401);
   }
-  let body: { action?: "clear_viewers" | "kick_viewer"; viewerId?: string } = {};
+  let body: { action?: "clear_viewers" | "kick_viewer"; viewerId?: string } =
+    {};
   try {
     body = await req.json();
   } catch {
@@ -44,30 +47,33 @@ export async function POST(req: Request, { params }: Ctx) {
 
   const action = body.action ?? "clear_viewers";
 
-  if (!getLiveWatchSession(params.id)) {
+  if (!(await getLiveWatchSession(params.id))) {
     return liveWatchJson({ error: "not_found" }, 404);
   }
 
-  if (action === "clear_viewers") {
-    const session = clearLiveWatchViewers(params.id);
-    return liveWatchJson({
-      ok: true,
-      viewerCount: session?.viewers.length ?? 0,
-    });
-  }
-
-  if (action === "kick_viewer") {
-    if (!body.viewerId) {
-      return liveWatchJson({ error: "missing_viewer" }, 400);
+  switch (action) {
+    case "clear_viewers": {
+      const session = await clearLiveWatchViewers(params.id);
+      return liveWatchJson({
+        ok: true,
+        viewerCount: session?.viewers.length ?? 0,
+      });
     }
-    const ok = kickLiveWatchViewer(params.id, body.viewerId);
-    if (!ok) return liveWatchJson({ error: "viewer_not_found" }, 404);
-    const session = getLiveWatchSession(params.id);
-    return liveWatchJson({
-      ok: true,
-      viewerCount: session?.viewers.length ?? 0,
-    });
+    case "kick_viewer": {
+      if (!body.viewerId) {
+        return liveWatchJson({ error: "missing_viewer" }, 400);
+      }
+      const ok = await kickLiveWatchViewer(params.id, body.viewerId);
+      if (!ok) return liveWatchJson({ error: "viewer_not_found" }, 404);
+      const session = await getLiveWatchSession(params.id);
+      return liveWatchJson({
+        ok: true,
+        viewerCount: session?.viewers.length ?? 0,
+      });
+    }
+    default: {
+      const _never: never = action;
+      return liveWatchJson({ error: "bad_action", detail: _never }, 400);
+    }
   }
-
-  return liveWatchJson({ error: "bad_action" }, 400);
 }

@@ -1,3 +1,4 @@
+import { Redis } from "@upstash/redis";
 import {
   LIVE_WATCH_MAX_SHARES,
   LIVE_WATCH_TTL_MS,
@@ -9,16 +10,72 @@ import {
   type LiveWatchViewer,
 } from "./types";
 
-type GlobalStore = {
-  sessions: Map<string, LiveWatchSession>;
+type SessionRecord = Omit<LiveWatchSession, "viewers">;
+
+type MemoryStore = {
+  records: Map<string, SessionRecord>;
+  viewers: Map<string, Record<string, LiveWatchViewer>>;
 };
 
-function store(): GlobalStore {
+const INDEX_KEY = "olympus:lw:ids";
+
+function sessionKey(id: string): string {
+  return `olympus:lw:s:${id}`;
+}
+
+function viewersKey(id: string): string {
+  return `olympus:lw:v:${id}`;
+}
+
+function ttlSec(expiresAt: number, now = Date.now()): number {
+  return Math.max(1, Math.ceil((expiresAt - now) / 1000));
+}
+
+function redisCredentials(): { url: string; token: string } | null {
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return null;
+  return { url, token };
+}
+
+function allowMemoryFallback(): boolean {
+  if (process.env.LIVE_WATCH_STORE === "memory") return true;
+  if (process.env.NODE_ENV === "test") return true;
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") return false;
+  return true;
+}
+
+let redisClient: Redis | null | undefined;
+
+function redis(): Redis | null {
+  if (process.env.LIVE_WATCH_STORE === "memory") return null;
+  if (process.env.NODE_ENV === "test") return null;
+  if (redisClient !== undefined) return redisClient;
+  const creds = redisCredentials();
+  if (!creds) {
+    if (!allowMemoryFallback()) {
+      throw new Error(
+        "Live watch requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN"
+      );
+    }
+    redisClient = null;
+    return null;
+  }
+  redisClient = new Redis(creds);
+  return redisClient;
+}
+
+function memory(): MemoryStore {
   const g = globalThis as typeof globalThis & {
-    __olympusLiveWatch?: GlobalStore;
+    __olympusLiveWatch?: MemoryStore;
   };
   if (!g.__olympusLiveWatch) {
-    g.__olympusLiveWatch = { sessions: new Map() };
+    g.__olympusLiveWatch = {
+      records: new Map(),
+      viewers: new Map(),
+    };
   }
   return g.__olympusLiveWatch;
 }
@@ -31,20 +88,169 @@ function randomId(bytes = 9): string {
     .slice(0, bytes * 2);
 }
 
-function pruneViewers(session: LiveWatchSession, now = Date.now()): void {
+function activeViewers(
+  viewers: LiveWatchViewer[],
+  now = Date.now()
+): LiveWatchViewer[] {
   const cutoff = now - LIVE_WATCH_VIEWER_STALE_MS;
-  session.viewers = session.viewers.filter((v) => v.lastSeenAt >= cutoff);
+  return viewers.filter((v) => v.lastSeenAt >= cutoff);
 }
 
-function pruneExpired(now = Date.now()): void {
-  const sessions = store().sessions;
-  for (const [id, session] of Array.from(sessions.entries())) {
-    if (session.expiresAt <= now) {
-      sessions.delete(id);
-      continue;
+function parseViewer(value: unknown): LiveWatchViewer | null {
+  let raw = value;
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return null;
     }
-    pruneViewers(session, now);
   }
+  if (!raw || typeof raw !== "object") return null;
+  const v = raw as Partial<LiveWatchViewer>;
+  if (typeof v.id !== "string") return null;
+  return {
+    id: v.id,
+    joinedAt: Number(v.joinedAt) || 0,
+    lastSeenAt: Number(v.lastSeenAt) || 0,
+  };
+}
+
+function parseRecord(value: unknown): SessionRecord | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Partial<SessionRecord>;
+  if (
+    typeof v.id !== "string" ||
+    typeof v.secret !== "string" ||
+    typeof v.matchId !== "string" ||
+    typeof v.createdAt !== "number" ||
+    typeof v.updatedAt !== "number" ||
+    typeof v.expiresAt !== "number" ||
+    !v.snapshot
+  ) {
+    return null;
+  }
+  return v as SessionRecord;
+}
+
+function viewersFromHash(raw: unknown): LiveWatchViewer[] {
+  if (!raw || typeof raw !== "object") return [];
+  const out: LiveWatchViewer[] = [];
+  for (const value of Object.values(raw as Record<string, unknown>)) {
+    const viewer = parseViewer(value);
+    if (viewer) out.push(viewer);
+  }
+  return out;
+}
+
+async function listIds(): Promise<string[]> {
+  const client = redis();
+  if (!client) return Array.from(memory().records.keys());
+  const ids = await client.smembers(INDEX_KEY);
+  return ids.map(String);
+}
+
+async function getRecord(id: string): Promise<SessionRecord | null> {
+  const client = redis();
+  if (!client) return memory().records.get(id) ?? null;
+  return parseRecord(await client.get(sessionKey(id)));
+}
+
+async function putRecord(record: SessionRecord): Promise<void> {
+  const client = redis();
+  const ttl = ttlSec(record.expiresAt);
+  if (!client) {
+    memory().records.set(record.id, record);
+    return;
+  }
+  await client.set(sessionKey(record.id), record, { ex: ttl });
+  await client.sadd(INDEX_KEY, record.id);
+}
+
+async function deleteStored(id: string): Promise<void> {
+  const client = redis();
+  if (!client) {
+    memory().records.delete(id);
+    memory().viewers.delete(id);
+    return;
+  }
+  await client.del(sessionKey(id), viewersKey(id));
+  await client.srem(INDEX_KEY, id);
+}
+
+async function getViewers(id: string): Promise<LiveWatchViewer[]> {
+  const client = redis();
+  if (!client) {
+    const hash = memory().viewers.get(id);
+    return hash ? Object.values(hash) : [];
+  }
+  return viewersFromHash(await client.hgetall(viewersKey(id)));
+}
+
+async function putViewer(
+  id: string,
+  viewer: LiveWatchViewer,
+  expiresAt: number
+): Promise<void> {
+  const client = redis();
+  if (!client) {
+    const hash = memory().viewers.get(id) ?? {};
+    hash[viewer.id] = viewer;
+    memory().viewers.set(id, hash);
+    return;
+  }
+  await client.hset(viewersKey(id), { [viewer.id]: viewer });
+  await client.expire(viewersKey(id), ttlSec(expiresAt));
+}
+
+async function removeViewer(id: string, viewerId: string): Promise<boolean> {
+  const client = redis();
+  if (!client) {
+    const hash = memory().viewers.get(id);
+    if (!hash || !(viewerId in hash)) return false;
+    delete hash[viewerId];
+    return true;
+  }
+  const removed = await client.hdel(viewersKey(id), viewerId);
+  return Number(removed) > 0;
+}
+
+async function replaceViewers(
+  id: string,
+  viewers: LiveWatchViewer[],
+  expiresAt: number
+): Promise<void> {
+  const client = redis();
+  if (!client) {
+    const hash: Record<string, LiveWatchViewer> = {};
+    for (const viewer of viewers) hash[viewer.id] = viewer;
+    memory().viewers.set(id, hash);
+    return;
+  }
+  await client.del(viewersKey(id));
+  if (viewers.length === 0) return;
+  const hash: Record<string, LiveWatchViewer> = {};
+  for (const viewer of viewers) hash[viewer.id] = viewer;
+  await client.hset(viewersKey(id), hash);
+  await client.expire(viewersKey(id), ttlSec(expiresAt));
+}
+
+async function loadSession(id: string): Promise<LiveWatchSession | null> {
+  const record = await getRecord(id);
+  const now = Date.now();
+  if (!record) {
+    await deleteStored(id);
+    return null;
+  }
+  if (record.expiresAt <= now) {
+    await deleteStored(id);
+    return null;
+  }
+  const stored = await getViewers(id);
+  const viewers = activeViewers(stored, now);
+  if (viewers.length !== stored.length) {
+    await replaceViewers(id, viewers, record.expiresAt);
+  }
+  return { ...record, viewers };
 }
 
 export function liveWatchLimits() {
@@ -56,31 +262,33 @@ export function liveWatchLimits() {
   };
 }
 
-export function listLiveWatchSessions(): LiveWatchSession[] {
-  pruneExpired();
-  return Array.from(store().sessions.values()).sort(
-    (a, b) => b.updatedAt - a.updatedAt
-  );
+export async function listLiveWatchSessions(): Promise<LiveWatchSession[]> {
+  const ids = await listIds();
+  const sessions = (
+    await Promise.all(ids.map((id) => loadSession(id)))
+  ).filter((session): session is LiveWatchSession => session != null);
+  return sessions.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-export function getLiveWatchSession(id: string): LiveWatchSession | null {
-  pruneExpired();
-  return store().sessions.get(id) ?? null;
+export async function getLiveWatchSession(
+  id: string
+): Promise<LiveWatchSession | null> {
+  return loadSession(id);
 }
 
-export function createLiveWatchSession(input: {
+export async function createLiveWatchSession(input: {
   matchId: string;
   snapshot: LiveWatchSnapshot;
 }):
-  | { ok: true; session: LiveWatchSession }
-  | { ok: false; error: "full" } {
-  pruneExpired();
-  const sessions = store().sessions;
-  if (sessions.size >= LIVE_WATCH_MAX_SHARES) {
+  Promise<
+    { ok: true; session: LiveWatchSession } | { ok: false; error: "full" }
+  > {
+  const existing = await listLiveWatchSessions();
+  if (existing.length >= LIVE_WATCH_MAX_SHARES) {
     return { ok: false, error: "full" };
   }
   const now = Date.now();
-  const session: LiveWatchSession = {
+  const record: SessionRecord = {
     id: randomId(8),
     secret: randomId(12),
     matchId: input.matchId,
@@ -88,137 +296,168 @@ export function createLiveWatchSession(input: {
     updatedAt: now,
     expiresAt: now + LIVE_WATCH_TTL_MS,
     snapshot: { ...input.snapshot, updatedAt: now },
-    viewers: [],
   };
-  sessions.set(session.id, session);
-  return { ok: true, session };
+  await putRecord(record);
+  return { ok: true, session: { ...record, viewers: [] } };
 }
 
-export function updateLiveWatchSession(
+export async function updateLiveWatchSession(
   id: string,
   secret: string,
   snapshot: LiveWatchSnapshot
-):
+): Promise<
   | { ok: true; session: LiveWatchSession; viewerWarn: boolean }
-  | { ok: false; error: "not_found" | "unauthorized" | "expired" } {
-  pruneExpired();
-  const session = store().sessions.get(id);
-  if (!session) return { ok: false, error: "not_found" };
-  if (session.secret !== secret) return { ok: false, error: "unauthorized" };
+  | { ok: false; error: "not_found" | "unauthorized" | "expired" }
+> {
+  const record = await getRecord(id);
+  if (!record) {
+    await deleteStored(id);
+    return { ok: false, error: "not_found" };
+  }
+  if (record.secret !== secret) return { ok: false, error: "unauthorized" };
   const now = Date.now();
-  if (session.expiresAt <= now) {
-    store().sessions.delete(id);
+  if (record.expiresAt <= now) {
+    await deleteStored(id);
     return { ok: false, error: "expired" };
   }
-  pruneViewers(session, now);
-  session.snapshot = { ...snapshot, updatedAt: now };
-  session.updatedAt = now;
-  // Refresh TTL on activity so a long night stays live while scoring.
-  session.expiresAt = now + LIVE_WATCH_TTL_MS;
+  const viewers = activeViewers(await getViewers(id), now);
+  const next: SessionRecord = {
+    ...record,
+    snapshot: { ...snapshot, updatedAt: now },
+    updatedAt: now,
+    expiresAt: now + LIVE_WATCH_TTL_MS,
+  };
+  await putRecord(next);
+  await replaceViewers(id, viewers, next.expiresAt);
   return {
     ok: true,
-    session,
-    viewerWarn: session.viewers.length >= LIVE_WATCH_VIEWER_WARN,
+    session: { ...next, viewers },
+    viewerWarn: viewers.length >= LIVE_WATCH_VIEWER_WARN,
   };
 }
 
-export function deleteLiveWatchSession(
+export async function deleteLiveWatchSession(
   id: string,
   secret?: string,
   opts?: { admin?: boolean }
-): boolean {
-  pruneExpired();
-  const session = store().sessions.get(id);
-  if (!session) return false;
-  if (!opts?.admin && secret != null && session.secret !== secret) {
+): Promise<boolean> {
+  const record = await getRecord(id);
+  if (!record) {
+    await deleteStored(id);
     return false;
   }
-  return store().sessions.delete(id);
+  if (!opts?.admin && secret != null && record.secret !== secret) {
+    return false;
+  }
+  await deleteStored(id);
+  return true;
 }
 
-export function clearLiveWatchViewers(id: string): LiveWatchSession | null {
-  pruneExpired();
-  const session = store().sessions.get(id);
+export async function clearLiveWatchViewers(
+  id: string
+): Promise<LiveWatchSession | null> {
+  const session = await loadSession(id);
   if (!session) return null;
-  session.viewers = [];
-  session.updatedAt = Date.now();
-  return session;
+  const now = Date.now();
+  const next: SessionRecord = {
+    id: session.id,
+    secret: session.secret,
+    matchId: session.matchId,
+    createdAt: session.createdAt,
+    updatedAt: now,
+    expiresAt: session.expiresAt,
+    snapshot: session.snapshot,
+  };
+  await putRecord(next);
+  await replaceViewers(id, [], session.expiresAt);
+  return { ...next, viewers: [] };
 }
 
-export function joinLiveWatchViewer(
+export async function joinLiveWatchViewer(
   id: string,
   viewerId?: string
-):
+): Promise<
   | { ok: true; viewer: LiveWatchViewer; session: LiveWatchSession }
-  | { ok: false; error: "not_found" | "full" | "expired" } {
-  pruneExpired();
-  const session = store().sessions.get(id);
-  if (!session) return { ok: false, error: "not_found" };
+  | { ok: false; error: "not_found" | "full" | "expired" }
+> {
+  const record = await getRecord(id);
   const now = Date.now();
-  if (session.expiresAt <= now) {
-    store().sessions.delete(id);
+  if (!record) {
+    await deleteStored(id);
+    return { ok: false, error: "not_found" };
+  }
+  if (record.expiresAt <= now) {
+    await deleteStored(id);
     return { ok: false, error: "expired" };
   }
-  pruneViewers(session, now);
-
+  const viewers = activeViewers(await getViewers(id), now);
   if (viewerId) {
-    const existing = session.viewers.find((v) => v.id === viewerId);
+    const existing = viewers.find((v) => v.id === viewerId);
     if (existing) {
       existing.lastSeenAt = now;
-      return { ok: true, viewer: existing, session };
+      await putViewer(id, existing, record.expiresAt);
+      return { ok: true, viewer: existing, session: { ...record, viewers } };
     }
   }
-
-  if (session.viewers.length >= LIVE_WATCH_VIEWER_MAX) {
+  if (viewers.length >= LIVE_WATCH_VIEWER_MAX) {
+    await replaceViewers(id, viewers, record.expiresAt);
     return { ok: false, error: "full" };
   }
-
   const viewer: LiveWatchViewer = {
     id: viewerId && viewerId.length > 8 ? viewerId : randomId(8),
     joinedAt: now,
     lastSeenAt: now,
   };
-  session.viewers.push(viewer);
-  session.updatedAt = now;
-  return { ok: true, viewer, session };
+  viewers.push(viewer);
+  const next: SessionRecord = { ...record, updatedAt: now };
+  await putRecord(next);
+  await putViewer(id, viewer, record.expiresAt);
+  return { ok: true, viewer, session: { ...next, viewers } };
 }
 
-export function heartbeatLiveWatchViewer(
+export async function heartbeatLiveWatchViewer(
   id: string,
   viewerId: string
-):
-  | { ok: true; session: LiveWatchSession }
-  | { ok: false; error: "not_found" | "viewer" } {
-  pruneExpired();
-  const session = store().sessions.get(id);
-  if (!session) return { ok: false, error: "not_found" };
-  pruneViewers(session);
-  const viewer = session.viewers.find((v) => v.id === viewerId);
+): Promise<
+  { ok: true; session: LiveWatchSession } | { ok: false; error: "not_found" | "viewer" }
+> {
+  const record = await getRecord(id);
+  if (!record) {
+    await deleteStored(id);
+    return { ok: false, error: "not_found" };
+  }
+  const now = Date.now();
+  const viewers = activeViewers(await getViewers(id), now);
+  const viewer = viewers.find((v) => v.id === viewerId);
   if (!viewer) return { ok: false, error: "viewer" };
-  viewer.lastSeenAt = Date.now();
-  return { ok: true, session };
+  viewer.lastSeenAt = now;
+  await putViewer(id, viewer, record.expiresAt);
+  return { ok: true, session: { ...record, viewers } };
 }
 
-export function leaveLiveWatchViewer(id: string, viewerId: string): boolean {
-  pruneExpired();
-  const session = store().sessions.get(id);
-  if (!session) return false;
-  const before = session.viewers.length;
-  session.viewers = session.viewers.filter((v) => v.id !== viewerId);
-  if (session.viewers.length !== before) {
-    session.updatedAt = Date.now();
-    return true;
+export async function leaveLiveWatchViewer(
+  id: string,
+  viewerId: string
+): Promise<boolean> {
+  const record = await getRecord(id);
+  if (!record) return false;
+  const removed = await removeViewer(id, viewerId);
+  if (removed) {
+    await putRecord({ ...record, updatedAt: Date.now() });
   }
-  return false;
+  return removed;
 }
 
 /** Admin: kick one viewer by id. */
-export function kickLiveWatchViewer(id: string, viewerId: string): boolean {
+export async function kickLiveWatchViewer(
+  id: string,
+  viewerId: string
+): Promise<boolean> {
   return leaveLiveWatchViewer(id, viewerId);
 }
 
 export function publicSessionPayload(session: LiveWatchSession) {
-  pruneViewers(session);
+  const viewers = activeViewers(session.viewers);
   return {
     id: session.id,
     status: "live" as const,
@@ -226,8 +465,14 @@ export function publicSessionPayload(session: LiveWatchSession) {
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
     expiresAt: session.expiresAt,
-    viewerCount: session.viewers.length,
+    viewerCount: viewers.length,
     snapshot: session.snapshot,
     limits: liveWatchLimits(),
   };
+}
+
+/** Test helper: drop in-memory sessions. No-op for Redis. */
+export function resetLiveWatchStoreForTests(): void {
+  memory().records.clear();
+  memory().viewers.clear();
 }
