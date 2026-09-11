@@ -28,30 +28,36 @@ const SUBTITLE_STEM: Record<PodiumCategoryId, string> = {
   hands: "podiumHandsSubtitle",
   bestLoser: "podiumBestLoserSubtitle",
   keepsComing: "podiumKeepsComingSubtitle",
+  floor: "podiumFloorSubtitle",
+  atm: "podiumAtmSubtitle",
   pollosEaten: "podiumPollosEatenSubtitle",
+  polloEatenRate: "podiumPolloEatenRateSubtitle",
   zapatosEaten: "podiumZapatosEatenSubtitle",
   maxDataFor: "podiumMaxDataForSubtitle",
+  minDataFor: "podiumMinDataForSubtitle",
   minDatasToWin: "podiumMinDatasToWinSubtitle",
   maxDatasToWin: "podiumMaxDatasToWinSubtitle",
   maxDatasToLose: "podiumMaxDatasToLoseSubtitle",
-  minDatasToLose: "podiumMinDatasToLoseSubtitle",
   maxDataAgainst: "podiumMaxDataAgainstSubtitle",
 };
-
-export function podiumPunchlineKey(
-  id: PodiumCategoryId,
-  index: number
-): string {
-  const clamped = ((index % PODIUM_PUNCHLINE_COUNT) + PODIUM_PUNCHLINE_COUNT) %
-    PODIUM_PUNCHLINE_COUNT;
-  return `${SUBTITLE_STEM[id]}${clamped}`;
-}
 
 function clampIndex(index: number): number {
   if (!Number.isFinite(index)) return 0;
   const n = Math.trunc(index);
   return ((n % PODIUM_PUNCHLINE_COUNT) + PODIUM_PUNCHLINE_COUNT) %
     PODIUM_PUNCHLINE_COUNT;
+}
+
+export function podiumPunchlineKey(
+  id: PodiumCategoryId,
+  index: number
+): string {
+  return `${SUBTITLE_STEM[id]}${clampIndex(index)}`;
+}
+
+/** Shared snark when every eligible player tied on a trophy. */
+export function podiumAllTiedKey(index: number): string {
+  return `podiumAllTied${clampIndex(index)}`;
 }
 
 function pickIndex(

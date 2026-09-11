@@ -29,11 +29,14 @@ export type PodiumCategoryId =
   | "maxDatasToLose"
   | "games"
   | "hands"
+  | "minDataFor"
   | "bestLoser"
   | "keepsComing"
+  | "floor"
+  | "atm"
   | "pollosEaten"
+  | "polloEatenRate"
   | "zapatosEaten"
-  | "minDatasToLose"
   | "maxDataAgainst";
 
 /** Minimal row shape shared by app LeaderboardRow and web analytics. */
@@ -62,19 +65,26 @@ export type PodiumPlace = {
   playerName: string;
   value: number;
   display: string;
-} | null;
+};
 
 export type PodiumCategoryResult = {
   id: PodiumCategoryId;
   kind: PodiumKind;
-  winner: PodiumPlace;
-  runnerUp: PodiumPlace;
+  /** Rank 1. Several people when the metric ties. Empty when allTied. */
+  first: PodiumPlace[];
+  /** Rank 2. Empty when first is tied, when allTied, or when nobody else qualifies. */
+  second: PodiumPlace[];
+  /** Every eligible player posted the same number. */
+  allTied: boolean;
+  /** Shared formatted value when allTied. */
+  allTiedDisplay: string | null;
 };
 
 type CategoryDef = {
   id: PodiumCategoryId;
   kind: PodiumKind;
   minGames: number;
+  direction?: "higher" | "lower";
   /** Extra eligibility filter (e.g. keepsComing). */
   eligible?: (row: PodiumPlayerRow) => boolean;
   /** Return null when the metric cannot be computed for this row. */
@@ -176,8 +186,24 @@ const CATEGORIES: CategoryDef[] = [
     kind: "shame",
     minGames: PODIUM_COUNT_MIN_GAMES,
     eligible: (row) => row.gamesLost >= row.gamesWon,
-    metric: (row) => row.gamesPlayed,
-    format: (value) => String(value),
+    metric: (row) => row.gamesLost,
+    format: (_value, row) => `${row.gamesLost} / ${row.gamesPlayed}`,
+  },
+  {
+    id: "floor",
+    kind: "shame",
+    minGames: PODIUM_COUNT_MIN_GAMES,
+    direction: "lower",
+    metric: (row) => row.josesCoefficient,
+    format: (value) => formatJosesCoefficient(value),
+  },
+  {
+    id: "atm",
+    kind: "shame",
+    minGames: PODIUM_COUNT_MIN_GAMES,
+    direction: "lower",
+    metric: (row) => row.pointsFor - row.pointsAgainst,
+    format: (value) => formatSignedDiff(value),
   },
   {
     id: "pollosEaten",
@@ -185,6 +211,15 @@ const CATEGORIES: CategoryDef[] = [
     minGames: PODIUM_COUNT_MIN_GAMES,
     metric: (row) => row.pollosAgainst,
     format: (value) => String(value),
+  },
+  {
+    id: "polloEatenRate",
+    kind: "shame",
+    minGames: PODIUM_RATE_MIN_GAMES,
+    metric: (row) =>
+      row.gamesPlayed > 0 ? (row.pollosAgainst / row.gamesPlayed) * 100 : null,
+    format: (_value, row) =>
+      formatPerGameRatePct(row.pollosAgainst, row.gamesPlayed),
   },
   {
     id: "zapatosEaten",
@@ -210,6 +245,12 @@ const STYLE_CATEGORIES: StyleCategoryDef[] = [
     metric: (row) => row.maxDataFor,
   },
   {
+    id: "minDataFor",
+    kind: "style",
+    direction: "lower",
+    metric: (row) => row.minDataFor,
+  },
+  {
     id: "minDatasToWin",
     kind: "style",
     direction: "lower",
@@ -226,12 +267,6 @@ const STYLE_CATEGORIES: StyleCategoryDef[] = [
     kind: "style",
     direction: "higher",
     metric: (row) => row.maxDatasToLose,
-  },
-  {
-    id: "minDatasToLose",
-    kind: "style",
-    direction: "lower",
-    metric: (row) => row.minDatasToLose,
   },
   {
     id: "maxDataAgainst",
@@ -269,10 +304,9 @@ function compareCandidates(
 }
 
 function toPlace(
-  candidate: { row: Rankable; value: number } | undefined,
+  candidate: { row: Rankable; value: number },
   format: (value: number) => string
 ): PodiumPlace {
-  if (!candidate) return null;
   return {
     playerId: candidate.row.playerId,
     playerName: candidate.row.playerName,
@@ -281,29 +315,84 @@ function toPlace(
   };
 }
 
+function emptyResult(
+  id: PodiumCategoryId,
+  kind: PodiumKind
+): PodiumCategoryResult {
+  return {
+    id,
+    kind,
+    first: [],
+    second: [],
+    allTied: false,
+    allTiedDisplay: null,
+  };
+}
+
+function placesFromCandidates<T extends Rankable>(
+  id: PodiumCategoryId,
+  kind: PodiumKind,
+  candidates: { row: T; value: number }[],
+  format: (candidate: { row: T; value: number }) => string,
+  /** Players who posted a metric, before extra eligibility. Whole-table snark uses this. */
+  poolSize: number = candidates.length
+): PodiumCategoryResult {
+  if (candidates.length === 0) return emptyResult(id, kind);
+
+  const top = candidates[0]!.value;
+  const firsts = candidates.filter((c) => c.value === top);
+  if (firsts.length === poolSize && poolSize >= 2) {
+    return {
+      id,
+      kind,
+      first: [],
+      second: [],
+      allTied: true,
+      allTiedDisplay: format(candidates[0]!),
+    };
+  }
+
+  const first = [...firsts]
+    .sort((a, b) => a.row.playerName.localeCompare(b.row.playerName))
+    .map((c) => toPlace(c, () => format(c)));
+  const second =
+    firsts.length === 1 && candidates[1]
+      ? [toPlace(candidates[1], () => format(candidates[1]!))]
+      : [];
+
+  return {
+    id,
+    kind,
+    first,
+    second,
+    allTied: false,
+    allTiedDisplay: null,
+  };
+}
+
 function rankCategory(
   rows: PodiumPlayerRow[],
   def: CategoryDef
 ): PodiumCategoryResult {
-  const candidates = rows
+  const measured = rows
     .filter((row) => row.gamesPlayed >= def.minGames)
-    .filter((row) => (def.eligible ? def.eligible(row) : true))
     .map((row) => {
       const value = def.metric(row);
       if (value == null || Number.isNaN(value)) return null;
       return { row, value };
     })
-    .filter((c): c is { row: PodiumPlayerRow; value: number } => c != null)
-    .sort((a, b) => compareCandidates(a, b));
+    .filter((c): c is { row: PodiumPlayerRow; value: number } => c != null);
+  const candidates = measured
+    .filter((c) => (def.eligible ? def.eligible(c.row) : true))
+    .sort((a, b) => compareCandidates(a, b, def.direction ?? "higher"));
 
-  return {
-    id: def.id,
-    kind: def.kind,
-    winner: toPlace(candidates[0], (value) => def.format(value, candidates[0]!.row)),
-    runnerUp: toPlace(candidates[1], (value) =>
-      def.format(value, candidates[1]!.row)
-    ),
-  };
+  return placesFromCandidates(
+    def.id,
+    def.kind,
+    candidates,
+    (c) => def.format(c.value, c.row),
+    measured.length
+  );
 }
 
 function rankStyleCategory(
@@ -319,12 +408,9 @@ function rankStyleCategory(
     .filter((c): c is { row: StylePodiumRow; value: number } => c != null)
     .sort((a, b) => compareCandidates(a, b, def.direction));
 
-  return {
-    id: def.id,
-    kind: def.kind,
-    winner: toPlace(candidates[0], (value) => String(value)),
-    runnerUp: toPlace(candidates[1], (value) => String(value)),
-  };
+  return placesFromCandidates(def.id, def.kind, candidates, (c) =>
+    String(c.value)
+  );
 }
 
 /** Build all podium categories for a mode's leaderboard + style extrema. */

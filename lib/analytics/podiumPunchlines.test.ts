@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   parsePunchlineMap,
+  podiumAllTiedKey,
   podiumPunchlineKey,
   PODIUM_PUNCHLINE_COUNT,
   PODIUM_PUNCHLINE_TTL_MS,
@@ -12,6 +13,7 @@ describe("podiumPunchlineKey", () => {
   it("builds numbered subtitle keys", () => {
     expect(podiumPunchlineKey("jose", 0)).toBe("podiumJoseSubtitle0");
     expect(podiumPunchlineKey("polloRate", 3)).toBe("podiumPolloRateSubtitle3");
+    expect(podiumAllTiedKey(2)).toBe("podiumAllTied2");
   });
 });
 
