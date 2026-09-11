@@ -2,23 +2,12 @@
 
 import {
   STYLE_POINT_IDS,
+  STYLE_POINT_LABEL_KEY,
   formatStylePoint,
-  type StylePointId,
   type StylePoints,
 } from "@/lib/analytics/stylePoints";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Stack, Typography } from "@mui/material";
-
-const LABEL_KEY: Record<StylePointId, string> = {
-  maxDataFor: "statsStyleMaxDataFor",
-  minDataFor: "statsStyleMinDataFor",
-  maxDataAgainst: "statsStyleMaxDataAgainst",
-  minDataAgainst: "statsStyleMinDataAgainst",
-  maxDatasToWin: "statsStyleMaxDatasToWin",
-  minDatasToWin: "statsStyleMinDatasToWin",
-  maxDatasToLose: "statsStyleMaxDatasToLose",
-  minDatasToLose: "statsStyleMinDatasToLose",
-};
 
 export function StylePointsLines({
   points,
@@ -46,7 +35,7 @@ export function StylePointsLines({
           sx={{ py: 0.4 }}
         >
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            {t(LABEL_KEY[id])}
+            {t(STYLE_POINT_LABEL_KEY[id])}
           </Typography>
           <Typography
             sx={{

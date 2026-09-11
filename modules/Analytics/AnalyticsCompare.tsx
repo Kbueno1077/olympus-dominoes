@@ -38,6 +38,12 @@ import {
   type TileSet,
 } from "@/lib/analytics/modeFormat";
 import { getPlayerStats } from "@/lib/analytics/selectors";
+import {
+  STYLE_POINT_IDS,
+  STYLE_POINT_LABEL_KEY,
+  formatStylePoint,
+  stylePointsFromData,
+} from "@/lib/analytics/stylePoints";
 import type { CompareLaunch } from "@/lib/analytics/datasets";
 import type { OlympusExportData, PlayerStatsView } from "@/lib/analytics/types";
 import ModeFormatFilters from "@/modules/Analytics/ModeFormatFilters";
@@ -322,6 +328,32 @@ export default function AnalyticsCompare({
         .filter((p): p is (typeof players)[number] => p != null),
     [players, selectedIds]
   );
+
+  const styleByPlayerId = useMemo(() => {
+    if (selectedIds.length === 0 || !modeLabel) {
+      return new Map();
+    }
+    if (matchupMode && !alignmentReady) {
+      return new Map();
+    }
+    return stylePointsFromData(data, {
+      modeLabel,
+      tileSet,
+      dateRange: dateFilter.range,
+      matchup: matchupMode
+        ? matchupFilterFromTeams(selectedIds, teams)
+        : null,
+    });
+  }, [
+    data,
+    selectedIds,
+    modeLabel,
+    tileSet,
+    dateFilter.range,
+    matchupMode,
+    alignmentReady,
+    teams,
+  ]);
 
   const rows = useMemo(
     () =>
@@ -759,6 +791,130 @@ export default function AnalyticsCompare({
                           </Box>
                         );
                       })}
+                    </Box>
+                  ))}
+                </tbody>
+              </Box>
+            </Card>
+            <Card
+              sx={{
+                overflow: "auto",
+                width: "100%",
+                maxWidth: "100%",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              <Box sx={{ px: 1.5, pt: 1.5, pb: 0.75 }}>
+                <Typography
+                  variant="overline"
+                  component="p"
+                  sx={{ color: "text.secondary", mb: 0.35 }}
+                >
+                  {t("statsStylePointsTitle")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "text.secondary", display: "block" }}
+                >
+                  {t("statsStylePointsHint")}
+                </Typography>
+              </Box>
+              <Box
+                component="table"
+                sx={{
+                  borderCollapse: "collapse",
+                  minWidth: 220 + selectedPlayers.length * 88,
+                  width: "100%",
+                }}
+              >
+                <thead>
+                  <tr>
+                    <Box
+                      component="th"
+                      sx={{
+                        minWidth: 180,
+                        px: 1.5,
+                        py: 1.25,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                        borderTop: "1px solid",
+                        borderRight: "1px solid",
+                        borderColor: "divider",
+                        color: "text.secondary",
+                        fontWeight: 500,
+                        fontSize: 12,
+                      }}
+                    >
+                      {t("statsCompareStat")}
+                    </Box>
+                    {selectedPlayers.map((player) => (
+                      <Box
+                        key={player.id}
+                        component="th"
+                        sx={{
+                          width: 88,
+                          px: 1,
+                          py: 1.25,
+                          textAlign: "center",
+                          borderBottom: "1px solid",
+                          borderTop: "1px solid",
+                          borderColor: "divider",
+                          fontWeight: 700,
+                          fontSize: 13,
+                        }}
+                      >
+                        {player.name}
+                      </Box>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {STYLE_POINT_IDS.map((id, index) => (
+                    <Box
+                      component="tr"
+                      key={id}
+                      sx={{
+                        backgroundColor:
+                          index % 2 === 1
+                            ? (theme) =>
+                                alpha(theme.palette.text.secondary, 0.06)
+                            : "transparent",
+                      }}
+                    >
+                      <Box
+                        component="td"
+                        title={t(STYLE_POINT_LABEL_KEY[id])}
+                        sx={{
+                          px: 1.5,
+                          py: 1.25,
+                          borderRight: "1px solid",
+                          borderColor: "divider",
+                          color: "text.secondary",
+                          fontSize: 12,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {t(STYLE_POINT_LABEL_KEY[id])}
+                      </Box>
+                      {selectedPlayers.map((player) => (
+                        <Box
+                          key={player.id}
+                          component="td"
+                          sx={{
+                            px: 1,
+                            py: 1.25,
+                            textAlign: "center",
+                            fontWeight: 600,
+                            fontSize: 15,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {formatStylePoint(
+                            id,
+                            styleByPlayerId.get(player.id)?.[id] ?? null
+                          )}
+                        </Box>
+                      ))}
                     </Box>
                   ))}
                 </tbody>

@@ -2,12 +2,18 @@ import {
   activeTeamNumbers,
   teamNumberFrom,
 } from "@/utils/matchSettings";
-import { FREE_FOR_ALL, teamsFromRoster, teamScoresFromGame } from "@/utils/teams";
+import { FREE_FOR_ALL, normalizeNameKey, teamsFromRoster, teamScoresFromGame } from "@/utils/teams";
 import {
   matchInDateRange,
   type DateRange,
 } from "./dateRangeFilter";
 import { getMatchDetail, listMatches, type MatchDetail } from "./history";
+import {
+  historyFilterActive,
+  matchPassesMatchupFilter,
+  type HistoryFilter,
+  type HistorySeat as FilterSeat,
+} from "./historyFilters";
 import type { MatchGame, NamedSeat } from "./matchStats";
 import type { TileSet } from "./modeFormat";
 import { isPlayerHidden } from "./playerVisibility";
@@ -27,6 +33,17 @@ export const STYLE_POINT_IDS = [
 
 export type StylePointId = (typeof STYLE_POINT_IDS)[number];
 
+export const STYLE_POINT_LABEL_KEY: Record<StylePointId, string> = {
+  maxDataFor: "statsStyleMaxDataFor",
+  minDataFor: "statsStyleMinDataFor",
+  maxDataAgainst: "statsStyleMaxDataAgainst",
+  minDataAgainst: "statsStyleMinDataAgainst",
+  maxDatasToWin: "statsStyleMaxDatasToWin",
+  minDatasToWin: "statsStyleMinDatasToWin",
+  maxDatasToLose: "statsStyleMaxDatasToLose",
+  minDatasToLose: "statsStyleMinDatasToLose",
+};
+
 export type StylePoints = {
   playerId: number;
 } & Record<StylePointId, number | null>;
@@ -35,6 +52,8 @@ export type StylePointsFilter = {
   modeLabel?: string;
   tileSet?: TileSet;
   dateRange?: DateRange | null;
+  /** When set, only nights / games that pass this Compare matchup seating. */
+  matchup?: HistoryFilter | null;
 };
 
 function emptyStyle(playerId: number): StylePoints {
@@ -148,29 +167,28 @@ export function accumulateStylePoints(
   }
 }
 
-function mergeStyleInto(
-  acc: Map<number, StylePoints>,
-  row: StylePoints
-): void {
-  const existing = bumpPlayer(acc, row.playerId);
-  for (const id of STYLE_POINT_IDS) {
-    const value = row[id];
-    if (value == null) continue;
-    if (id.startsWith("max")) {
-      existing[id] = bumpMax(existing[id], value);
-    } else {
-      existing[id] = bumpMin(existing[id], value);
-    }
-  }
+function toFilterSeats(
+  seats: { seat: number; displayName: string; playerId: number | null }[]
+): FilterSeat[] {
+  return seats.map((seat) => ({
+    seat: seat.seat,
+    displayName: seat.displayName,
+    playerId: seat.playerId,
+    nameKey: normalizeNameKey(seat.displayName),
+  }));
 }
 
-export function stylePointsFromDetail(detail: MatchDetail): Map<number, StylePoints> {
-  const acc = new Map<number, StylePoints>();
+function mergeDetailInto(
+  acc: Map<number, StylePoints>,
+  detail: MatchDetail,
+  games: MatchDetail["games"]
+): void {
+  if (games.length === 0) return;
   accumulateStylePoints(acc, {
     modeLabel: detail.modeLabel,
     playersAmount: detail.playersAmount,
     seats: detail.seats,
-    games: detail.games.map((game) => ({
+    games: games.map((game) => ({
       game,
       seats: detail.isClosed
         ? detail.seats
@@ -179,6 +197,11 @@ export function stylePointsFromDetail(detail: MatchDetail): Map<number, StylePoi
           : detail.seats,
     })),
   });
+}
+
+export function stylePointsFromDetail(detail: MatchDetail): Map<number, StylePoints> {
+  const acc = new Map<number, StylePoints>();
+  mergeDetailInto(acc, detail, detail.games);
   return acc;
 }
 
@@ -187,15 +210,41 @@ export function stylePointsFromData(
   filter: StylePointsFilter = {}
 ): Map<number, StylePoints> {
   const acc = new Map<number, StylePoints>();
+  const matchup = filter.matchup;
+  const matchupOn = Boolean(matchup && historyFilterActive(matchup));
   for (const item of listMatches(data)) {
     if (filter.modeLabel && item.modeLabel !== filter.modeLabel) continue;
     if (filter.tileSet && item.tileSet !== filter.tileSet) continue;
     if (!matchInDateRange(item.endedAt, filter.dateRange)) continue;
     const detail = getMatchDetail(data, item.id);
     if (!detail) continue;
-    for (const row of Array.from(stylePointsFromDetail(detail).values())) {
-      mergeStyleInto(acc, row);
+    if (!matchupOn || !matchup) {
+      mergeDetailInto(acc, detail, detail.games);
+      continue;
     }
+    const seating = {
+      playersAmount: detail.playersAmount,
+      modeLabel: detail.modeLabel,
+      seats: toFilterSeats(detail.seats),
+    };
+    if (detail.isClosed) {
+      if (!matchPassesMatchupFilter(seating, matchup)) continue;
+      mergeDetailInto(acc, detail, detail.games);
+      continue;
+    }
+    const games = detail.games.filter((game) =>
+      matchPassesMatchupFilter(
+        {
+          playersAmount: detail.playersAmount,
+          modeLabel: detail.modeLabel,
+          seats: toFilterSeats(
+            game.seats.length > 0 ? game.seats : detail.seats
+          ),
+        },
+        matchup
+      )
+    );
+    mergeDetailInto(acc, detail, games);
   }
   return acc;
 }
