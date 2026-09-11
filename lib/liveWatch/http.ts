@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isGateOpen } from "@/lib/devGate/server";
 
 const ALLOWED_HEADERS =
   "Content-Type, x-live-watch-secret, x-live-watch-admin, Authorization";
@@ -22,9 +23,10 @@ export function liveWatchJson(
   return withLiveWatchCors(NextResponse.json(body, { status }));
 }
 
-/** Admin unlock for local dev, or LIVE_WATCH_ADMIN_PASSWORD / MERGE_PASSWORD. */
+/** Admin unlock for local dev, Tools cookie, or LIVE_WATCH_ADMIN_PASSWORD / MERGE_PASSWORD. */
 export function isLiveWatchAdmin(req: Request): boolean {
   if (process.env.NODE_ENV === "development") return true;
+  if (isGateOpen("merge")) return true;
   const header =
     req.headers.get("x-live-watch-admin") ??
     req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");

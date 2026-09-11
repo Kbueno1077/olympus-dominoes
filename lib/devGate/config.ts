@@ -18,6 +18,15 @@ export const GATE_PATH: Record<GateId, string> = {
   "f-lab": "/f-lab",
 };
 
+/**
+ * Cookie Path (not the page URL). Merge Tools calls `/api/live-watch`, so
+ * that gate cookie must be sent outside `/merge` or the monitor 401s.
+ */
+export const GATE_COOKIE_PATH: Record<GateId, string> = {
+  merge: "/",
+  "f-lab": "/f-lab",
+};
+
 export const GATE_NAV_KEY: Record<GateId, "mergeNav" | "fLabNav"> = {
   merge: "mergeNav",
   "f-lab": "fLabNav",
