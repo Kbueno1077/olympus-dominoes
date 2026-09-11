@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   if (!isLiveWatchAdmin(req)) {
     return liveWatchJson({ error: "unauthorized" }, 401);
   }
-  const sessions = listLiveWatchSessions().map((s) => ({
+  const sessions = (await listLiveWatchSessions()).map((s) => ({
     id: s.id,
     matchId: s.matchId,
     createdAt: s.createdAt,
@@ -56,23 +56,21 @@ export async function POST(req: Request) {
   if (!body.matchId || !body.snapshot) {
     return liveWatchJson({ error: "missing_fields" }, 400);
   }
-  const result = createLiveWatchSession({
+  const result = await createLiveWatchSession({
     matchId: body.matchId,
     snapshot: body.snapshot,
   });
   if (!result.ok) {
-    return liveWatchJson(
-      { error: "full", limits: liveWatchLimits() },
-      503
-    );
+    return liveWatchJson({ error: "full", limits: liveWatchLimits() }, 503);
   }
   const { session } = result;
+  const listed = await listLiveWatchSessions();
   return liveWatchJson({
     id: session.id,
     secret: session.secret,
     expiresAt: session.expiresAt,
     viewerCount: 0,
-    shareCount: listLiveWatchSessions().length,
+    shareCount: listed.length,
     limits: liveWatchLimits(),
   });
 }

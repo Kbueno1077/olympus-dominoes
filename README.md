@@ -57,6 +57,9 @@ Pull requests and pushes to `master` run typecheck + `npm test`
 | `/watch/[id]` | Read-only live scoreboard (phone-published relay) |
 
 Local live-watch setup: see the phone repo `docs/live-watch.md`.
+Production shares live in Upstash Redis (`UPSTASH_REDIS_REST_URL` +
+`UPSTASH_REDIS_REST_TOKEN`, or the `KV_REST_API_*` aliases). Without those,
+Vercel lambdas cannot list or update the same live match.
 
 Analytics pages share full-bleed chrome (frosted left sidebar + scrollable
 main). Import / rename / switch datasets via **Manage data**. Use **Merge** to
