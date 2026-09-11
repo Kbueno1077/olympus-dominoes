@@ -53,7 +53,10 @@ Pull requests and pushes to `master` run typecheck + `npm test`
 | `/history/[matchId]` | Deep link into one imported match |
 | `/leaderboard` | Ranking by Jose's Coefficient |
 | `/podium` | System AI podium |
-| `/merge` | Prototype: merge 2+ data sets into a new one |
+| `/merge` | Prototype: merge 2+ data sets into a new one (+ **Live watch** monitor) |
+| `/watch/[id]` | Read-only live scoreboard (phone-published relay) |
+
+Local live-watch setup: see the phone repo `docs/live-watch.md`.
 
 Analytics pages share full-bleed chrome (frosted left sidebar + scrollable
 main). Import / rename / switch datasets via **Manage data**. Use **Merge** to

@@ -36,7 +36,9 @@ export default function AppShell({ children }) {
   const pathname = usePathname();
   const playTableActive = useRecoilValue(playTableActiveRecoil);
   const fullBleed =
-    FULL_BLEED_PATHS.has(pathname) || pathname.startsWith("/history/");
+    FULL_BLEED_PATHS.has(pathname) ||
+    pathname.startsWith("/history/") ||
+    pathname.startsWith("/watch/");
   const playPath = pathname === "/play";
   const playInMatch = playPath && playTableActive;
 

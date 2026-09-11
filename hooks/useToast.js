@@ -1,11 +1,10 @@
-import { useSnackbar, VariantType } from "notistack";
+import { useCallback } from "react";
+import { useSnackbar } from "notistack";
 
 export default function useToast() {
   const { enqueueSnackbar } = useSnackbar();
 
-  const displayToast = (message, type) => {
+  return useCallback((message, type) => {
     enqueueSnackbar(message, { variant: type });
-  };
-
-  return displayToast;
+  }, [enqueueSnackbar]);
 }
