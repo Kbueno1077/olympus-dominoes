@@ -4,6 +4,7 @@ import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { findDuplicateNightGroups } from "@/lib/analytics/dedupeNights";
 import { formatYmd } from "@/lib/analytics/dateRangeFilter";
 import { useTranslation } from "@/i18n/useTranslation";
+import { ToolsPanelHeader, ToolsQuietCard, toolsPaperSx } from "@/modules/Analytics/ToolsChrome";
 import ToolsNeedData from "@/modules/Analytics/ToolsNeedData";
 import useToast from "@/hooks/useToast";
 import DifferenceOutlinedIcon from "@mui/icons-material/DifferenceOutlined";
@@ -55,37 +56,29 @@ export default function ToolsDedupePanel() {
 
   return (
     <Stack spacing={2} sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
-      <Box>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {t("toolsDedupeTitle")}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
-          {t("toolsDedupeHint")}
-        </Typography>
-        {activeDataset ? (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mt: 0.75 }}
-          >
-            {t("dashboardViewingDataset", { name: activeDataset.displayName })}
-          </Typography>
-        ) : null}
-      </Box>
+      <ToolsPanelHeader
+        overline={t("toolsDedupeKicker")}
+        title={t("toolsDedupeTitle")}
+        hint={t("toolsDedupeHint")}
+        extra={
+          activeDataset ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 0.75 }}
+            >
+              {t("dashboardViewingDataset", { name: activeDataset.displayName })}
+            </Typography>
+          ) : null
+        }
+      />
 
       {!data ? (
         <ToolsNeedData />
       ) : groups.length === 0 ? (
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            border: "1px dashed",
-            borderColor: "divider",
-          }}
-        >
-          <Typography color="text.secondary">{t("toolsDedupeEmpty")}</Typography>
-        </Box>
+        <ToolsQuietCard overline={t("toolsDedupeEmptyOverline")}>
+          {t("toolsDedupeEmpty")}
+        </ToolsQuietCard>
       ) : (
         <>
           <Typography variant="body2">
@@ -95,13 +88,7 @@ export default function ToolsDedupePanel() {
             {groups.map((group) => (
               <Box
                 key={group.fingerprint}
-                sx={{
-                  px: 1.5,
-                  py: 1,
-                  borderRadius: 1.5,
-                  border: "1px solid",
-                  borderColor: "divider",
-                }}
+                sx={toolsPaperSx()}
               >
                 <Typography sx={{ fontWeight: 600 }}>
                   {group.day === "unknown-date"

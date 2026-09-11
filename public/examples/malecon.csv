@@ -1,0 +1,56 @@
+# db_meta
+id,db_identifier,created_at,updated_at,schema_version,app_version,label,origin
+1,MaleconTable0001,2026-06-12T12:00:00.000Z,2026-06-12T12:00:00.000Z,25,4.9.0,Malecón,imported
+
+# players
+id,name,name_key,public_id,created_at,is_myself,is_hidden
+1,Ana,ana,AnaPublicId00001,2026-06-12T12:00:00.000Z,0,0
+2,Pedro,pedro,PedroPublicId001,2026-06-12T12:00:00.000Z,0,0
+3,Luisito,luisito,LuisPublicId0001,2026-06-12T12:00:00.000Z,0,0
+4,Tomas,tomas,TomasPublicId001,2026-06-12T12:00:00.000Z,0,0
+5,Cesar,cesar,CesarPublicId001,2026-06-12T12:00:00.000Z,0,0
+6,Maria,maria,MariaMalecon0001,2026-06-12T12:00:00.000Z,0,0
+
+# app_settings
+
+# matches
+id,title,ended_at,players_amount,mode_label,tile_set,max_points,is_closed,public_id
+1,April Thursday,2026-04-09T23:40:00.000Z,4,2 vs 2,55,150,1,NightApr09Shared1
+2,May Thursday,2026-05-14T23:10:00.000Z,4,2 vs 2,55,150,1,NightMay14Male01
+3,June Thursday,2026-06-11T23:20:00.000Z,4,2 vs 2,55,150,1,NightJun11Male01
+
+# match_players
+id,match_id,seat,display_name,player_id
+11,1,1,Ana,1
+12,1,2,Pedro,2
+13,1,3,Luisito,3
+14,1,4,Tomas,4
+21,2,1,Ana,1
+22,2,2,Pedro,2
+23,2,3,Luisito,3
+24,2,4,Tomas,4
+31,3,1,Ana,1
+32,3,2,Pedro,2
+33,3,3,Cesar,5
+34,3,4,Maria,6
+
+# games
+id,match_id,game_index,winner_team
+10,1,1,Team 1
+11,2,1,Team 2
+12,3,1,Team 1
+
+# game_players
+
+# game_team_scores
+id,game_id,team_number,total_points,hands_json,hands_taken_json,hand_count
+19,10,1,150,[150],[],1
+20,10,2,95,[95],[],1
+21,11,1,90,[90],[],1
+22,11,2,150,[150],[],1
+23,12,1,150,[150],[],1
+24,12,2,110,[110],[],1
+
+# player_stats
+
+# player_h2h
