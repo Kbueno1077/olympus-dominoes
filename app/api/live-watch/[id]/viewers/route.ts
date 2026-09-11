@@ -26,6 +26,7 @@ export async function POST(req: Request, { params }: Ctx) {
   let body: {
     action?: "join" | "heartbeat" | "leave";
     viewerId?: string;
+    displayName?: string;
   };
   try {
     body = await req.json();
@@ -37,7 +38,10 @@ export async function POST(req: Request, { params }: Ctx) {
 
   switch (action) {
     case "join": {
-      const result = await joinLiveWatchViewer(params.id, body.viewerId);
+      const result = await joinLiveWatchViewer(params.id, {
+        viewerId: body.viewerId,
+        displayName: body.displayName,
+      });
       if (!result.ok) {
         const status =
           result.error === "full"
@@ -49,7 +53,14 @@ export async function POST(req: Request, { params }: Ctx) {
       }
       return liveWatchJson({
         viewerId: result.viewer.id,
+        displayName: result.viewer.displayName,
+        joinOrder: result.viewer.joinOrder,
         viewerCount: result.session.viewers.length,
+        viewers: result.session.viewers.map((v) => ({
+          id: v.id,
+          displayName: v.displayName,
+          joinOrder: v.joinOrder,
+        })),
       });
     }
     case "heartbeat": {

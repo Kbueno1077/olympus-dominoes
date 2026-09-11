@@ -34,6 +34,8 @@ import { useCallback, useEffect, useRef, useState, Fragment } from "react";
 
 type AdminViewer = {
   id: string;
+  displayName?: string;
+  joinOrder?: number;
   joinedAt: number;
   lastSeenAt: number;
 };
@@ -337,8 +339,14 @@ export default function ToolsLiveWatchPanel() {
                                   }}
                                 >
                                   <Box sx={{ minWidth: 0 }}>
+                                    <Typography variant="body2" noWrap>
+                                      {v.joinOrder
+                                        ? `#${v.joinOrder} ${v.displayName || v.id}`
+                                        : v.displayName || v.id}
+                                    </Typography>
                                     <Typography
-                                      variant="body2"
+                                      variant="caption"
+                                      color="text.secondary"
                                       fontFamily="monospace"
                                       noWrap
                                     >
@@ -347,6 +355,7 @@ export default function ToolsLiveWatchPanel() {
                                     <Typography
                                       variant="caption"
                                       color="text.secondary"
+                                      sx={{ display: "block" }}
                                     >
                                       {t("liveWatchAdminViewerSeen", {
                                         joined: ago(Date.now() - v.joinedAt),

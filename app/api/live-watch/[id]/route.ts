@@ -1,8 +1,9 @@
 import {
-  deleteLiveWatchSession,
   getLiveWatchSession,
+  joinLiveWatchViewer,
   publicSessionPayload,
   updateLiveWatchSession,
+  deleteLiveWatchSession,
 } from "@/lib/liveWatch/store";
 import {
   isLiveWatchEnabled,
@@ -50,6 +51,51 @@ export async function GET(_req: Request, { params }: Ctx) {
     return liveWatchJson({ status: "not_found", error: "not_found" }, 404);
   }
   return liveWatchJson(publicSessionPayload(session));
+}
+
+function joinErrorStatus(error: "not_found" | "full" | "expired"): number {
+  switch (error) {
+    case "full":
+      return 403;
+    case "expired":
+      return 410;
+    case "not_found":
+      return 404;
+    default: {
+      const _never: never = error;
+      return _never;
+    }
+  }
+}
+
+/** One call: join or heartbeat this viewer, return score + watching list. */
+export async function POST(req: Request, { params }: Ctx) {
+  if (!isLiveWatchEnabled()) {
+    return liveWatchJson(
+      {
+        status: "disabled",
+        error: "disabled",
+        message: "Live matches are disabled for now.",
+      },
+      503
+    );
+  }
+  let body: { viewerId?: string; displayName?: string } = {};
+  try {
+    body = await req.json();
+  } catch {
+    body = {};
+  }
+  const result = await joinLiveWatchViewer(params.id, {
+    viewerId: body.viewerId,
+    displayName: body.displayName,
+  });
+  if (!result.ok) {
+    return liveWatchJson({ error: result.error }, joinErrorStatus(result.error));
+  }
+  return liveWatchJson(
+    publicSessionPayload(result.session, { viewerId: result.viewer.id })
+  );
 }
 
 export async function PUT(req: Request, { params }: Ctx) {

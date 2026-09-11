@@ -2,13 +2,16 @@
 
 import {
   LIVE_WATCH_FAIL_LIMIT,
-  LIVE_WATCH_SCORE_POLL_MS,
-  LIVE_WATCH_VIEWER_POLL_MS,
+  LIVE_WATCH_POLL_MS,
+  LIVE_WATCH_RETRY_MS,
+  type LiveWatchPublicViewer,
   type LiveWatchSnapshot,
 } from "@/lib/liveWatch/types";
+import { LIVE_WATCH_DISPLAY_NAME_MAX } from "@/lib/liveWatch/displayName";
 import { hasFullPadPayload } from "@/lib/liveWatch/fromSnapshot";
 import LiveWatchScoreboard from "@/modules/LiveWatch/LiveWatchScoreboard";
 import LiveWatchStatsPanel from "@/modules/LiveWatch/LiveWatchStatsPanel";
+import LiveWatchViewersRail from "@/modules/LiveWatch/LiveWatchViewersRail";
 import { FONT_DISPLAY } from "@/muiTheme/typography";
 import { useTranslation } from "@/i18n/useTranslation";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -18,11 +21,12 @@ import {
   Chip,
   LinearProgress,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 type TerminalReason =
   | "ended"
@@ -35,33 +39,57 @@ type TerminalReason =
   | "error";
 
 type WatchState =
+  | { kind: "name" }
   | { kind: "loading" }
-  | { kind: "live"; snapshot: LiveWatchSnapshot; viewerCount: number }
+  | {
+      kind: "live";
+      snapshot: LiveWatchSnapshot;
+      viewers: LiveWatchPublicViewer[];
+      selfId: string;
+    }
   | { kind: "terminal"; reason: TerminalReason; stopped: boolean };
 
 const VIEWER_KEY = (id: string) => `olympus.liveWatch.viewer.${id}`;
+const NAME_KEY = (id: string) => `olympus.liveWatch.name.${id}`;
 
 function pageIsVisible(): boolean {
   return typeof document === "undefined" || document.visibilityState === "visible";
 }
 
-/** Stable id before any network call — prevents double-counting on Strict Mode. */
-function ensureViewerId(shareId: string): string {
+function readStored(key: string): string | null {
   try {
-    const existing = sessionStorage.getItem(VIEWER_KEY(shareId));
-    if (existing && existing.length >= 8) return existing;
+    const value = sessionStorage.getItem(key);
+    return value && value.length > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(key, value);
   } catch {
     // ignore
   }
+}
+
+function removeStored(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
+/** Stable id before any network call — prevents double-counting on Strict Mode. */
+function ensureViewerId(shareId: string): string {
+  const existing = readStored(VIEWER_KEY(shareId));
+  if (existing && existing.length >= 8) return existing;
   const id =
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID().replace(/-/g, "").slice(0, 16)
       : `v${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
-  try {
-    sessionStorage.setItem(VIEWER_KEY(shareId), id);
-  } catch {
-    // ignore
-  }
+  writeStored(VIEWER_KEY(shareId), id);
   return id;
 }
 
@@ -88,20 +116,26 @@ export default function LiveWatchClient() {
   const params = useParams();
   const router = useRouter();
   const id = String(params?.id ?? "");
-  const [state, setState] = useState<WatchState>({ kind: "loading" });
+  const [state, setState] = useState<WatchState>({ kind: "name" });
+  const [watching, setWatching] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const viewerIdRef = useRef<string | null>(null);
+  const displayNameRef = useRef<string | null>(null);
+  const watchingRef = useRef(false);
   const leftRef = useRef(false);
   const haltedRef = useRef(false);
   const liveRef = useRef(false);
   const failCountRef = useRef(0);
-  const fetchScoreRef = useRef<() => Promise<void>>(async () => {});
-  const fetchViewersRef = useRef<() => Promise<void>>(async () => {});
+  const pendingRetryRef = useRef(false);
+  const syncRef = useRef<() => Promise<void>>(async () => {});
 
   const disconnect = useCallback(async () => {
     leftRef.current = true;
     haltedRef.current = true;
     liveRef.current = false;
+    watchingRef.current = false;
+    setWatching(false);
     const viewerId = viewerIdRef.current;
     if (id && viewerId) {
       try {
@@ -113,80 +147,117 @@ export default function LiveWatchClient() {
       } catch {
         // ignore
       }
-      try {
-        sessionStorage.removeItem(VIEWER_KEY(id));
-      } catch {
-        // ignore
-      }
+      removeStored(VIEWER_KEY(id));
+      removeStored(NAME_KEY(id));
     }
     setState({ kind: "terminal", reason: "disconnected", stopped: true });
   }, [id]);
 
+  const beginWatching = useCallback(
+    (displayName: string | null) => {
+      if (!id || watchingRef.current) return;
+      displayNameRef.current = displayName;
+      watchingRef.current = true;
+      leftRef.current = false;
+      haltedRef.current = false;
+      liveRef.current = false;
+      failCountRef.current = 0;
+      setWatching(true);
+      setState({ kind: "loading" });
+    },
+    [id]
+  );
+
   const refreshLive = useCallback(() => {
-    if (leftRef.current) return;
-    haltedRef.current = false;
-    failCountRef.current = 0;
+    if (leftRef.current || !watchingRef.current) return;
+    if (haltedRef.current) return;
     setRefreshing(true);
     void (async () => {
-      await fetchScoreRef.current();
-      if (!haltedRef.current && !leftRef.current) {
-        await fetchViewersRef.current();
-      }
+      await syncRef.current();
       setRefreshing(false);
     })();
   }, []);
 
   useEffect(() => {
     if (!id) return;
-    leftRef.current = false;
-    haltedRef.current = false;
-    liveRef.current = false;
-    failCountRef.current = 0;
-    setState({ kind: "loading" });
+    const savedName = readStored(NAME_KEY(id));
+    if (savedName) {
+      setNameDraft(savedName);
+      beginWatching(savedName);
+    }
+  }, [id, beginWatching]);
+
+  useEffect(() => {
+    if (!id || !watching) return;
 
     let cancelled = false;
-    let loadingRetry: ReturnType<typeof setTimeout> | null = null;
-    let scoreBusy = false;
-    let viewersBusy = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let busy = false;
 
-    function clearLoadingRetry() {
-      if (loadingRetry) {
-        clearTimeout(loadingRetry);
-        loadingRetry = null;
+    function clearRetry() {
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
       }
     }
 
     function noteSuccess() {
       failCountRef.current = 0;
       haltedRef.current = false;
+      pendingRetryRef.current = false;
+    }
+
+    function scheduleRetry() {
+      clearRetry();
+      retryTimer = setTimeout(() => {
+        if (cancelled || leftRef.current || haltedRef.current) return;
+        if (!pageIsVisible()) {
+          pendingRetryRef.current = true;
+          return;
+        }
+        void sync();
+      }, LIVE_WATCH_RETRY_MS);
     }
 
     function noteFailure(reason: TerminalReason) {
       failCountRef.current += 1;
       if (failCountRef.current < LIVE_WATCH_FAIL_LIMIT) {
-        if (!liveRef.current && !cancelled && !haltedRef.current) {
-          clearLoadingRetry();
-          loadingRetry = setTimeout(() => {
-            void fetchScoreRef.current();
-          }, 1500);
-        }
+        scheduleRetry();
         return;
       }
       haltedRef.current = true;
       liveRef.current = false;
-      clearLoadingRetry();
+      watchingRef.current = false;
+      pendingRetryRef.current = false;
+      clearRetry();
       if (!cancelled) {
+        setWatching(false);
+        setRefreshing(false);
         setState({ kind: "terminal", reason, stopped: true });
       }
     }
 
-    async function fetchScore() {
-      if (cancelled || leftRef.current || haltedRef.current || scoreBusy) {
+    async function sync() {
+      if (cancelled || leftRef.current || haltedRef.current || busy) {
         return;
       }
-      scoreBusy = true;
+      if (!pageIsVisible() && liveRef.current) {
+        pendingRetryRef.current = true;
+        return;
+      }
+      busy = true;
       try {
-        const res = await fetch(`/api/live-watch/${id}`, { cache: "no-store" });
+        const viewerId = ensureViewerId(id);
+        viewerIdRef.current = viewerId;
+        const res = await fetch(`/api/live-watch/${id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({
+            viewerId,
+            displayName: displayNameRef.current || undefined,
+          }),
+        });
         if (cancelled || leftRef.current) return;
         if (res.status === 503) {
           noteFailure("disabled");
@@ -199,115 +270,126 @@ export default function LiveWatchClient() {
         }
         const data = (await res.json()) as {
           snapshot?: LiveWatchSnapshot;
-          viewerCount?: number;
+          viewers?: LiveWatchPublicViewer[];
+          viewerId?: string;
         };
         if (!data.snapshot) {
           noteFailure("error");
           return;
         }
+        const selfId =
+          typeof data.viewerId === "string" && data.viewerId.length >= 8
+            ? data.viewerId
+            : viewerId;
+        if (selfId !== viewerId) {
+          viewerIdRef.current = selfId;
+          writeStored(VIEWER_KEY(id), selfId);
+        }
+        const self = (data.viewers ?? []).find((v) => v.id === selfId);
+        if (self?.displayName) {
+          displayNameRef.current = self.displayName;
+          writeStored(NAME_KEY(id), self.displayName);
+        }
         noteSuccess();
         liveRef.current = true;
-        setState((prev) => ({
+        setState({
           kind: "live",
-          snapshot: data.snapshot as LiveWatchSnapshot,
-          viewerCount:
-            data.viewerCount ??
-            (prev.kind === "live" ? prev.viewerCount : 0),
-        }));
-        if (!cancelled && !haltedRef.current && !leftRef.current) {
-          void fetchViewers();
-        }
-      } catch {
-        if (!cancelled && !leftRef.current) noteFailure("network");
-      } finally {
-        scoreBusy = false;
-      }
-    }
-
-    async function fetchViewers() {
-      if (
-        cancelled ||
-        leftRef.current ||
-        haltedRef.current ||
-        viewersBusy ||
-        !liveRef.current
-      ) {
-        return;
-      }
-      viewersBusy = true;
-      try {
-        const viewerId = ensureViewerId(id);
-        viewerIdRef.current = viewerId;
-        const joinRes = await fetch(`/api/live-watch/${id}/viewers`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "join", viewerId }),
+          snapshot: data.snapshot,
+          viewers: data.viewers ?? [],
+          selfId,
         });
-        if (cancelled || leftRef.current) return;
-        if (!joinRes.ok) {
-          const error = await readApiError(joinRes);
-          noteFailure(reasonFromHttp(joinRes.status, error));
-          return;
-        }
-        const joinBody = (await joinRes.json()) as {
-          viewerId?: string;
-          viewerCount?: number;
-        };
-        if (joinBody.viewerId && joinBody.viewerId !== viewerId) {
-          viewerIdRef.current = joinBody.viewerId;
-          try {
-            sessionStorage.setItem(VIEWER_KEY(id), joinBody.viewerId);
-          } catch {
-            // ignore
-          }
-        }
-        noteSuccess();
-        if (typeof joinBody.viewerCount === "number") {
-          setState((prev) =>
-            prev.kind === "live"
-              ? { ...prev, viewerCount: joinBody.viewerCount as number }
-              : prev
-          );
-        }
       } catch {
         if (!cancelled && !leftRef.current) noteFailure("network");
       } finally {
-        viewersBusy = false;
+        busy = false;
       }
     }
 
-    fetchScoreRef.current = fetchScore;
-    fetchViewersRef.current = fetchViewers;
+    syncRef.current = sync;
+    void sync();
 
-    void fetchScore();
-
-    const scoreTimer = setInterval(() => {
+    const pollTimer = setInterval(() => {
       if (!pageIsVisible()) return;
-      void fetchScore();
-    }, LIVE_WATCH_SCORE_POLL_MS);
-
-    const viewerTimer = setInterval(() => {
-      if (!pageIsVisible()) return;
-      void fetchViewers();
-    }, LIVE_WATCH_VIEWER_POLL_MS);
+      void sync();
+    }, LIVE_WATCH_POLL_MS);
 
     function onVisibility() {
       if (document.visibilityState !== "visible") return;
-      if (haltedRef.current || leftRef.current) return;
-      void fetchScore();
-      void fetchViewers();
+      if (haltedRef.current || leftRef.current || !watchingRef.current) return;
+      pendingRetryRef.current = false;
+      void sync();
     }
 
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       cancelled = true;
-      clearLoadingRetry();
-      clearInterval(scoreTimer);
-      clearInterval(viewerTimer);
+      clearRetry();
+      clearInterval(pollTimer);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [id]);
+  }, [id, watching]);
+
+  if (state.kind === "name") {
+    return (
+      <WatchStatusPanel
+        tone="loading"
+        chip={t("liveWatchLive")}
+        title={t("liveWatchNameTitle")}
+        lead={t("liveWatchNameLead")}
+        body={t("liveWatchNameBody")}
+      >
+        <Stack
+          component="form"
+          spacing={1.5}
+          onSubmit={(event) => {
+            event.preventDefault();
+            const typed = nameDraft.trim();
+            beginWatching(typed || null);
+          }}
+          sx={{ mt: 0.5, textAlign: "left" }}
+        >
+          <TextField
+            autoFocus
+            fullWidth
+            value={nameDraft}
+            onChange={(event) => setNameDraft(event.target.value)}
+            label={t("liveWatchNameLabel")}
+            inputProps={{ maxLength: LIVE_WATCH_DISPLAY_NAME_MAX }}
+          />
+          <Stack direction="row" spacing={1} justifyContent="center">
+            <Button
+              type="submit"
+              variant="contained"
+              disableElevation
+              sx={{
+                bgcolor: "#1F6B58",
+                color: "#FDF8EE",
+                "&:hover": { bgcolor: "#185546" },
+              }}
+            >
+              {t("liveWatchNameJoin")}
+            </Button>
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={() => beginWatching(null)}
+              sx={{
+                borderColor: "#1F6B58",
+                color: "#1F6B58",
+                "&:hover": {
+                  borderColor: "#185546",
+                  bgcolor: alpha("#1F6B58", 0.08),
+                },
+              }}
+            >
+              {t("liveWatchNameSkip")}
+            </Button>
+          </Stack>
+        </Stack>
+      </WatchStatusPanel>
+    );
+  }
 
   if (state.kind === "loading") {
     return (
@@ -337,7 +419,7 @@ export default function LiveWatchClient() {
     );
   }
 
-  const { snapshot, viewerCount } = state;
+  const { snapshot, viewers, selfId } = state;
   const fullPad = hasFullPadPayload(snapshot);
 
   return (
@@ -358,6 +440,7 @@ export default function LiveWatchClient() {
         overflowY: { xs: "visible", md: "hidden" },
       }}
     >
+      <LiveWatchViewersRail viewers={viewers} selfId={selfId} />
       <Box
         component="main"
         sx={{
@@ -386,7 +469,7 @@ export default function LiveWatchClient() {
             direction="row"
             justifyContent="space-between"
             alignItems="center"
-            sx={{ mb: 2, gap: 1, flexWrap: "wrap" }}
+            sx={{ mb: 0.75, gap: 1, flexWrap: "wrap" }}
           >
             <Stack direction="row" spacing={1} alignItems="center">
               <Chip
@@ -399,7 +482,7 @@ export default function LiveWatchClient() {
                 }}
               />
               <Typography variant="body2" color="text.secondary">
-                {t("liveWatchViewers", { n: viewerCount })}
+                {t("liveWatchViewers", { n: viewers.length })}
               </Typography>
             </Stack>
             <Stack direction="row" spacing={1} alignItems="center">
@@ -430,6 +513,13 @@ export default function LiveWatchClient() {
               </Button>
             </Stack>
           </Stack>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", mb: 2 }}
+          >
+            {t("liveWatchPollHint", { minutes: 3 })}
+          </Typography>
 
           <Typography variant="overline" color="text.secondary">
             {snapshot.modeLabel} · {snapshot.tileSet} ·{" "}
@@ -558,17 +648,17 @@ function terminalCopy(
       return {
         tone: "error",
         chip: t("liveWatchNetworkChip"),
-        title: t("liveWatchNetworkTitle"),
+        title: t("liveWatchUnavailableTitle"),
         lead: stoppedLead,
-        body: t("liveWatchNetwork"),
+        body: t("liveWatchUnavailableBody"),
       };
     case "error":
       return {
         tone: "error",
         chip: t("liveWatchErrorChip"),
-        title: t("liveWatchErrorTitle"),
+        title: t("liveWatchUnavailableTitle"),
         lead: stoppedLead,
-        body: t("liveWatchError"),
+        body: t("liveWatchUnavailableBody"),
       };
     default: {
       const _never: never = reason;
@@ -586,6 +676,7 @@ function WatchStatusPanel({
   pulse,
   actionLabel,
   onAction,
+  children,
 }: {
   tone: WatchStatusTone;
   chip: string;
@@ -595,6 +686,7 @@ function WatchStatusPanel({
   pulse?: boolean;
   actionLabel?: string;
   onAction?: () => void;
+  children?: ReactNode;
 }) {
   return (
     <Box
@@ -669,7 +761,11 @@ function WatchStatusPanel({
         </Typography>
         <Typography
           color="text.secondary"
-          sx={{ mb: actionLabel || pulse ? 3 : 0, maxWidth: 340, mx: "auto" }}
+          sx={{
+            mb: actionLabel || pulse || children ? 3 : 0,
+            maxWidth: 340,
+            mx: "auto",
+          }}
         >
           {body}
         </Typography>
@@ -680,13 +776,14 @@ function WatchStatusPanel({
               height: 3,
               maxWidth: 180,
               mx: "auto",
-              mb: actionLabel ? 3 : 0,
+              mb: actionLabel || children ? 3 : 0,
               borderRadius: 99,
               bgcolor: alpha("#1F6B58", 0.12),
               "& .MuiLinearProgress-bar": { bgcolor: "#1F6B58" },
             }}
           />
         ) : null}
+        {children}
         {actionLabel && onAction ? (
           <Button
             variant="outlined"

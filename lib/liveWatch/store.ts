@@ -1,10 +1,15 @@
 import { Redis } from "@upstash/redis";
 import {
+  pickGuestDisplayName,
+  sanitizeLiveWatchDisplayName,
+} from "./displayName";
+import {
   LIVE_WATCH_MAX_SHARES,
   LIVE_WATCH_TTL_MS,
   LIVE_WATCH_VIEWER_MAX,
   LIVE_WATCH_VIEWER_STALE_MS,
   LIVE_WATCH_VIEWER_WARN,
+  type LiveWatchPublicViewer,
   type LiveWatchSession,
   type LiveWatchSnapshot,
   type LiveWatchViewer,
@@ -108,8 +113,12 @@ function parseViewer(value: unknown): LiveWatchViewer | null {
   if (!raw || typeof raw !== "object") return null;
   const v = raw as Partial<LiveWatchViewer>;
   if (typeof v.id !== "string") return null;
+  const displayName =
+    sanitizeLiveWatchDisplayName(v.displayName) ?? "";
   return {
     id: v.id,
+    displayName,
+    joinOrder: Number(v.joinOrder) || 0,
     joinedAt: Number(v.joinedAt) || 0,
     lastSeenAt: Number(v.lastSeenAt) || 0,
   };
@@ -129,7 +138,10 @@ function parseRecord(value: unknown): SessionRecord | null {
   ) {
     return null;
   }
-  return v as SessionRecord;
+  return {
+    ...(v as SessionRecord),
+    joinSeq: Number(v.joinSeq) || 0,
+  };
 }
 
 function viewersFromHash(raw: unknown): LiveWatchViewer[] {
@@ -295,6 +307,7 @@ export async function createLiveWatchSession(input: {
     createdAt: now,
     updatedAt: now,
     expiresAt: now + LIVE_WATCH_TTL_MS,
+    joinSeq: 0,
     snapshot: { ...input.snapshot, updatedAt: now },
   };
   await putRecord(record);
@@ -367,15 +380,53 @@ export async function clearLiveWatchViewers(
     updatedAt: now,
     expiresAt: session.expiresAt,
     snapshot: session.snapshot,
+    joinSeq: session.joinSeq,
   };
   await putRecord(next);
   await replaceViewers(id, [], session.expiresAt);
   return { ...next, viewers: [] };
 }
 
+function takenDisplayNames(
+  viewers: LiveWatchViewer[],
+  exceptId?: string
+): string[] {
+  return viewers
+    .filter((v) => v.id !== exceptId && v.displayName)
+    .map((v) => v.displayName);
+}
+
+function nextJoinOrder(
+  record: SessionRecord,
+  viewers: LiveWatchViewer[]
+): number {
+  const maxAssigned = Math.max(
+    record.joinSeq || 0,
+    0,
+    ...viewers.map((v) => v.joinOrder || 0)
+  );
+  return maxAssigned + 1;
+}
+
+function withDisplayName(
+  viewer: LiveWatchViewer,
+  requested: string | null,
+  others: LiveWatchViewer[]
+): LiveWatchViewer {
+  if (requested) return { ...viewer, displayName: requested };
+  if (viewer.displayName) return viewer;
+  return {
+    ...viewer,
+    displayName: pickGuestDisplayName(
+      takenDisplayNames(others, viewer.id),
+      viewer.joinOrder || 1
+    ),
+  };
+}
+
 export async function joinLiveWatchViewer(
   id: string,
-  viewerId?: string
+  input?: { viewerId?: string; displayName?: unknown }
 ): Promise<
   | { ok: true; viewer: LiveWatchViewer; session: LiveWatchSession }
   | { ok: false; error: "not_found" | "full" | "expired" }
@@ -391,25 +442,45 @@ export async function joinLiveWatchViewer(
     return { ok: false, error: "expired" };
   }
   const viewers = activeViewers(await getViewers(id), now);
+  const requested = sanitizeLiveWatchDisplayName(input?.displayName);
+  const viewerId = input?.viewerId;
+
   if (viewerId) {
     const existing = viewers.find((v) => v.id === viewerId);
     if (existing) {
-      existing.lastSeenAt = now;
-      await putViewer(id, existing, record.expiresAt);
-      return { ok: true, viewer: existing, session: { ...record, viewers } };
+      let viewer: LiveWatchViewer = { ...existing, lastSeenAt: now };
+      let next = record;
+      if (!viewer.joinOrder) {
+        viewer = { ...viewer, joinOrder: nextJoinOrder(record, viewers) };
+        next = { ...record, joinSeq: viewer.joinOrder, updatedAt: now };
+        await putRecord(next);
+      }
+      viewer = withDisplayName(viewer, requested, viewers);
+      const idx = viewers.findIndex((v) => v.id === viewer.id);
+      viewers[idx] = viewer;
+      await putViewer(id, viewer, next.expiresAt);
+      return { ok: true, viewer, session: { ...next, viewers } };
     }
   }
   if (viewers.length >= LIVE_WATCH_VIEWER_MAX) {
     await replaceViewers(id, viewers, record.expiresAt);
     return { ok: false, error: "full" };
   }
+  const joinOrder = nextJoinOrder(record, viewers);
   const viewer: LiveWatchViewer = {
     id: viewerId && viewerId.length > 8 ? viewerId : randomId(8),
+    displayName:
+      requested ?? pickGuestDisplayName(takenDisplayNames(viewers), joinOrder),
+    joinOrder,
     joinedAt: now,
     lastSeenAt: now,
   };
   viewers.push(viewer);
-  const next: SessionRecord = { ...record, updatedAt: now };
+  const next: SessionRecord = {
+    ...record,
+    updatedAt: now,
+    joinSeq: joinOrder,
+  };
   await putRecord(next);
   await putViewer(id, viewer, record.expiresAt);
   return { ok: true, viewer, session: { ...next, viewers } };
@@ -456,8 +527,26 @@ export async function kickLiveWatchViewer(
   return leaveLiveWatchViewer(id, viewerId);
 }
 
-export function publicSessionPayload(session: LiveWatchSession) {
-  const viewers = activeViewers(session.viewers);
+function publicViewers(viewers: LiveWatchViewer[]): LiveWatchPublicViewer[] {
+  return activeViewers(viewers)
+    .slice()
+    .sort(
+      (a, b) =>
+        (a.joinOrder || 0) - (b.joinOrder || 0) || a.joinedAt - b.joinedAt
+    )
+    .map((v) => ({
+      id: v.id,
+      displayName:
+        v.displayName || (v.joinOrder ? `Guest ${v.joinOrder}` : "Guest"),
+      joinOrder: v.joinOrder || 0,
+    }));
+}
+
+export function publicSessionPayload(
+  session: LiveWatchSession,
+  extras?: { viewerId?: string }
+) {
+  const viewers = publicViewers(session.viewers);
   return {
     id: session.id,
     status: "live" as const,
@@ -466,8 +555,10 @@ export function publicSessionPayload(session: LiveWatchSession) {
     updatedAt: session.updatedAt,
     expiresAt: session.expiresAt,
     viewerCount: viewers.length,
+    viewers,
     snapshot: session.snapshot,
     limits: liveWatchLimits(),
+    ...(extras?.viewerId ? { viewerId: extras.viewerId } : {}),
   };
 }
 
