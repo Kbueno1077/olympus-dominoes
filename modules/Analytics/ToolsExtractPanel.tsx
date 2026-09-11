@@ -6,6 +6,7 @@ import { extractDataset } from "@/lib/analytics/extractDataset";
 import type { PlayerRow } from "@/lib/analytics/types";
 import { useTranslation } from "@/i18n/useTranslation";
 import DashboardDateRangeFilter from "@/modules/Analytics/DashboardDateRangeFilter";
+import { ToolsPanelHeader, toolsPaperSx } from "@/modules/Analytics/ToolsChrome";
 import ToolsNeedData from "@/modules/Analytics/ToolsNeedData";
 import useToast from "@/hooks/useToast";
 import ContentCutOutlinedIcon from "@mui/icons-material/ContentCutOutlined";
@@ -17,7 +18,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { alpha, type Theme } from "@mui/material/styles";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -90,23 +90,22 @@ export default function ToolsExtractPanel() {
 
   return (
     <Stack spacing={2} sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
-      <Box>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {t("toolsExtractTitle")}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
-          {t("toolsExtractHint")}
-        </Typography>
-        {activeDataset ? (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mt: 0.75 }}
-          >
-            {t("dashboardViewingDataset", { name: activeDataset.displayName })}
-          </Typography>
-        ) : null}
-      </Box>
+      <ToolsPanelHeader
+        overline={t("toolsExtractKicker")}
+        title={t("toolsExtractTitle")}
+        hint={t("toolsExtractHint")}
+        extra={
+          activeDataset ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 0.75 }}
+            >
+              {t("dashboardViewingDataset", { name: activeDataset.displayName })}
+            </Typography>
+          ) : null
+        }
+      />
 
       {!data ? (
         <ToolsNeedData />
@@ -167,24 +166,20 @@ export default function ToolsExtractPanel() {
                       component="button"
                       type="button"
                       onClick={() => togglePlayer(player.id)}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.5,
-                        px: 1,
-                        py: 0.65,
-                        borderRadius: 1.5,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        backgroundColor: (theme: Theme) =>
-                          checked
-                            ? alpha(theme.palette.primary.main, 0.08)
-                            : alpha(theme.palette.common.white, 0.5),
-                        cursor: "pointer",
-                        font: "inherit",
-                        color: "inherit",
-                        textAlign: "left",
-                      }}
+                      sx={[
+                        toolsPaperSx({ selected: checked }),
+                        {
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          px: 1,
+                          py: 0.65,
+                          cursor: "pointer",
+                          font: "inherit",
+                          color: "inherit",
+                          textAlign: "left",
+                        },
+                      ]}
                     >
                       <Checkbox size="small" checked={checked} tabIndex={-1} />
                       <Typography noWrap sx={{ fontWeight: 600 }}>

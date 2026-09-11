@@ -80,6 +80,10 @@ type AnalyticsContextValue = {
   importText: (contents: string, fileName: string) => void;
   /** Import file as a brand-new named data set and switch to it. */
   importAsNew: (file: File, displayName?: string) => Promise<void>;
+  /** Import one or more new named data sets. Reuses an existing name if present. */
+  importNewDatasets: (
+    items: { contents: string; fileName: string; displayName: string }[]
+  ) => DatasetMeta[];
   /**
    * Merge 2+ saved datasets into a brand-new dataset (never overwrites sources).
    * Switches active to the merged set.
@@ -318,6 +322,45 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     [persistRegistry, registry]
   );
 
+  const importNewDatasets = useCallback(
+    (
+      items: { contents: string; fileName: string; displayName: string }[]
+    ): DatasetMeta[] => {
+      let current = registry;
+      const out: DatasetMeta[] = [];
+      let lastPrepared: OlympusExportData | null = null;
+      for (const item of items) {
+        const existing = current.datasets.find(
+          (dataset) => dataset.displayName === item.displayName
+        );
+        if (existing) {
+          out.push(existing);
+          continue;
+        }
+        const prepared = prepareImportedData(
+          parseOlympusExport(item.contents, item.fileName),
+          item.displayName
+        );
+        const { registry: next, dataset } = registerNewDatasetInRegistry(
+          current,
+          item.displayName,
+          item.fileName
+        );
+        saveDatasetData(dataset.id, prepared);
+        current = next;
+        lastPrepared = prepared;
+        out.push(dataset);
+      }
+      persistRegistry(current);
+      if (lastPrepared) {
+        setData(lastPrepared);
+        setError(null);
+      }
+      return out;
+    },
+    [persistRegistry, registry]
+  );
+
   const createMergedDataset = useCallback(
     (
       displayName: string,
@@ -551,6 +594,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       importFile,
       importText,
       importAsNew,
+      importNewDatasets,
       createMergedDataset,
       createExtractedDataset,
       dedupeNights,
@@ -577,6 +621,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       importFile,
       importText,
       importAsNew,
+      importNewDatasets,
       createMergedDataset,
       createExtractedDataset,
       dedupeNights,

@@ -6,10 +6,14 @@ import ToolsDedupePanel from "@/modules/Analytics/ToolsDedupePanel";
 import ToolsExtractPanel from "@/modules/Analytics/ToolsExtractPanel";
 import ToolsRepairPanel from "@/modules/Analytics/ToolsRepairPanel";
 import ToolsLiveWatchPanel from "@/modules/Analytics/ToolsLiveWatchPanel";
+import ToolsNeedData from "@/modules/Analytics/ToolsNeedData";
+import { ToolsPanelHeader, toolsPaperSx } from "@/modules/Analytics/ToolsChrome";
 import DashboardAside from "@/modules/Analytics/DashboardAside";
 import {
+  ControlSection,
   dashboardMainSx,
   dashboardShellSx,
+  MetricTile,
 } from "@/modules/Analytics/dashboardChrome";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { loadDatasetData } from "@/lib/analytics/datasets";
@@ -34,8 +38,13 @@ import {
 import { withEnsuredDbMeta } from "@/lib/analytics/dbMetaState";
 import { withEnsuredMatchPublicIds } from "@/lib/analytics/matchIdentity";
 import { withEnsuredPlayerPublicIds } from "@/lib/analytics/playerIdentity";
+import {
+  casaViejaCsv,
+  maleconCsv,
+  MERGE_EXAMPLE_CASA_NAME,
+  MERGE_EXAMPLE_MALECON_NAME,
+} from "@/lib/analytics/mergeExamplePair";
 import { useTranslation } from "@/i18n/useTranslation";
-import { statsDataDrawerOpenRecoil } from "@/recoil/recoilState";
 import useToast from "@/hooks/useToast";
 import {
   activeTeamNumbers,
@@ -52,7 +61,6 @@ import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
   Box,
@@ -73,7 +81,6 @@ import {
 import { alpha } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
-import { useSetRecoilState } from "recoil";
 
 const GIT_OURS = "#1a7f37";
 const GIT_THEIRS = "#cf222e";
@@ -126,8 +133,8 @@ export default function MergeDatasets() {
   const { t, language } = useTranslation();
   const router = useRouter();
   const displayToast = useToast();
-  const { registry, createMergedDataset, loading } = useAnalytics();
-  const openDataDrawer = useSetRecoilState(statsDataDrawerOpenRecoil);
+  const { registry, createMergedDataset, importNewDatasets, loading } =
+    useAnalytics();
 
   const [tool, setTool] = useState<ToolId>("restore");
   const [step, setStep] = useState<Step>("select");
@@ -245,6 +252,36 @@ export default function MergeDatasets() {
     setLocalError(null);
   };
 
+  const loadConflictExamples = () => {
+    setLocalError(null);
+    try {
+      const metas = importNewDatasets([
+        {
+          contents: casaViejaCsv(),
+          fileName: "casa-vieja.csv",
+          displayName: MERGE_EXAMPLE_CASA_NAME,
+        },
+        {
+          contents: maleconCsv(),
+          fileName: "malecon.csv",
+          displayName: MERGE_EXAMPLE_MALECON_NAME,
+        },
+      ]);
+      setSelectedIds(metas.map((dataset) => dataset.id));
+      setPlan(null);
+      setSources([]);
+      setResolutions(emptyResolutions());
+      setExcludeMatchKeys(new Set());
+      setGamesOpenId(null);
+      setDetailOpenKeys(new Set());
+      setPendingDelete(null);
+      setStep("select");
+    } catch (err) {
+      console.error(err);
+      setLocalError(t("mergeLoadExamplesFailed"));
+    }
+  };
+
   const goReview = () => {
     setLocalError(null);
     if (selectedIds.length < 2) {
@@ -321,7 +358,7 @@ export default function MergeDatasets() {
         sx={{ width: { xs: "100%", md: 380, lg: 420 } }}
       >
         <Stack
-          spacing={1.5}
+          spacing={2}
           sx={{
             px: 2,
             pb: 2,
@@ -330,17 +367,48 @@ export default function MergeDatasets() {
             overflow: { xs: "visible", md: "auto" },
           }}
         >
-          <Stack spacing={0.5}>
+          <ControlSection label={t("toolsPickerLabel")}>
+          <Stack spacing={0.75}>
             {(
               [
-                ["restore", t("toolsRestoreSection"), PersonSearchOutlinedIcon],
-                ["merge", t("toolsMergeSection"), CallMergeOutlinedIcon],
-                ["dedupe", t("toolsDedupeSection"), DifferenceOutlinedIcon],
-                ["extract", t("toolsExtractSection"), ContentCutOutlinedIcon],
-                ["repair", t("toolsRepairSection"), BuildOutlinedIcon],
-                ["livewatch", t("toolsLiveWatchSection"), LiveTvOutlinedIcon],
+                [
+                  "restore",
+                  t("toolsRestoreSection"),
+                  t("toolsRestoreKicker"),
+                  PersonSearchOutlinedIcon,
+                ],
+                [
+                  "merge",
+                  t("toolsMergeSection"),
+                  t("toolsMergeKicker"),
+                  CallMergeOutlinedIcon,
+                ],
+                [
+                  "dedupe",
+                  t("toolsDedupeSection"),
+                  t("toolsDedupeKicker"),
+                  DifferenceOutlinedIcon,
+                ],
+                [
+                  "extract",
+                  t("toolsExtractSection"),
+                  t("toolsExtractKicker"),
+                  ContentCutOutlinedIcon,
+                ],
+                [
+                  "repair",
+                  t("toolsRepairSection"),
+                  t("toolsRepairKicker"),
+                  BuildOutlinedIcon,
+                ],
+                [
+                  "livewatch",
+                  t("toolsLiveWatchSection"),
+                  t("toolsLiveWatchKicker"),
+                  LiveTvOutlinedIcon,
+                ],
               ] as const
-            ).map(([id, label, Icon]) => {
+            ).map(([id, label, kicker, Icon]) => {
               const active = tool === id;
               return (
                 <Box
@@ -351,19 +419,16 @@ export default function MergeDatasets() {
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 1,
+                    gap: 1.1,
                     width: "100%",
                     textAlign: "left",
-                    border: "1px solid",
-                    borderColor: active
-                      ? alpha(GIT_OURS, 0.45)
-                      : "transparent",
+                    border: "none",
                     backgroundColor: active
-                      ? alpha(GIT_OURS, 0.08)
+                      ? (theme) => alpha(theme.palette.primary.main, 0.08)
                       : "transparent",
                     borderRadius: 1.25,
                     px: 1,
-                    py: 0.65,
+                    py: 0.75,
                     cursor: "pointer",
                     font: "inherit",
                     color: "inherit",
@@ -377,25 +442,48 @@ export default function MergeDatasets() {
                     sx={{
                       fontSize: 18,
                       color: active ? "primary.main" : "text.secondary",
+                      flexShrink: 0,
                     }}
                   />
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: active ? 700 : 500,
-                      color: active ? "text.primary" : "text.secondary",
-                    }}
-                  >
-                    {label}
-                  </Typography>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: active ? 700 : 600,
+                        color: active ? "text.primary" : "text.secondary",
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      {label}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display: "block",
+                        color: "text.secondary",
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {kicker}
+                    </Typography>
+                  </Box>
                 </Box>
               );
             })}
           </Stack>
+          </ControlSection>
 
           {tool === "merge" ? (
-          <Stack spacing={1.5}>
-          <Stack spacing={0.5}>
+          <Stack
+            spacing={1.5}
+            sx={{
+              pt: 1.5,
+              borderTop: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+          <ControlSection label={t("mergeSteps")}>
+          <Stack spacing={0}>
             {(
               [
                 ["select", t("mergeStepSelect")],
@@ -411,6 +499,7 @@ export default function MergeDatasets() {
                 (id === "select") ||
                 (id === "review" && plan != null) ||
                 (id === "approve" && plan != null && resolved);
+              const last = index === 2;
               return (
                 <Box
                   key={id}
@@ -429,50 +518,69 @@ export default function MergeDatasets() {
                   }
                   sx={{
                     display: "flex",
-                    alignItems: "center",
-                    gap: 1,
+                    alignItems: "stretch",
+                    gap: 1.25,
                     width: "100%",
                     textAlign: "left",
-                    border: "1px solid",
-                    borderColor: active
-                      ? alpha(GIT_OURS, 0.45)
-                      : "transparent",
-                    backgroundColor: active
-                      ? alpha(GIT_OURS, 0.08)
-                      : "transparent",
-                    borderRadius: 1.25,
-                    px: 1,
-                    py: 0.65,
+                    border: "none",
+                    backgroundColor: "transparent",
+                    borderRadius: 1,
+                    px: 0.25,
+                    py: 0,
                     cursor: canJump ? "pointer" : "default",
                     font: "inherit",
                     color: "inherit",
                     "&:hover": canJump
                       ? {
                           backgroundColor: (theme) =>
-                            alpha(theme.palette.primary.main, 0.06),
+                            alpha(theme.palette.primary.main, 0.04),
                         }
                       : undefined,
                   }}
                 >
                   <Box
                     sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
                       width: 22,
-                      height: 22,
-                      borderRadius: "50%",
                       flexShrink: 0,
-                      display: "grid",
-                      placeItems: "center",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: done || active ? "#fff" : "text.secondary",
-                      backgroundColor: done
-                        ? GIT_OURS
-                        : active
-                          ? "primary.main"
-                          : (theme) => alpha(theme.palette.grey[500], 0.2),
                     }}
                   >
-                    {done ? "✓" : index + 1}
+                    <Box
+                      sx={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: "50%",
+                        flexShrink: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: done || active ? "#fff" : "text.secondary",
+                        backgroundColor: done
+                          ? GIT_OURS
+                          : active
+                            ? "primary.main"
+                            : (theme) => alpha(theme.palette.grey[500], 0.2),
+                      }}
+                    >
+                      {done ? "✓" : index + 1}
+                    </Box>
+                    {last ? null : (
+                      <Box
+                        sx={{
+                          width: 2,
+                          flex: 1,
+                          minHeight: 10,
+                          my: 0.35,
+                          borderRadius: 1,
+                          backgroundColor: done
+                            ? GIT_OURS
+                            : (theme) => alpha(theme.palette.grey[500], 0.28),
+                        }}
+                      />
+                    )}
                   </Box>
                   <Typography
                     variant="body2"
@@ -483,6 +591,8 @@ export default function MergeDatasets() {
                         : done
                           ? "text.primary"
                           : "text.secondary",
+                      pt: 0.15,
+                      pb: last ? 0 : 1.1,
                     }}
                   >
                     {label}
@@ -491,6 +601,7 @@ export default function MergeDatasets() {
               );
             })}
           </Stack>
+          </ControlSection>
 
           {selectedIds.length > 0 ? (
             <Box>
@@ -710,57 +821,56 @@ export default function MergeDatasets() {
         >
           {step === "select" ? (
             <>
-              <Stack
-                direction="row"
-                alignItems="flex-start"
-                justifyContent="space-between"
-                gap={1}
-                flexWrap="wrap"
+                <ToolsPanelHeader
+                  overline={t("toolsMergeKicker")}
+                  title={t("mergeSelectTitle")}
+                  hint={t("mergeSelectBody")}
+                  trailing={
+                    selectedIds.length > 0 ? (
+                      <Chip
+                        size="small"
+                        color={selectedIds.length >= 2 ? "success" : "default"}
+                        label={t("mergeSelectedCount", { n: selectedIds.length })}
+                        sx={{ fontWeight: 600 }}
+                      />
+                    ) : null
+                  }
+                />
+
+              <Box
+                sx={[
+                  toolsPaperSx(),
+                  {
+                    px: 1.5,
+                    py: 1.15,
+                  },
+                ]}
               >
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    {t("mergeSelectTitle")}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 0.35 }}
-                  >
-                    {t("mergeSelectBody")}
-                  </Typography>
-                </Box>
-                {selectedIds.length > 0 ? (
-                  <Chip
-                    size="small"
-                    color={selectedIds.length >= 2 ? "success" : "default"}
-                    label={t("mergeSelectedCount", { n: selectedIds.length })}
-                    sx={{ fontWeight: 600 }}
-                  />
-                ) : null}
-              </Stack>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {t("mergeLoadExamples")}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.25, mb: 1 }}
+                >
+                  {t("mergeLoadExamplesHint")}
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={loadConflictExamples}
+                  sx={{ textTransform: "none" }}
+                >
+                  {t("mergeLoadExamplesAction")}
+                </Button>
+              </Box>
 
               {selectable.length < 2 ? (
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 2,
-                    border: "1px dashed",
-                    borderColor: "divider",
-                    textAlign: "center",
-                  }}
-                >
-                  <Typography color="text.secondary">
-                    {t("mergeNeedDatasets")}
-                  </Typography>
-                  <Button
-                    size="small"
-                    sx={{ mt: 1 }}
-                    startIcon={<FolderOpenIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => openDataDrawer(true)}
-                  >
-                    {t("statsManageData")}
-                  </Button>
-                </Box>
+                <ToolsNeedData
+                  overline={t("mergeNeedOverline")}
+                  message={t("mergeNeedDatasets")}
+                />
               ) : (
                 <Box
                   sx={{
@@ -933,39 +1043,26 @@ export default function MergeDatasets() {
 
           {step === "review" && plan ? (
             <>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="flex-start"
-                flexWrap="wrap"
-                gap={1}
-              >
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    {t("mergeReviewTitle")}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 0.35 }}
-                  >
-                    {t("mergeReviewFocus")}
-                  </Typography>
-                </Box>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<VisibilityOutlinedIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => setCleanOpen(true)}
-                  >
-                    {t("mergeViewClean")}
-                  </Button>
-                  <Button size="small" onClick={() => setStep("select")}>
-                    {t("mergeBack")}
-                  </Button>
-                </Stack>
-              </Stack>
+              <ToolsPanelHeader
+                overline={t("mergeStepReview")}
+                title={t("mergeReviewTitle")}
+                hint={t("mergeReviewFocus")}
+                trailing={
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<VisibilityOutlinedIcon sx={{ fontSize: 16 }} />}
+                      onClick={() => setCleanOpen(true)}
+                    >
+                      {t("mergeViewClean")}
+                    </Button>
+                    <Button size="small" onClick={() => setStep("select")}>
+                      {t("mergeBack")}
+                    </Button>
+                  </Stack>
+                }
+              />
 
               <Stack
                 direction={{ xs: "column", sm: "row" }}
@@ -995,33 +1092,8 @@ export default function MergeDatasets() {
                     ],
                   ] as const
                 ).map(([label, value]) => (
-                  <Box
-                    key={label}
-                    sx={{
-                      flex: 1,
-                      minWidth: 0,
-                      px: 1.25,
-                      py: 1,
-                      borderRadius: 1.5,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      backgroundColor: (theme) =>
-                        alpha(theme.palette.background.paper, 0.8),
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ fontWeight: 700, letterSpacing: 0.3 }}
-                    >
-                      {label}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 700, mt: 0.15 }}
-                    >
-                      {value}
-                    </Typography>
+                  <Box key={label} sx={{ flex: 1, minWidth: 0 }}>
+                    <MetricTile label={label} value={value} />
                   </Box>
                 ))}
               </Stack>
@@ -1243,26 +1315,19 @@ export default function MergeDatasets() {
 
           {step === "approve" && plan ? (
             <>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                flexWrap="wrap"
-                gap={1}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  {t("mergeApproveTitle")}
-                </Typography>
-                <Button size="small" onClick={() => setStep("review")}>
-                  {t("mergeBack")}
-                </Button>
-              </Stack>
-              <Typography variant="body2" color="text.secondary">
-                {t("mergeApproveBody", {
+              <ToolsPanelHeader
+                overline={t("mergeStepApprove")}
+                title={t("mergeApproveTitle")}
+                hint={t("mergeApproveBody", {
                   players: preview?.players ?? 0,
                   matches: preview?.matches ?? 0,
                 })}
-              </Typography>
+                trailing={
+                  <Button size="small" onClick={() => setStep("review")}>
+                    {t("mergeBack")}
+                  </Button>
+                }
+              />
               <Button
                 size="small"
                 variant="outlined"
@@ -1592,14 +1657,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <Box
-      sx={{
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 2,
-        p: 1.5,
-      }}
-    >
+    <Box sx={[toolsPaperSx(), { p: 1.5 }]}>
       <Typography sx={{ fontWeight: 700, mb: 1 }}>{title}</Typography>
       <Stack spacing={1.25}>{children}</Stack>
     </Box>
@@ -2152,11 +2210,11 @@ function GitConflictBlock({
     <Box
       sx={{
         border: "1px solid",
-        borderColor: resolved ? alpha(GIT_OURS, 0.45) : alpha(GIT_THEIRS, 0.45),
-        borderRadius: 1,
+        borderColor: resolved ? alpha(GIT_OURS, 0.4) : alpha(GIT_THEIRS, 0.4),
+        borderRadius: 1.5,
         overflow: "hidden",
         backgroundColor: (theme) =>
-          alpha(theme.palette.background.paper, 0.9),
+          alpha(theme.palette.background.paper, 0.92),
       }}
     >
       <Stack
@@ -2169,7 +2227,8 @@ function GitConflictBlock({
           py: 0.75,
           borderBottom: "1px solid",
           borderColor: "divider",
-          backgroundColor: (theme) => alpha(theme.palette.grey[500], 0.08),
+          backgroundColor: (theme) =>
+            alpha(theme.palette.background.default, 0.7),
         }}
       >
         <Typography
@@ -2230,9 +2289,20 @@ function GitConflictBlock({
               <MarkerRow color={GIT_SEP} text="=======" />
             )}
             <Box
+              role="button"
+              tabIndex={0}
+              aria-pressed={selectedKey === side.key}
+              onClick={() => onAccept(side.key)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onAccept(side.key);
+                }
+              }}
               sx={{
                 px: 1.25,
                 py: 0.75,
+                cursor: "pointer",
                 backgroundColor: alpha(
                   index === 0 ? GIT_OURS : GIT_THEIRS,
                   selectedKey === side.key ? 0.14 : 0.05
@@ -2242,6 +2312,12 @@ function GitConflictBlock({
                     ? `2px solid ${index === 0 ? GIT_OURS : GIT_THEIRS}`
                     : "none",
                 outlineOffset: -2,
+                "&:hover": {
+                  backgroundColor: alpha(
+                    index === 0 ? GIT_OURS : GIT_THEIRS,
+                    selectedKey === side.key ? 0.18 : 0.09
+                  ),
+                },
               }}
             >
               {side.lines.map((line) => (

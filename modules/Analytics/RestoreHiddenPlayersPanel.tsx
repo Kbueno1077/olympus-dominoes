@@ -3,12 +3,12 @@
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import {
   gamesPlayedForPlayer,
-  isPlayerHidden,
   listHiddenPlayers,
   listVisiblePlayers,
 } from "@/lib/analytics/playerVisibility";
 import type { PlayerRow } from "@/lib/analytics/types";
 import { useTranslation } from "@/i18n/useTranslation";
+import { ToolsPanelHeader, ToolsQuietCard, toolsPaperSx } from "@/modules/Analytics/ToolsChrome";
 import ToolsNeedData from "@/modules/Analytics/ToolsNeedData";
 import {
   Box,
@@ -17,7 +17,6 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { alpha, type Theme } from "@mui/material/styles";
 import { useMemo, useState } from "react";
 
 function sortByName(players: PlayerRow[]) {
@@ -81,23 +80,22 @@ export default function RestoreHiddenPlayersPanel() {
 
   return (
     <Stack spacing={2} sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
-      <Box>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {t("toolsRosterTitle")}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
-          {t("toolsRosterHint")}
-        </Typography>
-        {activeDataset ? (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mt: 0.75 }}
-          >
-            {t("dashboardViewingDataset", { name: activeDataset.displayName })}
-          </Typography>
-        ) : null}
-      </Box>
+      <ToolsPanelHeader
+        overline={t("toolsRestoreKicker")}
+        title={t("toolsRosterTitle")}
+        hint={t("toolsRosterHint")}
+        extra={
+          activeDataset ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 0.75 }}
+            >
+              {t("dashboardViewingDataset", { name: activeDataset.displayName })}
+            </Typography>
+          ) : null
+        }
+      />
 
       {!data ? (
         <ToolsNeedData />
@@ -194,16 +192,7 @@ function RosterGrid({
         {title}
       </Typography>
       {players.length === 0 ? (
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            border: "1px dashed",
-            borderColor: "divider",
-          }}
-        >
-          <Typography color="text.secondary">{empty}</Typography>
-        </Box>
+        <ToolsQuietCard>{empty}</ToolsQuietCard>
       ) : (
         <Box
           sx={{
@@ -222,21 +211,19 @@ function RosterGrid({
             return (
               <Box
                 key={player.id}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  px: 1,
-                  py: 0.65,
-                  borderRadius: 1.5,
-                  border: dashed ? "1px dashed" : "1px solid",
-                  borderColor: "divider",
-                  backgroundColor: (theme: Theme) =>
-                    alpha(
-                      theme.palette.common.white,
-                      isPlayerHidden(player) ? 0.35 : 0.5
-                    ),
-                }}
+                sx={[
+                  toolsPaperSx({
+                    dashed,
+                    selected: checked,
+                  }),
+                  {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    px: 1,
+                    py: 0.65,
+                  },
+                ]}
               >
                 <Checkbox
                   size="small"

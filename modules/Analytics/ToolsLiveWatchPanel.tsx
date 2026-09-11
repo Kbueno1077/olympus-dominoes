@@ -6,6 +6,7 @@ import {
   LIVE_WATCH_VIEWER_WARN,
 } from "@/lib/liveWatch/types";
 import { useTranslation } from "@/i18n/useTranslation";
+import { ToolsPanelHeader, ToolsQuietCard, toolsPaperSx } from "@/modules/Analytics/ToolsChrome";
 import useToast from "@/hooks/useToast";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -140,36 +141,28 @@ export default function ToolsLiveWatchPanel() {
 
   return (
     <Box>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 2, gap: 1, flexWrap: "wrap" }}
-      >
-        <Box>
-          <Typography variant="h6" fontWeight={700}>
-            {t("liveWatchAdminTitle")}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t("liveWatchAdminHint", {
-              used: shareCount,
-              max: LIVE_WATCH_MAX_SHARES,
-              warn: LIVE_WATCH_VIEWER_WARN,
-              cap: LIVE_WATCH_VIEWER_MAX,
-              hours: 10,
-            })}
-          </Typography>
-        </Box>
-        <Button
-          startIcon={<RefreshIcon />}
-          onClick={() => {
-            void refresh();
-          }}
-          disabled={loading}
-        >
-          {t("liveWatchAdminRefresh")}
-        </Button>
-      </Stack>
+      <ToolsPanelHeader
+        overline={t("toolsLiveWatchKicker")}
+        title={t("liveWatchAdminTitle")}
+        hint={t("liveWatchAdminHint", {
+          used: shareCount,
+          max: LIVE_WATCH_MAX_SHARES,
+          warn: LIVE_WATCH_VIEWER_WARN,
+          cap: LIVE_WATCH_VIEWER_MAX,
+          hours: 10,
+        })}
+        trailing={
+          <Button
+            startIcon={<RefreshIcon />}
+            onClick={() => {
+              void refresh();
+            }}
+            disabled={loading}
+          >
+            {t("liveWatchAdminRefresh")}
+          </Button>
+        }
+      />
 
       <Chip
         label={`${shareCount} / ${LIVE_WATCH_MAX_SHARES}`}
@@ -178,8 +171,11 @@ export default function ToolsLiveWatchPanel() {
       />
 
       {sessions.length === 0 ? (
-        <Typography color="text.secondary">{t("liveWatchAdminEmpty")}</Typography>
+        <ToolsQuietCard overline={t("liveWatchAdminEmptyOverline")}>
+          {t("liveWatchAdminEmpty")}
+        </ToolsQuietCard>
       ) : (
+        <Box sx={[toolsPaperSx(), { p: 0, overflow: "hidden" }]}>
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -360,6 +356,7 @@ export default function ToolsLiveWatchPanel() {
             })}
           </TableBody>
         </Table>
+        </Box>
       )}
     </Box>
   );

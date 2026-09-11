@@ -4,6 +4,7 @@ import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { SCHEMA_VERSION } from "@/lib/analytics/dbMeta";
 import type { RepairSaveReport } from "@/lib/analytics/repairSave";
 import { useTranslation } from "@/i18n/useTranslation";
+import { ToolsPanelHeader, toolsPaperSx } from "@/modules/Analytics/ToolsChrome";
 import ToolsNeedData from "@/modules/Analytics/ToolsNeedData";
 import useToast from "@/hooks/useToast";
 import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
@@ -45,36 +46,28 @@ export default function ToolsRepairPanel() {
 
   return (
     <Stack spacing={2} sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
-      <Box>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {t("toolsRepairTitle")}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
-          {t("toolsRepairHint")}
-        </Typography>
-        {activeDataset ? (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mt: 0.75 }}
-          >
-            {t("dashboardViewingDataset", { name: activeDataset.displayName })}
-          </Typography>
-        ) : null}
-      </Box>
+      <ToolsPanelHeader
+        overline={t("toolsRepairKicker")}
+        title={t("toolsRepairTitle")}
+        hint={t("toolsRepairHint")}
+        extra={
+          activeDataset ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 0.75 }}
+            >
+              {t("dashboardViewingDataset", { name: activeDataset.displayName })}
+            </Typography>
+          ) : null
+        }
+      />
 
       {!data ? (
         <ToolsNeedData />
       ) : (
         <>
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor: "divider",
-            }}
-          >
+          <Box sx={[toolsPaperSx(), { p: 2 }]}>
             <Typography variant="body2">
               {t("toolsRepairSchema", {
                 current: data.db_meta?.schema_version ?? "—",
@@ -98,14 +91,7 @@ export default function ToolsRepairPanel() {
             {t("toolsRepairRun")}
           </Button>
           {report ? (
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
+            <Box sx={[toolsPaperSx(), { p: 2 }]}>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>
                 {t("toolsRepairReportTitle")}
               </Typography>
