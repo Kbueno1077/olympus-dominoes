@@ -4,6 +4,7 @@ import {
   deleteLiveWatchSession,
   getLiveWatchSession,
   joinLiveWatchViewer,
+  leaveLiveWatchViewer,
   listLiveWatchSessions,
   resetLiveWatchStoreForTests,
   updateLiveWatchSession,
@@ -98,6 +99,36 @@ describe("live watch store (memory)", () => {
     const loaded = await getLiveWatchSession(created.session.id);
     expect(loaded?.snapshot.matchId).toBe("m1");
     expect(loaded?.viewers).toHaveLength(1);
+  });
+
+  it("assigns names and sequential join order, and does not reuse order", async () => {
+    const created = await createLiveWatchSession({
+      matchId: "m1",
+      snapshot,
+    });
+    if (!created.ok) throw new Error("create failed");
+    const first = await joinLiveWatchViewer(created.session.id, {
+      displayName: "Lolo",
+    });
+    const second = await joinLiveWatchViewer(created.session.id);
+    expect(first.ok && second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+    expect(first.viewer.displayName).toBe("Lolo");
+    expect(first.viewer.joinOrder).toBe(1);
+    expect(second.viewer.joinOrder).toBe(2);
+    expect(second.viewer.displayName.length).toBeGreaterThan(0);
+    expect(second.viewer.displayName).not.toBe("Lolo");
+
+    await leaveLiveWatchViewer(created.session.id, first.viewer.id);
+    const third = await joinLiveWatchViewer(created.session.id, {
+      displayName: "Tita",
+    });
+    if (!third.ok) throw new Error("third join failed");
+    expect(third.viewer.joinOrder).toBe(3);
+    const loaded = await getLiveWatchSession(created.session.id);
+    expect(
+      loaded?.viewers.map((v) => v.joinOrder).sort((a, b) => a - b)
+    ).toEqual([2, 3]);
   });
 
   it("deletes a share so get and list go empty", async () => {

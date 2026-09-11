@@ -4,12 +4,13 @@ export const LIVE_WATCH_MAX_SHARES = 50;
 export const LIVE_WATCH_VIEWER_WARN = 10;
 export const LIVE_WATCH_VIEWER_MAX = 20;
 export const LIVE_WATCH_TTL_MS = 10 * 60 * 60 * 1000; // 10 hours
-export const LIVE_WATCH_VIEWER_STALE_MS = 3 * 60 * 1000;
-/** Public /watch score GET — only while the tab is visible. */
-export const LIVE_WATCH_SCORE_POLL_MS = 60 * 1000;
-/** Public /watch viewer POST — presence, not score. */
-export const LIVE_WATCH_VIEWER_POLL_MS = 2 * 60 * 1000;
-/** Stop Redis traffic after this many failed score/viewer calls in a row. */
+/** Drop a viewer after this with no sync. Must stay above the 3 min poll. */
+export const LIVE_WATCH_VIEWER_STALE_MS = 8 * 60 * 1000;
+/** Public /watch — one POST for score + presence, only while the tab is visible. */
+export const LIVE_WATCH_POLL_MS = 3 * 60 * 1000;
+/** Pause between automatic retries of a failed sync. */
+export const LIVE_WATCH_RETRY_MS = 1500;
+/** Stop Redis traffic after this many failed syncs in a row. */
 export const LIVE_WATCH_FAIL_LIMIT = 3;
 /** Tools monitor list — Redis reads. Manual Refresh still fetches immediately. */
 export const LIVE_WATCH_ADMIN_POLL_MS = 5 * 60 * 1000;
@@ -73,8 +74,18 @@ export type LiveWatchSnapshot = {
 
 export type LiveWatchViewer = {
   id: string;
+  displayName: string;
+  /** 1-based order this person first entered the share. Never reused. */
+  joinOrder: number;
   joinedAt: number;
   lastSeenAt: number;
+};
+
+/** Public rail — no last-seen timestamps. */
+export type LiveWatchPublicViewer = {
+  id: string;
+  displayName: string;
+  joinOrder: number;
 };
 
 export type LiveWatchSession = {
@@ -84,6 +95,8 @@ export type LiveWatchSession = {
   createdAt: number;
   updatedAt: number;
   expiresAt: number;
+  /** Last joinOrder handed out (0 before anyone joins). */
+  joinSeq: number;
   snapshot: LiveWatchSnapshot;
   viewers: LiveWatchViewer[];
 };
