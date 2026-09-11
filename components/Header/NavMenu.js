@@ -99,9 +99,9 @@ export default function NavMenu({ dense = false }) {
         Icon: EmojiEventsOutlined,
       },
       {
-        href: "/merge",
+        href: "/tools",
         label: t("mergeNav"),
-        match: (p) => p === "/merge" || p.startsWith("/merge/"),
+        match: (p) => p === "/tools" || p.startsWith("/tools/"),
         Icon: CallMergeOutlined,
         gated: true,
       },
