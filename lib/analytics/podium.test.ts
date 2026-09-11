@@ -94,28 +94,35 @@ describe("buildPodium", () => {
     const byId = Object.fromEntries(podium.map((c) => [c.id, c]));
 
     expect(byId.jose.kind).toBe("glory");
-    expect(byId.jose.winner?.playerName).toBe("Ana");
-    expect(byId.jose.runnerUp?.playerName).toBe("Cara");
+    expect(byId.jose.first.map((p) => p.playerName)).toEqual(["Ana"]);
+    expect(byId.jose.second.map((p) => p.playerName)).toEqual(["Cara"]);
 
     expect(byId.games.kind).toBe("grind");
-    expect(byId.games.winner?.playerName).toBe("Ana");
-    expect(byId.games.winner?.display).toBe("20");
+    expect(byId.games.first[0]?.playerName).toBe("Ana");
+    expect(byId.games.first[0]?.display).toBe("20");
 
-    expect(byId.hands.winner?.playerName).toBe("Ana");
+    expect(byId.hands.first[0]?.playerName).toBe("Ana");
 
     expect(byId.bestLoser.kind).toBe("shame");
-    expect(byId.bestLoser.winner?.playerName).toBe("Ben");
-    expect(byId.bestLoser.winner?.value).toBe(11);
-    expect(byId.bestLoser.runnerUp?.playerName).toBe("Ana");
+    expect(byId.bestLoser.first[0]?.playerName).toBe("Ben");
+    expect(byId.bestLoser.first[0]?.value).toBe(11);
+    expect(byId.bestLoser.second[0]?.playerName).toBe("Ana");
 
-    expect(byId.keepsComing.winner?.playerName).toBe("Ben");
-    expect(byId.keepsComing.runnerUp?.playerName).toBe("Cara");
+    expect(byId.keepsComing.first[0]?.playerName).toBe("Ben");
+    expect(byId.keepsComing.second[0]?.playerName).toBe("Cara");
+    expect(byId.keepsComing.first[0]?.display).toBe("11 / 15");
 
-    expect(byId.pollosEaten.winner?.playerName).toBe("Ben");
-    expect(byId.zapatosEaten.winner?.playerName).toBe("Ben");
+    expect(byId.floor.first[0]?.playerName).toBe("Ben");
+    expect(byId.atm.first[0]?.playerName).toBe("Ben");
+    expect(byId.atm.first[0]?.display).toBe("-150");
+    expect(byId.polloEatenRate.first[0]?.playerName).toBe("Ben");
+
+    expect(byId.pollosEaten.first[0]?.playerName).toBe("Ben");
+    expect(byId.zapatosEaten.first[0]?.playerName).toBe("Ben");
+    expect(byId.minDatasToLose).toBeUndefined();
   });
 
-  it("excludes winners from keepsComing and does not fall back to them", () => {
+  it("ranks keepsComing by losses among losing records, not a tiny 100%", () => {
     const podium = buildPodium([
       row({
         playerId: 1,
@@ -126,15 +133,54 @@ describe("buildPodium", () => {
       }),
       row({
         playerId: 2,
-        playerName: "Stubborn",
+        playerName: "Grinder",
         gamesPlayed: 12,
         gamesWon: 4,
         gamesLost: 8,
       }),
+      row({
+        playerId: 3,
+        playerName: "Perfect",
+        gamesPlayed: 2,
+        gamesWon: 0,
+        gamesLost: 2,
+      }),
     ]);
     const keeps = podium.find((c) => c.id === "keepsComing")!;
-    expect(keeps.winner?.playerName).toBe("Stubborn");
-    expect(keeps.runnerUp).toBeNull();
+    expect(keeps.first[0]?.playerName).toBe("Grinder");
+    expect(keeps.first[0]?.display).toBe("8 / 12");
+    expect(keeps.second[0]?.playerName).toBe("Perfect");
+    expect(keeps.second[0]?.display).toBe("2 / 2");
+  });
+
+  it("does not snark-tie keepsComing when a winning record sits outside the pool", () => {
+    const podium = buildPodium([
+      row({
+        playerId: 1,
+        playerName: "Winner",
+        gamesPlayed: 10,
+        gamesWon: 8,
+        gamesLost: 2,
+      }),
+      row({
+        playerId: 2,
+        playerName: "Maria",
+        gamesPlayed: 2,
+        gamesWon: 0,
+        gamesLost: 2,
+      }),
+      row({
+        playerId: 3,
+        playerName: "Pedro",
+        gamesPlayed: 2,
+        gamesWon: 0,
+        gamesLost: 2,
+      }),
+    ]);
+    const keeps = podium.find((c) => c.id === "keepsComing")!;
+    expect(keeps.allTied).toBe(false);
+    expect(keeps.first.map((p) => p.playerName)).toEqual(["Maria", "Pedro"]);
+    expect(keeps.second).toEqual([]);
   });
 
   it("requires rate min games for pollo/zapato rates", () => {
@@ -144,6 +190,7 @@ describe("buildPodium", () => {
         playerName: "Hot",
         gamesPlayed: PODIUM_RATE_MIN_GAMES - 1,
         pollosFor: 10,
+        pollosAgainst: 10,
         zapatosFor: 10,
       }),
       row({
@@ -151,15 +198,19 @@ describe("buildPodium", () => {
         playerName: "Steady",
         gamesPlayed: PODIUM_RATE_MIN_GAMES,
         pollosFor: 3,
+        pollosAgainst: 3,
         zapatosFor: 2,
       }),
     ]);
     const polloRate = podium.find((c) => c.id === "polloRate")!;
-    expect(polloRate.winner?.playerName).toBe("Steady");
-    expect(polloRate.runnerUp).toBeNull();
+    expect(polloRate.first[0]?.playerName).toBe("Steady");
+    expect(polloRate.second).toEqual([]);
+    const eatenRate = podium.find((c) => c.id === "polloEatenRate")!;
+    expect(eatenRate.first[0]?.playerName).toBe("Steady");
+    expect(eatenRate.second).toEqual([]);
   });
 
-  it("tie-breaks by games played then name", () => {
+  it("lists a two-way first-place tie as 1st and hides 2nd", () => {
     const podium = buildPodium([
       row({
         playerId: 1,
@@ -175,10 +226,43 @@ describe("buildPodium", () => {
         gamesLost: 7,
         gamesWon: 3,
       }),
+      row({
+        playerId: 3,
+        playerName: "Cal",
+        gamesPlayed: 10,
+        gamesLost: 2,
+        gamesWon: 8,
+      }),
     ]);
     const bestLoser = podium.find((c) => c.id === "bestLoser")!;
-    expect(bestLoser.winner?.playerName).toBe("Amy");
-    expect(bestLoser.runnerUp?.playerName).toBe("Zoe");
+    expect(bestLoser.allTied).toBe(false);
+    expect(bestLoser.first.map((p) => p.playerName)).toEqual(["Amy", "Zoe"]);
+    expect(bestLoser.second).toEqual([]);
+  });
+
+  it("lists every name when more than two tie for first", () => {
+    const podium = buildPodium([
+      row({ playerId: 1, playerName: "Ana", pollosFor: 4 }),
+      row({ playerId: 2, playerName: "Ben", pollosFor: 4 }),
+      row({ playerId: 3, playerName: "Cara", pollosFor: 4 }),
+      row({ playerId: 4, playerName: "Drew", pollosFor: 1 }),
+    ]);
+    const pollos = podium.find((c) => c.id === "pollos")!;
+    expect(pollos.allTied).toBe(false);
+    expect(pollos.first.map((p) => p.playerName)).toEqual(["Ana", "Ben", "Cara"]);
+    expect(pollos.second).toEqual([]);
+  });
+
+  it("uses the all-tied snark when every eligible player matches", () => {
+    const podium = buildPodium([
+      row({ playerId: 1, playerName: "Amy", gamesLost: 7, gamesWon: 3 }),
+      row({ playerId: 2, playerName: "Zoe", gamesLost: 7, gamesWon: 3 }),
+    ]);
+    const bestLoser = podium.find((c) => c.id === "bestLoser")!;
+    expect(bestLoser.allTied).toBe(true);
+    expect(bestLoser.first).toEqual([]);
+    expect(bestLoser.second).toEqual([]);
+    expect(bestLoser.allTiedDisplay).toBe("7");
   });
 
   it("ranks style categories with higher/lower directions", () => {
@@ -216,11 +300,12 @@ describe("buildPodium", () => {
     const byId = Object.fromEntries(podium.map((c) => [c.id, c]));
 
     expect(byId.maxDataFor.kind).toBe("style");
-    expect(byId.maxDataFor.winner?.playerName).toBe("Ana");
-    expect(byId.minDatasToWin.winner?.playerName).toBe("Ana");
-    expect(byId.maxDatasToWin.winner?.playerName).toBe("Ana");
-    expect(byId.maxDatasToLose.winner?.playerName).toBe("Ben");
-    expect(byId.minDatasToLose.winner?.playerName).toBe("Ana");
-    expect(byId.maxDataAgainst.winner?.playerName).toBe("Ben");
+    expect(byId.maxDataFor.first[0]?.playerName).toBe("Ana");
+    expect(byId.minDataFor.first[0]?.playerName).toBe("Ben");
+    expect(byId.minDatasToWin.first[0]?.playerName).toBe("Ana");
+    expect(byId.maxDatasToWin.first[0]?.playerName).toBe("Ana");
+    expect(byId.maxDatasToLose.first[0]?.playerName).toBe("Ben");
+    expect(byId.maxDataAgainst.first[0]?.playerName).toBe("Ben");
+    expect(byId.minDatasToLose).toBeUndefined();
   });
 });

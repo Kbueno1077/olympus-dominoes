@@ -2,6 +2,7 @@
 
 import {
   parsePunchlineMap,
+  podiumAllTiedKey,
   podiumPunchlineKey,
   resolveAllPunchlineSlots,
   type PodiumPunchlineMap,
@@ -35,6 +36,7 @@ function writeStored(map: PodiumPunchlineMap) {
 export function usePodiumPunchlines(): {
   ready: boolean;
   punchlineKey: (id: PodiumCategoryId) => string;
+  allTiedKey: (id: PodiumCategoryId) => string;
 } {
   const [map, setMap] = useState<PodiumPunchlineMap>({});
   const [ready, setReady] = useState(false);
@@ -58,5 +60,13 @@ export function usePodiumPunchlines(): {
     [map]
   );
 
-  return { ready, punchlineKey };
+  const allTiedKey = useCallback(
+    (id: PodiumCategoryId) => {
+      const index = map[id]?.index ?? 0;
+      return podiumAllTiedKey(index);
+    },
+    [map]
+  );
+
+  return { ready, punchlineKey, allTiedKey };
 }

@@ -14,6 +14,7 @@ import {
   type PodiumCategoryId,
   type PodiumCategoryResult,
   type PodiumKind,
+  type PodiumPlace,
 } from "@/lib/analytics/podium";
 import {
   DEFAULT_FORMAT_LABEL,
@@ -50,6 +51,7 @@ function categoryTitleKey(id: PodiumCategoryId): string {
     zapatos: "podiumZapatosTitle",
     zapatoRate: "podiumZapatoRateTitle",
     maxDataFor: "podiumMaxDataForTitle",
+    minDataFor: "podiumMinDataForTitle",
     minDatasToWin: "podiumMinDatasToWinTitle",
     maxDatasToWin: "podiumMaxDatasToWinTitle",
     maxDatasToLose: "podiumMaxDatasToLoseTitle",
@@ -57,9 +59,11 @@ function categoryTitleKey(id: PodiumCategoryId): string {
     hands: "podiumHandsTitle",
     bestLoser: "podiumBestLoserTitle",
     keepsComing: "podiumKeepsComingTitle",
+    floor: "podiumFloorTitle",
+    atm: "podiumAtmTitle",
     pollosEaten: "podiumPollosEatenTitle",
+    polloEatenRate: "podiumPolloEatenRateTitle",
     zapatosEaten: "podiumZapatosEatenTitle",
-    minDatasToLose: "podiumMinDatasToLoseTitle",
     maxDataAgainst: "podiumMaxDataAgainstTitle",
   };
   return map[id];
@@ -89,7 +93,7 @@ function PlaceRow({
   muted,
 }: {
   label: string;
-  place: PodiumCategoryResult["winner"];
+  place: PodiumPlace | null;
   emphasize?: boolean;
   muted?: boolean;
 }) {
@@ -143,13 +147,16 @@ function PlaceRow({
 function TrophyCard({
   category,
   punchlineKey,
+  allTiedKey,
 }: {
   category: PodiumCategoryResult;
   punchlineKey: (id: PodiumCategoryId) => string;
+  allTiedKey: (id: PodiumCategoryId) => string;
 }) {
   const { t } = useTranslation();
   const shame = category.kind === "shame";
   const grind = category.kind === "grind";
+  const empty = !category.allTied && category.first.length === 0;
 
   return (
     <Box
@@ -199,17 +206,61 @@ function TrophyCard({
           </Typography>
         </Box>
       </Stack>
-      <PlaceRow
-        label={t("podiumFirst")}
-        place={category.winner}
-        emphasize
-        muted={shame}
-      />
-      <PlaceRow
-        label={t("podiumSecond")}
-        place={category.runnerUp}
-        muted
-      />
+      {category.allTied ? (
+        <Stack spacing={0.5} sx={{ pt: 0.25 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: shame ? "text.secondary" : "text.primary",
+              fontWeight: 600,
+              lineHeight: 1.4,
+            }}
+          >
+            {t(allTiedKey(category.id))}
+          </Typography>
+          {category.allTiedDisplay ? (
+            <Typography
+              sx={{
+                fontWeight: 700,
+                fontVariantNumeric: "tabular-nums",
+                color: shame ? "text.secondary" : "text.primary",
+              }}
+            >
+              {category.allTiedDisplay}
+            </Typography>
+          ) : null}
+        </Stack>
+      ) : empty ? (
+        <>
+          <PlaceRow
+            label={t("podiumFirst")}
+            place={null}
+            emphasize
+            muted={shame}
+          />
+          <PlaceRow label={t("podiumSecond")} place={null} muted />
+        </>
+      ) : (
+        <>
+          {category.first.map((place) => (
+            <PlaceRow
+              key={place.playerId}
+              label={t("podiumFirst")}
+              place={place}
+              emphasize
+              muted={shame}
+            />
+          ))}
+          {category.second.map((place) => (
+            <PlaceRow
+              key={place.playerId}
+              label={t("podiumSecond")}
+              place={place}
+              muted
+            />
+          ))}
+        </>
+      )}
     </Box>
   );
 }
@@ -217,7 +268,7 @@ function TrophyCard({
 export default function Podium() {
   const { t } = useTranslation();
   const { data, error, loading, activeDataset } = useAnalytics();
-  const { ready: punchlinesReady, punchlineKey } = usePodiumPunchlines();
+  const { ready: punchlinesReady, punchlineKey, allTiedKey } = usePodiumPunchlines();
   const [modeLabel, setModeLabel] = useState<string>(DEFAULT_FORMAT_LABEL);
   const [tileSet, setTileSet] = useState<TileSet>(DEFAULT_TILE_SET);
 
@@ -293,7 +344,7 @@ export default function Podium() {
           {t("dashboardViewingDataset", { name: datasetLabel })}
         </Typography>
 
-        {podium.every((c) => !c.winner) ? (
+        {podium.every((c) => c.first.length === 0 && !c.allTied) ? (
           <DashboardPanel title={t("podiumTitle")}>
             <Typography sx={{ color: "text.secondary" }}>
               {t("podiumEmpty")}
@@ -333,6 +384,7 @@ export default function Podium() {
                         key={category.id}
                         category={category}
                         punchlineKey={punchlineKey}
+                        allTiedKey={allTiedKey}
                       />
                     ))}
                   </Box>
