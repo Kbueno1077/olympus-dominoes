@@ -51,6 +51,26 @@ export const dashboardShellSx = {
   overflowY: { xs: "visible", md: "hidden" },
 };
 
+/**
+ * /history/[id] keeps two asides. Stay stacked until lg (1200) so the pad
+ * is not pinched between ~360 + ~320 rails on 768–1024 laptops.
+ */
+export const dashboardTwinAsideShellSx = {
+  display: "flex",
+  flexDirection: { xs: "column", lg: "row" },
+  flex: { xs: "0 0 auto", md: 1 },
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
+  minHeight: { xs: 0, md: 0 },
+  height: { xs: "auto", md: "100%" },
+  maxHeight: { xs: "none", md: "100%" },
+  backgroundColor: "background.default",
+  alignItems: "stretch",
+  overflowX: "hidden",
+  overflowY: { xs: "visible", md: "hidden" },
+};
+
 /** Page route wrapper under AppShell for full-bleed dashboards. */
 export const dashboardPageSx = {
   width: "100%",
@@ -103,8 +123,27 @@ export const dashboardMainSx = {
   overflowX: "hidden",
   overflowY: { xs: "visible", md: "auto" },
   overscrollBehavior: { md: "contain" },
+  order: { xs: 1, md: 0 },
   px: { xs: 1.5, sm: 2.5, lg: 3 },
-  pt: { xs: 2, md: 3 },
+  pt: { xs: 1.5, md: 3 },
+  pb: { xs: 3, sm: 3, md: 4 },
+};
+
+/** Main pane for /history/[id] — sidebar buttons stay above the pad until lg. */
+export const dashboardTwinAsideMainSx = {
+  flex: { xs: "0 0 auto", md: 1 },
+  minWidth: 0,
+  maxWidth: "100%",
+  width: "100%",
+  minHeight: 0,
+  height: { xs: "auto", md: "100%" },
+  maxHeight: { xs: "none", md: "100%" },
+  overflowX: "hidden",
+  overflowY: { xs: "visible", md: "auto" },
+  overscrollBehavior: { md: "contain" },
+  order: { xs: 1, lg: 0 },
+  px: { xs: 1.5, sm: 2.5, lg: 3 },
+  pt: { xs: 1.5, md: 3 },
   pb: { xs: 3, sm: 3, md: 4 },
 };
 

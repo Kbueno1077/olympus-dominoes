@@ -313,9 +313,21 @@ function Standing({ snapshot }: { snapshot: LiveWatchSnapshot }) {
     >
       <Typography
         variant="overline"
-        sx={{ color: "text.secondary", display: "block", mb: 1 }}
+        sx={{ color: "text.secondary", display: "block" }}
       >
         {snapshot.isClosed ? t("matchStanding") : t("openTable")}
+      </Typography>
+      <Typography
+        variant="caption"
+        sx={{
+          display: "block",
+          color: "text.secondary",
+          mb: 1,
+          lineHeight: 1.4,
+        }}
+      >
+        {snapshot.modeLabel} · {snapshot.tileSet} ·{" "}
+        {t("liveWatchFirstTo", { n: snapshot.maxPoints })}
       </Typography>
       <Stack direction="row" spacing={1}>
         {wins.map(({ teamNumber, wins: w }) => {

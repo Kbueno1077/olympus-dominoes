@@ -19,6 +19,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Collapse,
   IconButton,
   Stack,
@@ -62,6 +63,40 @@ function ago(ms: number): string {
   return `${Math.round(m / 60)}h`;
 }
 
+async function readApiError(res: Response): Promise<string> {
+  try {
+    const body = (await res.json()) as { error?: string; message?: string };
+    return String(body?.error || body?.message || "");
+  } catch {
+    return "";
+  }
+}
+
+function watchAdminErrorDetail(
+  t: (key: string) => string,
+  status: number,
+  code: string
+): string {
+  switch (code) {
+    case "unauthorized":
+      return t("toastErrorNoAccess");
+    case "not_found":
+    case "not_found_or_unauthorized":
+      return t("toastErrorShareGone");
+    case "expired":
+      return t("toastErrorShareExpired");
+    case "disabled":
+      return t("toastErrorLiveOff");
+    default:
+      break;
+  }
+  if (status === 401 || status === 403) return t("toastErrorNoAccess");
+  if (status === 404) return t("toastErrorShareGone");
+  if (status === 410) return t("toastErrorShareExpired");
+  if (status === 503) return t("toastErrorLiveOff");
+  return t("toastErrorTryAgain");
+}
+
 export default function ToolsLiveWatchPanel() {
   const { t } = useTranslation();
   const toast = useToast();
@@ -83,14 +118,22 @@ export default function ToolsLiveWatchPanel() {
     try {
       const res = await fetch("/api/live-watch", { cache: "no-store" });
       if (!res.ok) {
-        toastRef.current(tRef.current("liveWatchAdminLoadFailed"), "error");
+        const code = await readApiError(res);
+        toastRef.current(tRef.current("liveWatchAdminLoadFailed"), "error", {
+          detail:
+            code || res.status
+              ? watchAdminErrorDetail(tRef.current, res.status, code)
+              : tRef.current("liveWatchAdminLoadFailedDetail"),
+        });
         return;
       }
       const data = await res.json();
       setSessions(data.sessions ?? []);
       setShareCount(data.shareCount ?? 0);
     } catch {
-      toastRef.current(tRef.current("liveWatchAdminLoadFailed"), "error");
+      toastRef.current(tRef.current("liveWatchAdminLoadFailed"), "error", {
+        detail: tRef.current("toastErrorOffline"),
+      });
     } finally {
       inFlight.current = false;
       setLoading(false);
@@ -105,10 +148,26 @@ export default function ToolsLiveWatchPanel() {
     return () => clearInterval(timer);
   }, [refresh]);
 
+  const failAction = async (
+    titleKey: string,
+    res: Response
+  ): Promise<boolean> => {
+    if (res.ok) return false;
+    const code = await readApiError(res);
+    toast(t(titleKey), "error", {
+      detail: watchAdminErrorDetail(t, res.status, code),
+    });
+    return true;
+  };
+
   const removeShare = async (id: string) => {
-    const res = await fetch(`/api/live-watch/admin/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      toast(t("liveWatchAdminActionFailed"), "error");
+    try {
+      const res = await fetch(`/api/live-watch/admin/${id}`, { method: "DELETE" });
+      if (await failAction("liveWatchAdminRemoveFailed", res)) return;
+    } catch {
+      toast(t("liveWatchAdminRemoveFailed"), "error", {
+        detail: t("toastErrorOffline"),
+      });
       return;
     }
     toast(t("liveWatchAdminRemoved"), "success");
@@ -116,13 +175,17 @@ export default function ToolsLiveWatchPanel() {
   };
 
   const clearViewers = async (id: string) => {
-    const res = await fetch(`/api/live-watch/admin/${id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "clear_viewers" }),
-    });
-    if (!res.ok) {
-      toast(t("liveWatchAdminActionFailed"), "error");
+    try {
+      const res = await fetch(`/api/live-watch/admin/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "clear_viewers" }),
+      });
+      if (await failAction("liveWatchAdminClearFailed", res)) return;
+    } catch {
+      toast(t("liveWatchAdminClearFailed"), "error", {
+        detail: t("toastErrorOffline"),
+      });
       return;
     }
     toast(t("liveWatchAdminViewersCleared"), "success");
@@ -130,13 +193,17 @@ export default function ToolsLiveWatchPanel() {
   };
 
   const kickViewer = async (shareId: string, viewerId: string) => {
-    const res = await fetch(`/api/live-watch/admin/${shareId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "kick_viewer", viewerId }),
-    });
-    if (!res.ok) {
-      toast(t("liveWatchAdminActionFailed"), "error");
+    try {
+      const res = await fetch(`/api/live-watch/admin/${shareId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "kick_viewer", viewerId }),
+      });
+      if (await failAction("liveWatchAdminKickFailed", res)) return;
+    } catch {
+      toast(t("liveWatchAdminKickFailed"), "error", {
+        detail: t("toastErrorOffline"),
+      });
       return;
     }
     toast(t("liveWatchAdminViewerKicked"), "success");
@@ -156,7 +223,11 @@ export default function ToolsLiveWatchPanel() {
           hours: 10,
         })}
         extra={
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", mt: 0.85, lineHeight: 1.45 }}
+          >
             {t("liveWatchAdminPollHint", { minutes: 5 })}
           </Typography>
         }
@@ -179,12 +250,22 @@ export default function ToolsLiveWatchPanel() {
         sx={{ mb: 2 }}
       />
 
-      {sessions.length === 0 ? (
-        <ToolsQuietCard overline={t("liveWatchAdminEmptyOverline")}>
-          {t("liveWatchAdminEmpty")}
-        </ToolsQuietCard>
+      {loading && sessions.length === 0 ? (
+        <Stack
+          alignItems="center"
+          justifyContent="center"
+          spacing={1.5}
+          sx={{ py: 6 }}
+        >
+          <CircularProgress size={32} thickness={4} sx={{ color: "#1F6B58" }} />
+          <Typography color="text.secondary">
+            {t("liveWatchAdminLoading")}
+          </Typography>
+        </Stack>
+      ) : sessions.length === 0 ? (
+        <ToolsQuietCard>{t("liveWatchAdminEmpty")}</ToolsQuietCard>
       ) : (
-        <Box sx={[toolsPaperSx(), { p: 0, overflow: "hidden" }]}>
+        <Box sx={[toolsPaperSx(), { p: 0, overflow: "auto" }]}>
         <Table size="small">
           <TableHead>
             <TableRow>

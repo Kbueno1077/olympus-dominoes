@@ -14,14 +14,16 @@ import LiveWatchStatsPanel from "@/modules/LiveWatch/LiveWatchStatsPanel";
 import LiveWatchViewersRail from "@/modules/LiveWatch/LiveWatchViewersRail";
 import { FONT_DISPLAY } from "@/muiTheme/typography";
 import { useTranslation } from "@/i18n/useTranslation";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import {
   Box,
   Button,
   Chip,
-  LinearProgress,
+  CircularProgress,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -334,9 +336,7 @@ export default function LiveWatchClient() {
     return (
       <WatchStatusPanel
         tone="loading"
-        chip={t("liveWatchLive")}
         title={t("liveWatchNameTitle")}
-        lead={t("liveWatchNameLead")}
         body={t("liveWatchNameBody")}
       >
         <Stack
@@ -395,9 +395,7 @@ export default function LiveWatchClient() {
     return (
       <WatchStatusPanel
         tone="loading"
-        chip={t("liveWatchLive")}
         title={t("liveWatchLoadingTitle")}
-        lead={t("liveWatchLoadingLead")}
         body={t("liveWatchLoading")}
         pulse
       />
@@ -455,6 +453,7 @@ export default function LiveWatchClient() {
           overflowY: { xs: "visible", md: "auto" },
           overscrollBehavior: { md: "contain" },
           WebkitOverflowScrolling: "touch",
+          order: { xs: 1, md: 0 },
           bgcolor: "#F1E7D6",
           display: "flex",
           flexDirection: "column",
@@ -465,74 +464,14 @@ export default function LiveWatchClient() {
         }}
       >
         <Box sx={{ maxWidth: 920, width: "100%", mx: "auto" }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{ mb: 0.75, gap: 1, flexWrap: "wrap" }}
-          >
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Chip
-                size="small"
-                label={t("liveWatchLive")}
-                sx={{
-                  bgcolor: alpha("#1F6B58", 0.18),
-                  color: "#1F6B58",
-                  fontWeight: 700,
-                }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {t("liveWatchViewers", { n: viewers.length })}
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Button
-                size="small"
-                variant="contained"
-                disableElevation
-                startIcon={<RefreshIcon />}
-                disabled={refreshing}
-                onClick={refreshLive}
-                sx={{
-                  bgcolor: "#1F6B58",
-                  color: "#FDF8EE",
-                  "&:hover": { bgcolor: "#185546" },
-                }}
-              >
-                {t("liveWatchRefresh")}
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="inherit"
-                onClick={() => {
-                  void disconnect();
-                }}
-              >
-                {t("liveWatchDisconnect")}
-              </Button>
-            </Stack>
-          </Stack>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mb: 2 }}
-          >
-            {t("liveWatchPollHint", { minutes: 3 })}
-          </Typography>
-
-          <Typography variant="overline" color="text.secondary">
-            {snapshot.modeLabel} · {snapshot.tileSet} ·{" "}
-            {t("liveWatchFirstTo", { n: snapshot.maxPoints })} ·{" "}
-            {snapshot.isClosed ? t("liveWatchClosed") : t("liveWatchOpen")}
-          </Typography>
-          <Typography variant="h5" fontWeight={800} sx={{ mt: 0.25, mb: 0.25 }}>
-            {snapshot.overallLine}
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            {t("liveWatchGame", { n: snapshot.gameIndex })} ·{" "}
-            {snapshot.currentLine}
-          </Typography>
+          <WatchLiveMasthead
+            viewerCount={viewers.length}
+            refreshing={refreshing}
+            onRefresh={refreshLive}
+            onDisconnect={() => {
+              void disconnect();
+            }}
+          />
 
           {fullPad ? (
             <LiveWatchScoreboard snapshot={snapshot} />
@@ -543,6 +482,136 @@ export default function LiveWatchClient() {
       </Box>
 
       {fullPad ? <LiveWatchStatsPanel snapshot={snapshot} /> : null}
+    </Box>
+  );
+}
+
+const creamCardSx = {
+  borderRadius: 2,
+  border: "1px solid",
+  borderColor: alpha("#1F6B58", 0.18),
+  bgcolor: alpha("#FDF8EE", 0.92),
+  px: { xs: 1.75, sm: 2.25 },
+  py: { xs: 1.6, sm: 2 },
+  mb: 2,
+  boxShadow: `0 10px 28px ${alpha("#3A2A18", 0.05)}`,
+};
+
+function WatchLiveMasthead({
+  viewerCount,
+  refreshing,
+  onRefresh,
+  onDisconnect,
+}: {
+  viewerCount: number;
+  refreshing: boolean;
+  onRefresh: () => void;
+  onDisconnect: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Box sx={{ ...creamCardSx, py: { xs: 1.25, sm: 1.35 }, mb: 1.5 }}>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        alignItems={{ xs: "stretch", sm: "center" }}
+        justifyContent="space-between"
+        gap={1.25}
+      >
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          flexWrap="wrap"
+          useFlexGap
+          sx={{ minWidth: 0 }}
+        >
+          <Chip
+            size="small"
+            label={t("liveWatchLive")}
+            sx={{
+              bgcolor: alpha("#1F6B58", 0.18),
+              color: "#1F6B58",
+              fontWeight: 700,
+              "@keyframes olympusLiveChip": {
+                "0%, 100%": { opacity: 1 },
+                "50%": { opacity: 0.42 },
+              },
+              animation: "olympusLiveChip 1.4s ease-in-out infinite",
+            }}
+          />
+          <Typography
+            sx={{
+              fontWeight: 700,
+              fontSize: 13.5,
+              color: "#1F6B58",
+            }}
+          >
+            {t("liveWatchViewers", { n: viewerCount })}
+          </Typography>
+        </Stack>
+
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1}
+          sx={{
+            flexShrink: 0,
+            width: { xs: "100%", sm: "auto" },
+          }}
+        >
+          <Tooltip title={t("liveWatchPollHint", { minutes: 3 })}>
+            <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
+              <Button
+                fullWidth
+                variant="contained"
+                disableElevation
+                startIcon={<RefreshIcon />}
+                disabled={refreshing}
+                onClick={onRefresh}
+                sx={{
+                  py: 1.05,
+                  px: 2,
+                  minWidth: { sm: 132 },
+                  fontWeight: 700,
+                  textTransform: "none",
+                  bgcolor: "#1F6B58",
+                  color: "#FDF8EE",
+                  "&:hover": { bgcolor: "#185546" },
+                  "@keyframes olympusRefreshSpin": {
+                    to: { transform: "rotate(360deg)" },
+                  },
+                  "& .MuiButton-startIcon": refreshing
+                    ? {
+                        animation: "olympusRefreshSpin 0.8s linear infinite",
+                      }
+                    : null,
+                }}
+              >
+                {t("liveWatchRefresh")}
+              </Button>
+            </Box>
+          </Tooltip>
+          <Button
+            fullWidth
+            variant="contained"
+            disableElevation
+            startIcon={<LogoutOutlinedIcon />}
+            onClick={onDisconnect}
+            sx={{
+              py: 1.05,
+              px: 2,
+              minWidth: { sm: 168 },
+              fontWeight: 700,
+              textTransform: "none",
+              bgcolor: "#6B4F3A",
+              color: "#FDF8EE",
+              "&:hover": { bgcolor: "#563D2C" },
+            }}
+          >
+            {t("liveWatchDisconnect")}
+          </Button>
+        </Stack>
+      </Stack>
     </Box>
   );
 }
@@ -589,7 +658,7 @@ function terminalCopy(
   stopped: boolean
 ): {
   tone: WatchStatusTone;
-  chip: string;
+  chip?: string;
   title: string;
   lead?: string;
   body: string;
@@ -623,9 +692,7 @@ function terminalCopy(
     case "disconnected":
       return {
         tone: "ended",
-        chip: t("liveWatchDisconnectedChip"),
         title: t("liveWatchDisconnectedTitle"),
-        lead: t("liveWatchDisconnectedLead"),
         body: t("liveWatchDisconnected"),
       };
     case "full":
@@ -679,7 +746,7 @@ function WatchStatusPanel({
   children,
 }: {
   tone: WatchStatusTone;
-  chip: string;
+  chip?: string;
   title: string;
   lead?: string;
   body: string;
@@ -716,28 +783,19 @@ function WatchStatusPanel({
           boxShadow: `0 18px 40px ${alpha("#3A2A18", 0.08)}`,
         }}
       >
-        <Chip
-          size="small"
-          label={chip}
-          sx={{
-            ...watchStatusChipSx(tone),
-            ...(pulse
-              ? {
-                  "@keyframes olympusLiveChip": {
-                    "0%, 100%": { opacity: 1 },
-                    "50%": { opacity: 0.42 },
-                  },
-                  animation: "olympusLiveChip 1.4s ease-in-out infinite",
-                }
-              : null),
-          }}
-        />
+        {chip ? (
+          <Chip
+            size="small"
+            label={chip}
+            sx={watchStatusChipSx(tone)}
+          />
+        ) : null}
         {lead ? (
           <Typography
             variant="overline"
             sx={{
               display: "block",
-              mt: 2.5,
+              mt: chip ? 2.5 : 0,
               letterSpacing: "0.14em",
               color: "text.secondary",
             }}
@@ -748,7 +806,7 @@ function WatchStatusPanel({
         <Typography
           component="h1"
           sx={{
-            mt: lead ? 0.5 : 2,
+            mt: chip || lead ? (lead ? 0.5 : 2) : 0,
             mb: 1,
             fontFamily: FONT_DISPLAY,
             fontWeight: 700,
@@ -770,16 +828,12 @@ function WatchStatusPanel({
           {body}
         </Typography>
         {pulse ? (
-          <LinearProgress
-            aria-hidden
+          <CircularProgress
+            size={32}
+            thickness={4}
             sx={{
-              height: 3,
-              maxWidth: 180,
-              mx: "auto",
+              color: "#1F6B58",
               mb: actionLabel || children ? 3 : 0,
-              borderRadius: 99,
-              bgcolor: alpha("#1F6B58", 0.12),
-              "& .MuiLinearProgress-bar": { bgcolor: "#1F6B58" },
             }}
           />
         ) : null}
@@ -810,6 +864,13 @@ function LegacyTeamCards({ snapshot }: { snapshot: LiveWatchSnapshot }) {
   const { t } = useTranslation();
   return (
     <Stack spacing={1.5}>
+      <Typography
+        variant="caption"
+        sx={{ color: "text.secondary", lineHeight: 1.4 }}
+      >
+        {snapshot.modeLabel} · {snapshot.tileSet} ·{" "}
+        {t("liveWatchFirstTo", { n: snapshot.maxPoints })}
+      </Typography>
       {snapshot.teams.map((team) => (
         <Box
           key={team.teamNumber}

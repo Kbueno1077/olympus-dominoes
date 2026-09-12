@@ -1,5 +1,6 @@
 "use client";
 
+import { FONT_DISPLAY } from "@/muiTheme/typography";
 import { Box, Stack, Typography } from "@mui/material";
 import { alpha, type Theme } from "@mui/material/styles";
 import type { ReactNode } from "react";
@@ -38,41 +39,79 @@ export function ToolsPanelHeader({
   trailing?: ReactNode;
 }) {
   return (
-    <Stack
-      direction="row"
-      alignItems="flex-start"
-      justifyContent="space-between"
-      gap={1}
-      flexWrap="wrap"
+    <Box
       sx={{
-        pb: 1.5,
+        borderRadius: 2,
+        border: "1px solid",
+        borderColor: alpha("#1F6B58", 0.18),
+        bgcolor: alpha("#FDF8EE", 0.92),
+        px: { xs: 1.75, sm: 2.25 },
+        py: { xs: 1.6, sm: 2 },
         mb: 0.5,
-        borderBottom: "1px solid",
-        borderColor: "divider",
+        boxShadow: `0 10px 28px ${alpha("#3A2A18", 0.05)}`,
       }}
     >
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        {overline ? (
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        alignItems={{ xs: "stretch", sm: "flex-start" }}
+        justifyContent="space-between"
+        gap={{ xs: 1.25, sm: 1.5 }}
+      >
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          {overline ? (
+            <Typography
+              variant="overline"
+              component="p"
+              sx={{
+                color: "#1F6B58",
+                letterSpacing: "0.14em",
+                fontWeight: 700,
+                mb: 0.35,
+              }}
+            >
+              {overline}
+            </Typography>
+          ) : null}
           <Typography
-            variant="overline"
-            component="p"
-            sx={{ color: "text.secondary", mb: 0.15 }}
+            component="h1"
+            sx={{
+              fontFamily: FONT_DISPLAY,
+              fontWeight: 700,
+              fontSize: { xs: 26, sm: 30 },
+              lineHeight: 1.15,
+              color: "#2C2118",
+            }}
           >
-            {overline}
+            {title}
           </Typography>
+          {hint ? (
+            <Typography
+              sx={{
+                mt: 0.85,
+                maxWidth: "46ch",
+                color: "text.secondary",
+                fontSize: { xs: 13.5, sm: 14 },
+                lineHeight: 1.5,
+              }}
+            >
+              {hint}
+            </Typography>
+          ) : null}
+          {extra}
+        </Box>
+        {trailing ? (
+          <Box
+            sx={{
+              flexShrink: 0,
+              alignSelf: { xs: "stretch", sm: "flex-start" },
+              "& > *": { width: { xs: "100%", sm: "auto" } },
+            }}
+          >
+            {trailing}
+          </Box>
         ) : null}
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {title}
-        </Typography>
-        {hint ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
-            {hint}
-          </Typography>
-        ) : null}
-        {extra}
-      </Box>
-      {trailing}
-    </Stack>
+      </Stack>
+    </Box>
   );
 }
 
