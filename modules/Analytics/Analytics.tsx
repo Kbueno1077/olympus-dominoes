@@ -296,6 +296,7 @@ export default function Analytics() {
                     component="button"
                     type="button"
                     onClick={() => selectPlayer(row.playerId)}
+                    data-aside-pick=""
                     sx={{
                       display: "flex",
                       alignItems: "center",

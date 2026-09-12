@@ -425,9 +425,9 @@ const en = {
   historyFilterCount: "{shown} matching · {total} total",
   historyFilterFind: "Find",
   historyCompareMatch: "Compare seating",
-  historySessionStatsTitle: "This night",
+  historySessionStatsTitle: "This Match",
   historySessionStatsHint:
-    "Only the people who sat this match — numbers are for this session, not the whole save.",
+    "Numbers are for this match session only.",
   historySessionStatsEmpty: "No seats recorded for this match.",
   historySessionStatsNoId: "This name is not linked to a roster id, so session stats could not be counted.",
   historyGamesWonShort: "Wins",
@@ -497,13 +497,11 @@ const en = {
   toolsNeedDataOverline: "No save",
   liveWatchLoading: "Connecting to the live scoreboard…",
   liveWatchLoadingTitle: "Connecting",
-  liveWatchLoadingLead: "Opening the table",
   liveWatchLive: "LIVE",
   liveWatchRefresh: "Refresh",
   liveWatchPollHint:
     "Updates every {minutes} min, only while this tab is in front. Refresh if you want it now.",
   liveWatchNameTitle: "Who's watching?",
-  liveWatchNameLead: "A name for the rail",
   liveWatchNameBody:
     "The table will see this. Skip and we'll pick a nickname.",
   liveWatchNameLabel: "Your name",
@@ -560,9 +558,23 @@ const en = {
     "Not a live list. Checks every {minutes} minutes. Refresh to check now.",
   liveWatchAdminRefresh: "Refresh",
   liveWatchAdminEmptyOverline: "Quiet",
-  liveWatchAdminEmpty: "Nobody is live. The QR is waiting.",
-  liveWatchAdminLoadFailed: "Could not load live shares.",
-  liveWatchAdminActionFailed: "Action failed.",
+  liveWatchAdminEmpty: "No live matches ongoing",
+  liveWatchAdminLoading: "Loading live matches…",
+  liveWatchAdminLoadFailed: "Couldn't load live matches.",
+  liveWatchAdminLoadFailedDetail:
+    "The list didn't update. Check your connection, then tap Refresh.",
+  liveWatchAdminActionFailed: "That didn't go through.",
+  liveWatchAdminRemoveFailed: "Couldn't remove that share.",
+  liveWatchAdminClearFailed: "Couldn't kick those viewers.",
+  liveWatchAdminKickFailed: "Couldn't kick that viewer.",
+  toastErrorOffline:
+    "We couldn't reach the server. Check your connection and try again.",
+  toastErrorNoAccess: "You don't have permission to do that from Tools.",
+  toastErrorShareGone: "That live share is already gone.",
+  toastErrorShareExpired: "That live share ran out of time.",
+  toastErrorLiveOff: "Live watch is turned off right now.",
+  toastErrorTryAgain:
+    "Try again in a moment. If it keeps failing, refresh the page.",
   liveWatchAdminRemoved: "Share removed.",
   liveWatchAdminViewersCleared: "Viewers kicked.",
   liveWatchAdminColId: "Share",
@@ -609,7 +621,8 @@ const en = {
   toolsDedupeConfirmTitle: "Drop duplicate nights?",
   toolsDedupeConfirmBody:
     "This rewrites the active save. Extra copies ({n}) will be removed and stats will rebuild. This cannot be undone except by re-importing.",
-  toolsDedupeFailed: "Could not dedupe nights.",
+  toolsDedupeFailed:
+    "Couldn't remove duplicate nights. Nothing was changed — try again.",
   toolsExtractTitle: "Split / extract",
   toolsExtractHint:
     "Cut a new save from dates and/or a closed table. This one stays put.",
@@ -622,7 +635,8 @@ const en = {
   toolsExtractName: "New data set name",
   toolsExtractDefaultName: "{name} extract",
   toolsExtractCreate: "Create extracted data set",
-  toolsExtractFailed: "Could not create the extracted data set.",
+  toolsExtractFailed:
+    "Couldn't create the extracted data set. Check the filters and try again.",
   toolsRepairTitle: "Repair save",
   toolsRepairHint:
     "Fill missing ids, link seats, bump schema, rebuild stats from the nights on this save. Safe to run twice.",
@@ -633,7 +647,8 @@ const en = {
   toolsRepairConfirmTitle: "Repair the active save?",
   toolsRepairConfirmBody:
     "Ids, seats, schema, and stats will be rebuilt on this data set. Sources you merged from are not changed.",
-  toolsRepairFailed: "Could not repair this save.",
+  toolsRepairFailed:
+    "Couldn't repair this save. The data set is unchanged — try again.",
   toolsRepairReportTitle: "Last repair",
   toolsRepairReportSchema: "Schema {before} → {after}",
   toolsRepairReportPlayers: "Player public ids filled: {n}",
@@ -760,6 +775,7 @@ const en = {
   setAsMyself: "This is me",
   clearMyself: "Not me",
   dashboardFilters: "Filters",
+  sidebarClose: "Close",
   dashboardDateRange: "Date range",
   dashboardDateStart: "Start",
   dashboardDateEnd: "End",
@@ -782,7 +798,8 @@ const en = {
     "Upload a save in Analytics first, then try again.",
   toastMatchAnalyticsNeedRoster:
     "Name these players so they match your imported save.",
-  toastMatchAnalyticsFailed: "Could not open analytics.",
+  toastMatchAnalyticsFailed:
+    "Couldn't open Compare. Load a save first, then try again.",
 
   statsEmptyPlayers: "Upload a save to see player stats.",
   statsNoData: "No games yet for this selection.",
@@ -827,9 +844,11 @@ const en = {
   syncJosesCoefficientHint:
     "Recompute the ranking score for every player from saved stats. Use after a formula change.",
   toastJosesSynced: "Jose's Coefficient updated.",
-  toastJosesSyncFailed: "Could not update Jose's Coefficient. Try again.",
+  toastJosesSyncFailed:
+    "Couldn't update Jose's Coefficient. Rankings on this save are unchanged — try again.",
   toastDatasetExported: "CSV downloaded.",
-  toastDatasetExportFailed: "Could not export this data set.",
+  toastDatasetExportFailed:
+    "Couldn't export this data set. If the download is blocked, allow it and try again.",
   statsChartRecord: "{name} · games",
   statsChartRecordGeneric: "Games",
   statsChartGames: "Games",
@@ -969,10 +988,11 @@ const en = {
   // Toasts
   toastMissingPlayers:
     "This match is set for {expected} players but only {present} are named.",
-  toastNeedWinner: "A game needs a winner before moving on.",
+  toastNeedWinner: "Pick a winner for this game before starting the next one.",
   toastTooManyOverTarget:
-    "More than one team is at or past the target. Check the scores.",
-  toastEnterPoints: "Enter the points this team just made.",
+    "More than one team is at or past the target. Check the scores and try again.",
+  toastEnterPoints:
+    "Enter the points this team just made — empty scores can't be saved.",
 
   // Play vs bots
   playSetupOverline: "Table session",
@@ -1568,9 +1588,9 @@ const es = {
   historyFilterCount: "{shown} coinciden · {total} en total",
   historyFilterFind: "Buscar",
   historyCompareMatch: "Comparar alineación",
-  historySessionStatsTitle: "Esta noche",
+  historySessionStatsTitle: "Esta partida",
   historySessionStatsHint:
-    "Solo quienes se sentaron en esta partida — las cifras son de esta sesión, no de todo el guardado.",
+    "Las cifras son solo de esta sesión.",
   historySessionStatsEmpty: "No hay asientos registrados en esta partida.",
   historySessionStatsNoId:
     "Este nombre no está ligado a un id de plantilla, así que no se pudieron contar las estadísticas de la sesión.",
@@ -1641,13 +1661,11 @@ const es = {
   toolsNeedDataOverline: "Sin guardado",
   liveWatchLoading: "Conectando al marcador en vivo…",
   liveWatchLoadingTitle: "Conectando",
-  liveWatchLoadingLead: "Abriendo la mesa",
   liveWatchLive: "EN VIVO",
   liveWatchRefresh: "Actualizar",
   liveWatchPollHint:
     "Se actualiza cada {minutes} min, solo si esta pestaña está al frente. Actualiza si lo quieres ahora.",
   liveWatchNameTitle: "¿Quién mira?",
-  liveWatchNameLead: "Un nombre para el rail",
   liveWatchNameBody:
     "La mesa lo va a ver. Si saltas, te ponemos un apodo.",
   liveWatchNameLabel: "Tu nombre",
@@ -1704,9 +1722,23 @@ const es = {
     "No es una lista en vivo. Revisa cada {minutes} minutos. Actualiza para revisar ahora.",
   liveWatchAdminRefresh: "Actualizar",
   liveWatchAdminEmptyOverline: "Silencio",
-  liveWatchAdminEmpty: "Nadie está en vivo. El QR espera.",
-  liveWatchAdminLoadFailed: "No se pudieron cargar los shares.",
-  liveWatchAdminActionFailed: "La acción falló.",
+  liveWatchAdminEmpty: "No hay partidas en vivo",
+  liveWatchAdminLoading: "Cargando partidas en vivo…",
+  liveWatchAdminLoadFailed: "No se pudieron cargar las partidas en vivo.",
+  liveWatchAdminLoadFailedDetail:
+    "La lista no se actualizó. Revisa la conexión y pulsa Actualizar.",
+  liveWatchAdminActionFailed: "Eso no se pudo completar.",
+  liveWatchAdminRemoveFailed: "No se pudo quitar ese share.",
+  liveWatchAdminClearFailed: "No se pudo expulsar a esos viewers.",
+  liveWatchAdminKickFailed: "No se pudo expulsar a ese viewer.",
+  toastErrorOffline:
+    "No llegamos al servidor. Revisa la conexión e inténtalo de nuevo.",
+  toastErrorNoAccess: "No tienes permiso para hacer eso desde Tools.",
+  toastErrorShareGone: "Ese share en vivo ya no está.",
+  toastErrorShareExpired: "Ese share en vivo se quedó sin tiempo.",
+  toastErrorLiveOff: "El watch en vivo está apagado ahora.",
+  toastErrorTryAgain:
+    "Inténtalo en un momento. Si sigue fallando, recarga la página.",
   liveWatchAdminRemoved: "Share eliminado.",
   liveWatchAdminViewersCleared: "Viewers expulsados.",
   liveWatchAdminColId: "Share",
@@ -1753,7 +1785,8 @@ const es = {
   toolsDedupeConfirmTitle: "¿Quitar noches duplicadas?",
   toolsDedupeConfirmBody:
     "Esto reescribe el guardado activo. Se quitarán copias extra ({n}) y se recalcularán las estadísticas. No se puede deshacer salvo importando de nuevo.",
-  toolsDedupeFailed: "No se pudieron quitar las noches duplicadas.",
+  toolsDedupeFailed:
+    "No se pudieron quitar las noches duplicadas. No cambió nada — inténtalo de nuevo.",
   toolsExtractTitle: "Separar / extraer",
   toolsExtractHint:
     "Corta un conjunto nuevo por fechas y/o una mesa cerrada. Este guardado se queda.",
@@ -1766,7 +1799,8 @@ const es = {
   toolsExtractName: "Nombre del conjunto nuevo",
   toolsExtractDefaultName: "{name} extracto",
   toolsExtractCreate: "Crear conjunto extraído",
-  toolsExtractFailed: "No se pudo crear el conjunto extraído.",
+  toolsExtractFailed:
+    "No se pudo crear el conjunto extraído. Revisa los filtros e inténtalo de nuevo.",
   toolsRepairTitle: "Reparar guardado",
   toolsRepairHint:
     "Completa ids, enlaza asientos, actualiza el esquema, recalcula estadísticas desde las noches de este guardado. Se puede ejecutar dos veces.",
@@ -1777,7 +1811,8 @@ const es = {
   toolsRepairConfirmTitle: "¿Reparar el guardado activo?",
   toolsRepairConfirmBody:
     "Se reconstruirán ids, asientos, esquema y estadísticas en este conjunto. Las fuentes de una fusión no cambian.",
-  toolsRepairFailed: "No se pudo reparar este guardado.",
+  toolsRepairFailed:
+    "No se pudo reparar este guardado. El conjunto no cambió — inténtalo de nuevo.",
   toolsRepairReportTitle: "Última reparación",
   toolsRepairReportSchema: "Esquema {before} → {after}",
   toolsRepairReportPlayers: "Ids públicos de jugadores completados: {n}",
@@ -1904,6 +1939,7 @@ const es = {
   setAsMyself: "Soy yo",
   clearMyself: "No soy yo",
   dashboardFilters: "Filtros",
+  sidebarClose: "Cerrar",
   dashboardDateRange: "Rango de fechas",
   dashboardDateStart: "Desde",
   dashboardDateEnd: "Hasta",
@@ -1926,7 +1962,8 @@ const es = {
     "Sube un respaldo en Analítica primero e inténtalo de nuevo.",
   toastMatchAnalyticsNeedRoster:
     "Nombra a estos jugadores para que coincidan con tu respaldo importado.",
-  toastMatchAnalyticsFailed: "No se pudo abrir la analítica.",
+  toastMatchAnalyticsFailed:
+    "No se pudo abrir Comparar. Carga un guardado primero e inténtalo de nuevo.",
 
   statsEmptyPlayers: "Sube un respaldo para ver estadísticas.",
   statsNoData: "Aún no hay juegos para esta selección.",
@@ -1972,9 +2009,10 @@ const es = {
     "Recalcula la puntuación de todos los jugadores a partir de las estadísticas guardadas. Úsalo si cambió la fórmula.",
   toastJosesSynced: "Coeficiente de José actualizado.",
   toastJosesSyncFailed:
-    "No se pudo actualizar el coeficiente de José. Inténtalo de nuevo.",
+    "No se pudo actualizar el coeficiente de José. El ranking de este guardado no cambió — inténtalo de nuevo.",
   toastDatasetExported: "CSV descargado.",
-  toastDatasetExportFailed: "No se pudo exportar este conjunto.",
+  toastDatasetExportFailed:
+    "No se pudo exportar este conjunto. Si el navegador bloqueó la descarga, permítela e inténtalo de nuevo.",
   statsChartRecord: "{name} · juegos",
   statsChartRecordGeneric: "Juegos",
   statsChartGames: "Juegos",
@@ -2118,10 +2156,11 @@ const es = {
   // Toasts
   toastMissingPlayers:
     "La partida es para {expected} jugadores pero solo hay {present} con nombre.",
-  toastNeedWinner: "Hace falta un ganador antes de seguir.",
+  toastNeedWinner: "Elige un ganador de este juego antes de pasar al siguiente.",
   toastTooManyOverTarget:
-    "Más de un equipo llegó o pasó la meta. Revisa los puntos.",
-  toastEnterPoints: "Escribe los puntos que acaba de hacer este equipo.",
+    "Más de un equipo llegó o pasó la meta. Revisa los puntos e inténtalo de nuevo.",
+  toastEnterPoints:
+    "Escribe los puntos que acaba de hacer este equipo — no se puede guardar vacío.",
 
   // Play vs bots
   playSetupOverline: "Sesión de mesa",

@@ -10,6 +10,8 @@ import OpenTableBoard from "@/modules/History/OpenTableBoard";
 import {
   dashboardMainSx,
   dashboardShellSx,
+  dashboardTwinAsideMainSx,
+  dashboardTwinAsideShellSx,
 } from "@/modules/Analytics/dashboardChrome";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import { buildHistoryMatchCompareLaunch } from "@/lib/analytics/compareLaunch";
@@ -654,10 +656,13 @@ export default function History() {
     return <DashboardEmptyState page="history" />;
   }
 
+  const twinAsides = routeMatchId != null;
+
   return (
-    <Box sx={dashboardShellSx}>
+    <Box sx={twinAsides ? dashboardTwinAsideShellSx : dashboardShellSx}>
       <DashboardAside
         title={t("historyTitle")}
+        desktopAt={twinAsides ? "lg" : "md"}
       >
           <Box
             sx={{
@@ -931,7 +936,10 @@ export default function History() {
           </Box>
       </DashboardAside>
 
-      <Box component="main" sx={dashboardMainSx}>
+      <Box
+        component="main"
+        sx={twinAsides ? dashboardTwinAsideMainSx : dashboardMainSx}
+      >
         {routeMatchId == null ? (
           <HistoryList
             items={filteredItems}
@@ -968,6 +976,7 @@ export default function History() {
         <HistorySessionStats
           session={sessionStats}
           styleByPlayerId={sessionStyle}
+          desktopAt="lg"
         />
       ) : null}
 

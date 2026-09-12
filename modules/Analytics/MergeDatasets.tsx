@@ -367,7 +367,6 @@ export default function MergeDatasets() {
             overflow: { xs: "visible", md: "auto" },
           }}
         >
-          <ControlSection label={t("toolsPickerLabel")}>
           <Stack spacing={0.75}>
             {(
               [
@@ -415,6 +414,7 @@ export default function MergeDatasets() {
                   key={id}
                   component="button"
                   type="button"
+                  data-aside-pick=""
                   onClick={() => setTool(id)}
                   sx={{
                     display: "flex",
@@ -471,7 +471,6 @@ export default function MergeDatasets() {
               );
             })}
           </Stack>
-          </ControlSection>
 
           {tool === "merge" ? (
           <Stack
@@ -537,6 +536,7 @@ export default function MergeDatasets() {
                         }
                       : undefined,
                   }}
+                  {...(canJump ? { "data-aside-pick": "" } : {})}
                 >
                   <Box
                     sx={{

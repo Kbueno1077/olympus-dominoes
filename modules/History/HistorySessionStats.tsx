@@ -21,14 +21,21 @@ import {
   signedDiffColor,
 } from "@/lib/analytics/signedDiff";
 import { useTranslation } from "@/i18n/useTranslation";
+import {
+  SidebarDrawer,
+  SidebarOpenButton,
+  useAsideDesktop,
+  type AsideDesktopAt,
+} from "@/modules/Analytics/SidebarSheet";
 import { TEAM_KEYS } from "@/utils/matchSettings";
 import { Box, Stack, Typography } from "@mui/material";
 import { alpha, type Theme } from "@mui/material/styles";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type Props = {
   session: SessionStats;
   styleByPlayerId?: Map<number, StylePoints> | null;
+  desktopAt?: AsideDesktopAt;
 };
 
 function teamPaletteKey(teamNumber: number): string {
@@ -41,8 +48,13 @@ function teamPaletteKey(teamNumber: number): string {
 export default function HistorySessionStats({
   session,
   styleByPlayerId,
+  desktopAt = "md",
 }: Props) {
   const { t } = useTranslation();
+  const isDesktop = useAsideDesktop(desktopAt);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
   const [selectedKey, setSelectedKey] = useState(
     () => session.players[0]?.key ?? ""
   );
@@ -57,19 +69,87 @@ export default function HistorySessionStats({
     session.players[0] ??
     null;
 
+  const body = (
+    <Box
+      sx={{
+        px: 1.25,
+        pb: 2,
+        flex: 1,
+        minHeight: 0,
+        overflow: { xs: "visible", md: "auto" },
+        overscrollBehavior: { md: "contain" },
+      }}
+    >
+      {session.players.length === 0 ? (
+        <Typography
+          variant="body2"
+          sx={{ color: "text.secondary", px: 1, py: 2 }}
+        >
+          {t("historySessionStatsEmpty")}
+        </Typography>
+      ) : (
+        <Stack spacing={2}>
+          <Stack spacing={1.25}>
+            {session.teams.map((team) => (
+              <TeamBlock
+                key={team.teamNumber}
+                team={team}
+                selectedKey={selected?.key ?? ""}
+                onSelect={setSelectedKey}
+              />
+            ))}
+          </Stack>
+
+          {selected ? (
+            <SelectedBreakdown
+              player={selected}
+              style={
+                selected.playerId != null
+                  ? (styleByPlayerId?.get(selected.playerId) ?? null)
+                  : null
+              }
+            />
+          ) : null}
+        </Stack>
+      )}
+    </Box>
+  );
+
+  if (!isDesktop) {
+    return (
+      <Box sx={{ flexShrink: 0 }}>
+        <SidebarOpenButton
+          label={t("historySessionStatsTitle")}
+          onClick={openDrawer}
+          desktopAt={desktopAt}
+        />
+        <SidebarDrawer
+          open={drawerOpen}
+          onOpen={openDrawer}
+          onClose={closeDrawer}
+          title={t("historySessionStatsTitle")}
+          subtitle={t("historySessionStatsHint")}
+          anchor="right"
+        >
+          {body}
+        </SidebarDrawer>
+      </Box>
+    );
+  }
+
   return (
     <Box
       component="aside"
       sx={{
         ...dashboardAsideSx,
         borderRight: "none",
-        borderLeft: { xs: "none", md: "1px solid #C0C0C0" },
-        borderTop: { xs: "1px solid #C0C0C0", md: "none" },
+        borderLeft: "1px solid #C0C0C0",
+        borderTop: "none",
         borderBottom: "none",
-        width: { xs: "100%", md: 320, lg: 380 },
+        width: { md: 320, lg: 380 },
       }}
     >
-      <Box sx={{ px: 2, pt: { xs: 1.75, md: 3 }, pb: 1.5 }}>
+      <Box sx={{ px: 2, pt: 3, pb: 1.5 }}>
         <Typography variant="h5" sx={{ mb: 0.25 }}>
           {t("historySessionStatsTitle")}
         </Typography>
@@ -77,49 +157,7 @@ export default function HistorySessionStats({
           {t("historySessionStatsHint")}
         </Typography>
       </Box>
-      <Box
-        sx={{
-          px: 1.25,
-          pb: 2,
-          flex: 1,
-          minHeight: 0,
-          overflow: { xs: "visible", md: "auto" },
-          overscrollBehavior: { md: "contain" },
-        }}
-      >
-        {session.players.length === 0 ? (
-          <Typography
-            variant="body2"
-            sx={{ color: "text.secondary", px: 1, py: 2 }}
-          >
-            {t("historySessionStatsEmpty")}
-          </Typography>
-        ) : (
-          <Stack spacing={2}>
-            <Stack spacing={1.25}>
-              {session.teams.map((team) => (
-                <TeamBlock
-                  key={team.teamNumber}
-                  team={team}
-                  selectedKey={selected?.key ?? ""}
-                  onSelect={setSelectedKey}
-                />
-              ))}
-            </Stack>
-
-            {selected ? (
-              <SelectedBreakdown
-                player={selected}
-                style={
-                  selected.playerId != null
-                    ? (styleByPlayerId?.get(selected.playerId) ?? null)
-                    : null
-                }
-              />
-            ) : null}
-          </Stack>
-        )}
-      </Box>
+      {body}
     </Box>
   );
 }

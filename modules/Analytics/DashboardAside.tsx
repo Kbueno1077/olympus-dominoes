@@ -1,39 +1,33 @@
 "use client";
 
-import { useTranslation } from "@/i18n/useTranslation";
 import { dashboardAsideSx } from "@/modules/Analytics/dashboardChrome";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
-  Box,
-  Button,
-  Collapse,
-  Stack,
-  Typography,
-  useMediaQuery,
-} from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import {
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+  AsideDrawerProvider,
+  SidebarDrawer,
+  SidebarOpenButton,
+  useAsideDesktop,
+  type AsideDesktopAt,
+} from "@/modules/Analytics/SidebarSheet";
+import { Box, Stack, Typography } from "@mui/material";
+import { useCallback, useState, type ReactNode } from "react";
 
 type Props = {
   title: ReactNode;
   subtitle?: ReactNode;
-  /** Chips / actions that stay visible when filters are collapsed on mobile. */
+  /** Chips / actions that stay visible in the drawer header stack. */
   toolbar?: ReactNode;
   children?: ReactNode;
-  /** Label for the mobile expand/collapse control. Defaults to Filters. */
+  /** Mobile button label. Defaults to the aside title. */
   filtersLabel?: ReactNode;
   /** Extra aside sx (e.g. `{ p: 0 }`). */
   sx?: object;
+  /** Full rail from this breakpoint; drawers below. Default md (900). */
+  desktopAt?: AsideDesktopAt;
 };
 
 /**
- * Dashboard left chrome. On mobile, filter body is collapsed by default so the
- * main content leads; desktop always shows the full aside.
+ * Dashboard left chrome. Desktop keeps the full aside. Mobile is a single
+ * button that opens the same content in a drawer.
  */
 export default function DashboardAside({
   title,
@@ -42,39 +36,42 @@ export default function DashboardAside({
   children = null,
   filtersLabel = null,
   sx = {},
+  desktopAt = "md",
 }: Props) {
-  const { t } = useTranslation();
-  const theme = useTheme();
-  const isDesktop = useMediaQuery(theme.breakpoints.up("md"), {
-    // Avoid SSR flash open→closed on phone.
-    defaultMatches: false,
-    noSsr: true,
-  });
+  const isDesktop = useAsideDesktop(desktopAt);
   const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  const openDrawer = useCallback(() => setOpen(true), []);
+  const hasBody = children != null || toolbar != null;
 
-  useEffect(() => {
-    if (isDesktop) setOpen(true);
-  }, [isDesktop]);
-
-  const filtersOpen = isDesktop || open;
-  const hasFilters = children != null;
-
-  return (
-    <Box
-      component="aside"
-      sx={{
-        ...dashboardAsideSx,
-        ...sx,
-      }}
-    >
-      <Box sx={{ px: 2, pt: { xs: 1.75, md: 3 }, pb: 1.5 }}>
+  const body = hasBody ? (
+    <>
+      {toolbar ? (
         <Stack
           direction="row"
-          alignItems="flex-start"
-          justifyContent="space-between"
           spacing={1}
+          sx={{ px: 2, pb: 1.5 }}
+          flexWrap="wrap"
+          useFlexGap
         >
-          <Box sx={{ minWidth: 0, flex: 1 }}>
+          {toolbar}
+        </Stack>
+      ) : null}
+      {children}
+    </>
+  ) : null;
+
+  return (
+    <AsideDrawerProvider close={close} isMobileDrawer={!isDesktop}>
+      {isDesktop ? (
+        <Box
+          component="aside"
+          sx={{
+            ...dashboardAsideSx,
+            ...sx,
+          }}
+        >
+          <Box sx={{ px: 2, pt: 3, pb: 1.5 }}>
             <Typography variant="h5" sx={{ mb: subtitle ? 0.25 : 0 }}>
               {title}
             </Typography>
@@ -87,86 +84,26 @@ export default function DashboardAside({
               </Typography>
             ) : null}
           </Box>
-          {hasFilters && !isDesktop ? (
-            <Button
-              size="small"
-              variant={open ? "contained" : "outlined"}
-              color="inherit"
-              onClick={() => setOpen((value) => !value)}
-              endIcon={open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              aria-expanded={open}
-              sx={{
-                flexShrink: 0,
-                color: open ? "primary.contrastText" : "text.secondary",
-                backgroundColor: open ? "primary.main" : "transparent",
-                borderColor: "divider",
-                "&:hover": {
-                  backgroundColor: open ? "primary.dark" : "action.hover",
-                  borderColor: "divider",
-                },
-              }}
-            >
-              {filtersLabel ?? t("dashboardFilters")}
-            </Button>
-          ) : null}
-        </Stack>
-
-        {toolbar ? (
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ mt: 1.5 }}
-            flexWrap="wrap"
-            useFlexGap
+          {body}
+        </Box>
+      ) : hasBody ? (
+        <Box sx={{ flexShrink: 0 }}>
+          <SidebarOpenButton
+            label={filtersLabel ?? title}
+            onClick={openDrawer}
+            desktopAt={desktopAt}
+          />
+          <SidebarDrawer
+            open={open}
+            onOpen={openDrawer}
+            onClose={close}
+            title={title}
+            subtitle={subtitle}
           >
-            {toolbar}
-          </Stack>
-        ) : null}
-      </Box>
-
-      {hasFilters ? (
-        <Collapse
-          in={filtersOpen}
-          timeout={isDesktop ? 0 : 200}
-          unmountOnExit={!isDesktop}
-          sx={{
-            flex: { xs: "0 0 auto", md: 1 },
-            minHeight: { md: 0 },
-            display: { md: "flex" },
-            flexDirection: "column",
-            // MUI's entered state is overflow:visible, which would clip under
-            // a height-locked aside. Keep this pane as the desktop scroller.
-            overflow: { xs: "visible", md: "auto" },
-            "&.MuiCollapse-entered": {
-              overflow: { xs: "visible", md: "auto" },
-            },
-            "& .MuiCollapse-wrapper": {
-              flex: { md: 1 },
-              minHeight: { md: 0 },
-              display: { md: "flex" },
-              flexDirection: "column",
-            },
-            "& .MuiCollapse-wrapperInner": {
-              flex: { md: 1 },
-              minHeight: { md: 0 },
-              display: { md: "flex" },
-              flexDirection: "column",
-            },
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              flex: 1,
-              minHeight: 0,
-              overflow: { xs: "visible", md: "visible" },
-            }}
-          >
-            {children}
-          </Box>
-        </Collapse>
+            {body}
+          </SidebarDrawer>
+        </Box>
       ) : null}
-    </Box>
+    </AsideDrawerProvider>
   );
 }
