@@ -5,6 +5,7 @@ import {
   formatTeamInitials,
   normalizeNameKey,
   resolveTeamInitialLabels,
+  teamFullLabelsByNumber,
   teamInitialLabelsByNumber,
   teamScoresFromGame,
   teamsFromRoster,
@@ -100,6 +101,19 @@ describe("formatTeamInitials / resolveTeamInitialLabels", () => {
     ]) as Record<number, string>;
     expect(labels[1]).toBe("KJ");
     expect(labels[2]).toBe("RR");
+  });
+});
+
+describe("teamFullLabelsByNumber", () => {
+  it("joins partner names for 2 vs 2", () => {
+    const labels = teamFullLabelsByNumber(4, "2 vs 2", [
+      "Carlos",
+      "Camila",
+      "Hector",
+      "Patricia",
+    ]) as Record<number, string>;
+    expect(labels[1]).toBe("Carlos & Hector");
+    expect(labels[2]).toBe("Camila & Patricia");
   });
 });
 

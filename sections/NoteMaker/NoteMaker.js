@@ -1,22 +1,27 @@
 "use client";
 
 import AddScoreDialog from "@/components/Dialogs/AddScoreDialog/AddScoreDialog";
+import PadColumn from "@/components/Notes/PadColumn";
 import { useMatchTeamLabel } from "@/hooks/useMatchTeamLabel";
 import { useTranslation } from "@/i18n/useTranslation";
+import { FONT_HAND } from "@/muiTheme/typography";
 import { currentGameRecoil, gameEditionModeRecoil } from "@/recoil/recoilState";
-import { activeTeamNumbers, removeHandFromGame, TEAM_KEYS, teamNumberFrom } from "@/utils/matchSettings";
+import { activeTeamNumbers, TEAM_KEYS, teamNumberFrom } from "@/utils/matchSettings";
 import { Icon } from "@iconify/react";
 import { ArrowForward } from "@mui/icons-material";
+import CheckOutlined from "@mui/icons-material/CheckOutlined";
+import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
 import {
   Box,
   Button,
   Card,
-  LinearProgress,
+  IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import NoteHand from "./NoteHand";
 
 function TeamColumn({
@@ -33,69 +38,54 @@ function TeamColumn({
   onRemoveHand,
   onAddScore,
   index,
-  columnCount,
 }) {
-  const { t } = useTranslation();
   const teamKey = TEAM_KEYS[teamNumber];
   const hasOverflowed = total >= maxPoints;
-  const progress = maxPoints > 0 ? Math.min((total / maxPoints) * 100, 100) : 0;
+  const showAdd = isGameStarted && !gameOver && !gameEditionMode;
+
+  const header = (
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="center"
+      spacing={0.75}
+      sx={{ minHeight: 22 }}
+    >
+      <Box
+        sx={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          backgroundColor: (theme) => theme.palette[teamKey].main,
+          flexShrink: 0,
+        }}
+      />
+      <Typography
+        component="span"
+        sx={{
+          fontFamily: FONT_HAND,
+          fontSize: 20,
+          fontWeight: 600,
+          lineHeight: 1,
+          letterSpacing: "0.02em",
+          textTransform: "none",
+          color: "text.primary",
+        }}
+      >
+        {teamLabel}
+      </Typography>
+      {isWinner && (
+        <Icon
+          icon="ant-design:trophy-filled"
+          style={{ fontSize: 15, color: "#D4A017" }}
+        />
+      )}
+    </Stack>
+  );
 
   return (
-    <Box
-      sx={{
-        px: { xs: 1, sm: 1.75 },
-        // Two-column pad: rule on odd seats. Wide free-for-all: rule after first.
-        borderLeft: {
-          xs: index % 2 === 1 ? "1px solid" : "none",
-          md:
-            columnCount > 2
-              ? index > 0
-                ? "1px solid"
-                : "none"
-              : index % 2 === 1
-                ? "1px solid"
-                : "none",
-        },
-        borderColor: "divider",
-        display: "flex",
-        flexDirection: "column",
-        minWidth: 0,
-      }}
-    >
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="center"
-        spacing={0.75}
-        sx={{ mb: 1 }}
-      >
-        <Box
-          sx={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            backgroundColor: (theme) => theme.palette[teamKey].main,
-            flexShrink: 0,
-          }}
-        />
-        <Typography
-          variant="overline"
-          sx={{ color: "text.secondary", lineHeight: 1 }}
-        >
-          {teamLabel}
-        </Typography>
-        {isWinner && (
-          <Icon
-            icon="ant-design:trophy-filled"
-            style={{ fontSize: 15, color: "#D4A017" }}
-          />
-        )}
-      </Stack>
-
-      <Box sx={{ borderTop: "2px solid", borderColor: "divider", mb: 1.25 }} />
-
-      {/* Hands, oldest first, each showing this hand and the running total */}
-      <Box sx={{ flex: 1, minHeight: 32 }}>
+    <PadColumn index={index} header={header}>
+      <Box sx={{ minHeight: 28 }}>
         {hands.map((hand, handIndex) => (
           <NoteHand
             key={`${teamNumber}-${handIndex}-${hand}`}
@@ -105,66 +95,21 @@ function TeamColumn({
             teamDatas={hands}
             takenOrder={taken?.[handIndex]}
             teamNumber={teamNumber}
+            isLast={handIndex === hands.length - 1}
+            overflowed={hasOverflowed}
+            ruled={showAdd}
           />
         ))}
+        {showAdd ? (
+          <AddScoreDialog
+            addScore={onAddScore}
+            teamNumber={teamNumber}
+            teamKey={teamKey}
+            teamLabel={teamLabel}
+          />
+        ) : null}
       </Box>
-
-      <Box sx={{ mt: 1.5 }}>
-        <AddScoreDialog
-          addScore={onAddScore}
-          disabled={gameOver || !isGameStarted}
-          teamNumber={teamNumber}
-          teamKey={teamKey}
-          teamLabel={teamLabel}
-        />
-      </Box>
-
-      <Box sx={{ mt: 2 }}>
-        <Stack
-          direction="row"
-          alignItems="baseline"
-          justifyContent="space-between"
-          spacing={1}
-        >
-          <Typography variant="caption" sx={{ color: "text.secondary" }}>
-            {t("total")}
-          </Typography>
-          <Typography
-            sx={{
-              fontWeight: 700,
-              fontSize: 20,
-              lineHeight: 1.1,
-              fontVariantNumeric: "tabular-nums",
-              color: hasOverflowed ? "warning.dark" : "text.primary",
-            }}
-          >
-            {total}
-          </Typography>
-        </Stack>
-
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          aria-label={t("progressAria", {
-            team: teamLabel,
-            points: maxPoints,
-          })}
-          sx={{
-            mt: 0.75,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: (theme) => alpha(theme.palette.grey[600], 0.18),
-            "& .MuiLinearProgress-bar": {
-              borderRadius: 2,
-              backgroundColor: (theme) =>
-                hasOverflowed
-                  ? theme.palette.warning.main
-                  : theme.palette[teamKey].main,
-            },
-          }}
-        />
-      </Box>
-    </Box>
+    </PadColumn>
   );
 }
 
@@ -175,6 +120,7 @@ export default function NoteMaker({
   playersAmount,
   whoWon,
   handleUpateScores,
+  handleRemoveHand,
   handleNextGame,
   maxPoints,
 }) {
@@ -183,11 +129,7 @@ export default function NoteMaker({
   const [gameEditionMode, setGameEditionMode] = useRecoilState(
     gameEditionModeRecoil
   );
-  const [currentGame, setCurrentGame] = useRecoilState(currentGameRecoil);
-
-  const handleRemoveDataFromGame = (teamNumber, index) => {
-    setCurrentGame((prev) => removeHandFromGame(prev, teamNumber, index));
-  };
+  const currentGame = useRecoilValue(currentGameRecoil);
 
   const isFreeForAll = gameMode?.label === "Free For All";
   const teamNumbers = activeTeamNumbers(playersAmount, isFreeForAll);
@@ -198,31 +140,9 @@ export default function NoteMaker({
 
   return (
     <Card sx={{ p: { xs: 2, sm: 2.5 } }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        sx={{ mb: 2 }}
-      >
-        <Box>
-          <Typography variant="h6" sx={{ color: "text.primary" }}>
-            {t("gameNumber", { n: completedGames.length + 1 })}
-          </Typography>
-          <Typography variant="caption" sx={{ color: "text.secondary" }}>
-            {t("firstToPoints", { n: maxPoints })}
-          </Typography>
-        </Box>
-
-        <Button
-          size="small"
-          variant={gameEditionMode ? "contained" : "outlined"}
-          color={gameEditionMode ? "inherit" : "primary"}
-          onClick={() => setGameEditionMode(!gameEditionMode)}
-          aria-pressed={gameEditionMode}
-        >
-          {gameEditionMode ? t("doneEditing") : t("editHands")}
-        </Button>
-      </Stack>
+        <Typography variant="h6" sx={{ color: "text.primary", mb: 2 }}>
+          {t("gameNumber", { n: completedGames.length + 1 })}
+        </Typography>
 
       <Box
         sx={{
@@ -252,25 +172,25 @@ export default function NoteMaker({
             gameOver={gameOver}
             isGameStarted={isGameStarted}
             gameEditionMode={gameEditionMode}
-            onRemoveHand={handleRemoveDataFromGame}
+            onRemoveHand={handleRemoveHand}
             onAddScore={handleUpateScores}
             index={index}
-            columnCount={columnCount}
           />
         ))}
       </Box>
 
-      <Box
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={1.5}
         sx={{
-          mt: 2.5,
-          pt: 2,
-          borderTop: "1px solid",
-          borderColor: "divider",
+          mt: 1.5,
         }}
       >
         <Typography
           variant="body2"
-          sx={{ color: "text.secondary", mb: 1.5 }}
+          sx={{ color: "text.secondary", minWidth: 0, flex: 1 }}
         >
           {winningTeam
             ? t("teamReached", {
@@ -280,18 +200,55 @@ export default function NoteMaker({
             : t("waitingForTarget", { points: maxPoints })}
         </Typography>
 
-        <Button
-          onClick={handleNextGame}
-          variant="contained"
-          size="large"
-          fullWidth
-          disabled={!winningTeam}
-          endIcon={<ArrowForward />}
-          sx={{ minHeight: 48 }}
-        >
-          {t("nextGame")}
-        </Button>
-      </Box>
+        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ flexShrink: 0 }}>
+          <Tooltip title={gameEditionMode ? t("doneEditing") : t("editHands")}>
+            <IconButton
+              size="small"
+              color={gameEditionMode ? "primary" : "default"}
+              onClick={() => setGameEditionMode(!gameEditionMode)}
+              aria-pressed={gameEditionMode}
+              aria-label={gameEditionMode ? t("doneEditing") : t("editHands")}
+              sx={{
+                width: 34,
+                height: 34,
+                border: "1px solid",
+                borderColor: (theme) =>
+                  gameEditionMode
+                    ? alpha(theme.palette.primary.main, 0.45)
+                    : "divider",
+                backgroundColor: (theme) =>
+                  gameEditionMode
+                    ? alpha(theme.palette.primary.main, 0.14)
+                    : "transparent",
+                borderRadius: 1,
+              }}
+            >
+              {gameEditionMode ? (
+                <CheckOutlined fontSize="small" />
+              ) : (
+                <EditNoteOutlined fontSize="small" />
+              )}
+            </IconButton>
+          </Tooltip>
+
+          {winningTeam ? (
+            <Button
+              onClick={handleNextGame}
+              variant="contained"
+              size="small"
+              endIcon={<ArrowForward sx={{ fontSize: 16 }} />}
+              sx={{
+                height: 34,
+                minHeight: 34,
+                py: 0,
+                px: 1.25,
+              }}
+            >
+              {t("nextGame")}
+            </Button>
+          ) : null}
+        </Stack>
+      </Stack>
     </Card>
   );
 }

@@ -72,25 +72,25 @@ function buildSeats(playersAmount, isFreeForAll) {
 
 const SEAT_ANCHORS = {
   bottom: {
-    bottom: 10,
+    bottom: 14,
     left: "50%",
     transform: "translateX(-50%)",
     flexDirection: "column-reverse",
   },
   top: {
-    top: 10,
+    top: 14,
     left: "50%",
     transform: "translateX(-50%)",
     flexDirection: "column",
   },
   left: {
-    left: 10,
+    left: 14,
     top: "50%",
     transform: "translateY(-50%)",
     flexDirection: "row",
   },
   right: {
-    right: 10,
+    right: 14,
     top: "50%",
     transform: "translateY(-50%)",
     flexDirection: "row-reverse",
@@ -142,8 +142,8 @@ function Pool({ count }) {
             position: "absolute",
             top: `${spot.top}%`,
             left: `${spot.left}%`,
-            width: 8,
-            height: 16,
+            width: 11,
+            height: 22,
             borderRadius: "2px",
             background: "linear-gradient(160deg, #FBF5E9 0%, #DDCDAF 100%)",
             border: `1px solid ${alpha("#241D14", 0.28)}`,
@@ -167,9 +167,9 @@ function SeatPlaque({ label, teamColor }) {
       alignItems="center"
       spacing={0.75}
       sx={{
-        px: 1,
-        py: 0.4,
-        borderRadius: "8px",
+        px: 1.15,
+        py: 0.5,
+        borderRadius: "9px",
         backgroundColor: "#FBF5E9",
         border: `1px solid ${alpha("#241D14", 0.2)}`,
         boxShadow: `0 2px 5px -1px ${alpha("#000000", 0.4)}`,
@@ -187,7 +187,7 @@ function SeatPlaque({ label, teamColor }) {
       />
       <Typography
         sx={{
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: 700,
           lineHeight: 1,
           color: (t) => t.palette[teamColor].dark,
@@ -216,8 +216,8 @@ function Rack({ vertical, teamColor, count }) {
         <Box
           key={index}
           sx={{
-            width: vertical ? 14 : 5,
-            height: vertical ? 5 : 14,
+            width: vertical ? 18 : 7,
+            height: vertical ? 7 : 18,
             borderRadius: "1.5px",
             background: "linear-gradient(180deg, #FDF8EE 0%, #E4D7BE 100%)",
           }}
@@ -256,10 +256,10 @@ export default function TableDraw() {
       {/* Wooden rail around the baize */}
       <Box
         sx={{
-          maxWidth: { xs: 380, md: 440 },
+          maxWidth: "100%",
           mx: "auto",
-          p: "10px",
-          borderRadius: "18px",
+          p: { xs: "12px", md: "14px" },
+          borderRadius: "20px",
           background:
             "linear-gradient(150deg, #8A6440 0%, #6B4A2D 45%, #4A3320 100%)",
           boxShadow: (t) =>
@@ -297,9 +297,9 @@ export default function TableDraw() {
               transform: "translate(-50%, -50%)",
             }}
           >
-            <DominoTile top={3} bottom={6} size={12} orientation="horizontal" />
-            <DominoTile top={6} bottom={6} size={12} />
-            <DominoTile top={6} bottom={1} size={12} orientation="horizontal" />
+            <DominoTile top={3} bottom={6} size={18} orientation="horizontal" />
+            <DominoTile top={6} bottom={6} size={18} />
+            <DominoTile top={6} bottom={1} size={18} orientation="horizontal" />
           </Stack>
 
           {seats.map((seat, index) => {

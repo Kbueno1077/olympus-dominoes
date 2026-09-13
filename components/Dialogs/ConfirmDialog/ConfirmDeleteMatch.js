@@ -29,12 +29,14 @@ export default function ConfirmDeleteMatch({
       <Button
         onClick={() => setOpen(true)}
         color="error"
-        size="medium"
+        size={fullWidth ? "medium" : "small"}
         variant={variant}
         fullWidth={fullWidth}
         sx={{
-          minHeight: 44,
-          py: 1.25,
+          minHeight: fullWidth ? 44 : 34,
+          py: fullWidth ? 1.25 : 0.5,
+          px: 1.25,
+          fontWeight: 600,
         }}
       >
         {t("endMatch")}

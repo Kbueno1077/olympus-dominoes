@@ -7,6 +7,7 @@ import { TEAM_KEYS } from "@/utils/matchSettings";
 import { Box, Chip, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import React, { useMemo } from "react";
+import PadColumn from "./PadColumn";
 
 function runningTotal(hands, index) {
   return hands.slice(0, index).reduce((a, b) => a + b, 0) + hands[index];
@@ -49,7 +50,7 @@ function Outcome({ isWinner, handCount, t }) {
   return null;
 }
 
-function Note({ hands, taken, isWinner, teamNumber, label }) {
+function Note({ hands, taken, isWinner, teamNumber, label, index = 0 }) {
   const { t, teamName } = useTranslation();
   const teamKey = TEAM_KEYS[teamNumber] ?? "team1";
   const displayLabel = label || teamName(teamNumber);
@@ -59,42 +60,51 @@ function Note({ hands, taken, isWinner, teamNumber, label }) {
     [hands, taken]
   );
 
-  return (
-    <Box sx={{ minWidth: 0, textAlign: "center" }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="center"
-        spacing={0.75}
-        sx={{ mb: 0.75 }}
+  const header = (
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="center"
+      spacing={0.75}
+    >
+      <Box
+        sx={{
+          width: 7,
+          height: 7,
+          borderRadius: "50%",
+          backgroundColor: (theme) => theme.palette[teamKey].main,
+          flexShrink: 0,
+        }}
+      />
+      <Typography
+        component="span"
+        sx={{
+          fontFamily: FONT_HAND,
+          fontSize: 18,
+          fontWeight: 600,
+          lineHeight: 1,
+          letterSpacing: "0.02em",
+          textTransform: "none",
+          color: "text.primary",
+        }}
       >
-        <Box
-          sx={{
-            width: 7,
-            height: 7,
-            borderRadius: "50%",
-            backgroundColor: (theme) => theme.palette[teamKey].main,
-            flexShrink: 0,
-          }}
-        />
-        <Typography
-          variant="overline"
-          sx={{ color: "text.secondary", lineHeight: 1, fontSize: 10 }}
-        >
-          {displayLabel}
-        </Typography>
-      </Stack>
+        {displayLabel}
+      </Typography>
+    </Stack>
+  );
 
-      {cleanedHands.map((hand, index) => (
+  return (
+    <PadColumn index={index} header={header} dense>
+      {cleanedHands.map((hand, handIndex) => (
         <Stack
-          key={`${teamNumber}-${index}-${hand}`}
+          key={`${teamNumber}-${handIndex}-${hand}`}
           direction="row"
           alignItems="center"
           justifyContent="center"
           spacing={0.75}
           sx={{ py: 0.15 }}
         >
-          {cleanedTaken[index] > 0 ? (
+          {cleanedTaken[handIndex] > 0 ? (
             <Typography
               component="span"
               sx={{
@@ -106,7 +116,7 @@ function Note({ hands, taken, isWinner, teamNumber, label }) {
                 textAlign: "right",
               }}
             >
-              {cleanedTaken[index]}
+              {cleanedTaken[handIndex]}
             </Typography>
           ) : null}
           <Typography
@@ -121,7 +131,7 @@ function Note({ hands, taken, isWinner, teamNumber, label }) {
               color: hand < 0 ? "warning.dark" : "text.secondary",
             }}
           >
-            {index === 0 ? "x" : hand}
+            {handIndex === 0 ? "x" : hand}
           </Typography>
 
           <Box
@@ -141,15 +151,15 @@ function Note({ hands, taken, isWinner, teamNumber, label }) {
               color: "text.primary",
             }}
           >
-            {index === 0 ? hand : runningTotal(cleanedHands, index)}
+            {handIndex === 0 ? hand : runningTotal(cleanedHands, handIndex)}
           </Typography>
         </Stack>
       ))}
 
-      <Box sx={{ mt: 1 }}>
+      <Box sx={{ mt: 1, display: "flex", justifyContent: "center" }}>
         <Outcome isWinner={isWinner} handCount={cleanedHands.length} t={t} />
       </Box>
-    </Box>
+    </PadColumn>
   );
 }
 

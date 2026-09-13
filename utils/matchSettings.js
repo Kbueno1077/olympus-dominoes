@@ -76,6 +76,20 @@ export function addHandToGame(game, team, points) {
   };
 }
 
+/**
+ * Who has reached the race-to, if exactly one team has. Empty when nobody
+ * has, or when more than one team is over (the pad must stay open so a
+ * mistaken overshoot can be edited off).
+ */
+export function winnerFromGameTotals(game, maxPoints, teamNumbers) {
+  const target = Number(maxPoints);
+  const over = teamNumbers.filter(
+    (teamNumber) => (game?.[`t${teamNumber}TotalPoints`] ?? 0) >= target
+  );
+  if (over.length !== 1) return "";
+  return `Team ${over[0]}`;
+}
+
 export function removeHandFromGame(game, team, index) {
   const hands = gameHands(game, team);
   const taken = gameTaken(game, team);

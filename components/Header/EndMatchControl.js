@@ -26,7 +26,7 @@ import { useRouter } from "next/navigation";
 import { useSetRecoilState } from "recoil";
 
 /** Clears the in-progress match and returns the form to its defaults. */
-export default function EndMatchControl({ fullWidth = false }) {
+export default function EndMatchControl({ fullWidth = false, variant }) {
   const router = useRouter();
   const setPlayersAmount = useSetRecoilState(playersAmountRecoil);
   const setRenderGamesModes = useSetRecoilState(renderGameModesRecoil);
@@ -69,7 +69,7 @@ export default function EndMatchControl({ fullWidth = false }) {
     <ConfirmDeleteMatch
       onCofirm={handleCancelGame}
       fullWidth={fullWidth}
-      variant={fullWidth ? "outlined" : "text"}
+      variant={variant ?? "outlined"}
     />
   );
 }

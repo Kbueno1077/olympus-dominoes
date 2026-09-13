@@ -92,46 +92,27 @@ export default function HistoryGamesNotes({
                       : "repeat(2, minmax(0, 1fr))",
                 },
                 rowGap: 2,
-                borderTop: "2px solid",
-                borderColor: "divider",
-                pt: 1.5,
+                pt: 0.5,
               }}
             >
               {teamNumbers.map((teamNumber, index) => (
-                <Box
+                <Note
                   key={teamNumber}
-                  sx={{
-                    px: 1,
-                    borderLeft: {
-                      xs: index % 2 === 1 ? "1px solid" : "none",
-                      md:
-                        columnCount > 2
-                          ? index > 0
-                            ? "1px solid"
-                            : "none"
-                          : index % 2 === 1
-                            ? "1px solid"
-                            : "none",
-                    },
-                    borderColor: "divider",
-                  }}
-                >
-                  <Note
-                    hands={
-                      (game[
-                        `t${teamNumber}Datas` as keyof HistoryGame
-                      ] as number[]) ?? []
-                    }
-                    taken={
-                      (game[
-                        `t${teamNumber}Taken` as keyof HistoryGame
-                      ] as number[]) ?? []
-                    }
-                    isWinner={winningTeam === teamNumber}
-                    teamNumber={teamNumber}
-                    label={labelFor(teamNumber, game)}
-                  />
-                </Box>
+                  index={index}
+                  hands={
+                    (game[
+                      `t${teamNumber}Datas` as keyof HistoryGame
+                    ] as number[]) ?? []
+                  }
+                  taken={
+                    (game[
+                      `t${teamNumber}Taken` as keyof HistoryGame
+                    ] as number[]) ?? []
+                  }
+                  isWinner={winningTeam === teamNumber}
+                  teamNumber={teamNumber}
+                  label={labelFor(teamNumber, game)}
+                />
               ))}
             </Box>
           </Card>
