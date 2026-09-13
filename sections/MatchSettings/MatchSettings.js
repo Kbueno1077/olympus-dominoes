@@ -1,5 +1,6 @@
 "use client";
 
+import ShuffleOutlined from "@mui/icons-material/ShuffleOutlined";
 import {
   Box,
   Button,
@@ -13,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { Fragment } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import { useTranslation } from "@/i18n/useTranslation";
 import {
@@ -234,7 +235,6 @@ function FieldGroup({ label, icon, children, sx }) {
 
 function PlayerNameField({ member, teamKey }) {
   const { t } = useTranslation();
-  const isSelf = member.number === 1;
 
   return (
     <Stack direction="row" spacing={1} alignItems="center">
@@ -275,16 +275,14 @@ function PlayerNameField({ member, teamKey }) {
 
       <TextField
         id={member.id}
-        placeholder={isSelf ? t("selfPlaceholder") : t("namePlaceholder")}
+        placeholder={t("namePlaceholder")}
         fullWidth
         size="small"
         value={member.value}
         onChange={(event) => member.onChange(event.target.value)}
         inputProps={{
           maxLength: 24,
-          "aria-label": isSelf
-            ? t("selfPlaceholder")
-            : t("player", { n: member.number }),
+          "aria-label": t("player", { n: member.number }),
         }}
         sx={{
           flex: 1,
@@ -325,22 +323,6 @@ function PlayerNameField({ member, teamKey }) {
           ) : null,
         }}
       />
-      {isSelf ? (
-        <Typography
-          component="span"
-          sx={{
-            fontWeight: 500,
-            fontSize: 10,
-            letterSpacing: 0.6,
-            textTransform: "uppercase",
-            color: (theme) => theme.palette[teamKey].main,
-            lineHeight: 1.2,
-            flexShrink: 0,
-          }}
-        >
-          {t("youBadge")}
-        </Typography>
-      ) : null}
     </Stack>
   );
 }
@@ -378,6 +360,14 @@ export default function MatchSettings({ onStart }) {
   const [gameMode, setGameMode] = useRecoilState(gameModeRecoil);
   const [dominoSet, setDominoSet] = useRecoilState(dominoSetRecoil);
   const [maxPoints, setMaxPoints] = useRecoilState(maxPointsRecoil);
+  const isPresetTarget = TARGET_PRESETS.includes(Number(maxPoints));
+  const [firstToDraft, setFirstToDraft] = useState(
+    isPresetTarget ? "" : String(maxPoints)
+  );
+
+  useEffect(() => {
+    setFirstToDraft(isPresetTarget ? "" : String(maxPoints));
+  }, [maxPoints, isPresetTarget]);
 
   const [player1, setPlayer1] = useRecoilState(player1Recoil);
   const [player2, setPlayer2] = useRecoilState(player2Recoil);
@@ -440,17 +430,17 @@ export default function MatchSettings({ onStart }) {
     setMaxPoints(String(nextSet.defaultMaxPoints));
   };
 
-  const handleMaxPointsInput = (raw) => {
-    // Digits only: an empty or decimal target would break the win comparisons.
-    if (!/^\d+$/.test(raw)) return;
-    setMaxPoints(raw);
+  const commitFirstTo = (raw) => {
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) {
+      setFirstToDraft(isPresetTarget ? "" : String(maxPoints));
+      return;
+    }
+    setMaxPoints(String(Math.max(1, parsed)));
   };
 
   const handleRandomNames = () => {
-    const [next1, next2, next3, next4] = buildRandomRoster(
-      playersAmount,
-      t("selfName")
-    );
+    const [next1, next2, next3, next4] = buildRandomRoster(playersAmount);
     setPlayer1(next1);
     setPlayer2(next2);
     setPlayer3(next3);
@@ -572,7 +562,13 @@ export default function MatchSettings({ onStart }) {
                   fullWidth
                   size="small"
                   disabled={isGameStarted}
-                  value={TARGET_PRESETS.includes(Number(maxPoints)) ? Number(maxPoints) : null}
+                  value={
+                    firstToDraft !== ""
+                      ? null
+                      : isPresetTarget
+                        ? Number(maxPoints)
+                        : null
+                  }
                   onChange={(_event, nextPoints) => {
                     if (nextPoints !== null) setMaxPoints(String(nextPoints));
                   }}
@@ -593,10 +589,15 @@ export default function MatchSettings({ onStart }) {
                   placeholder={t("playFirstToCustom")}
                   size="small"
                   disabled={isGameStarted}
-                  value={
-                    TARGET_PRESETS.includes(Number(maxPoints)) ? "" : maxPoints
-                  }
-                  onChange={(event) => handleMaxPointsInput(event.target.value)}
+                  value={firstToDraft}
+                  onChange={(event) => setFirstToDraft(event.target.value)}
+                  onBlur={() => commitFirstTo(firstToDraft)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      commitFirstTo(firstToDraft);
+                      event.currentTarget.blur();
+                    }
+                  }}
                   type="number"
                   inputProps={{
                     "aria-label": t("target"),
@@ -610,15 +611,15 @@ export default function MatchSettings({ onStart }) {
                     "& .MuiOutlinedInput-root": {
                       minHeight: 40,
                       backgroundColor: (theme) =>
-                        TARGET_PRESETS.includes(Number(maxPoints))
-                          ? theme.palette.background.default
-                          : alpha(theme.palette.primary.main, 0.08),
+                        firstToDraft !== "" || !isPresetTarget
+                          ? alpha(theme.palette.primary.main, 0.08)
+                          : theme.palette.background.default,
                     },
                     "& .MuiOutlinedInput-notchedOutline": {
                       borderColor: (theme) =>
-                        TARGET_PRESETS.includes(Number(maxPoints))
-                          ? alpha(theme.palette.text.secondary, 0.16)
-                          : theme.palette.primary.main,
+                        firstToDraft !== "" || !isPresetTarget
+                          ? theme.palette.primary.main
+                          : alpha(theme.palette.text.secondary, 0.16),
                     },
                   }}
                 />
@@ -631,29 +632,42 @@ export default function MatchSettings({ onStart }) {
       <Card sx={{ p: { xs: 2, sm: 2.25 } }}>
         <Stack spacing={2}>
           <Box>
-            <Typography variant="subtitle1" sx={{ color: "text.primary" }}>
-              {t("rosterTitle")}
-            </Typography>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              gap={1}
+              sx={{ minWidth: 0 }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{ color: "text.primary", minWidth: 0 }}
+              >
+                {t("rosterTitle")}
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleRandomNames}
+                startIcon={<ShuffleOutlined sx={{ fontSize: "16px !important" }} />}
+                sx={{
+                  flexShrink: 0,
+                  minHeight: 28,
+                  px: 1,
+                  py: 0.15,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t("randomNames")}
+              </Button>
+            </Stack>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
               {t("rosterSubtitle")}
             </Typography>
           </Box>
-
-          <Stack direction="row" spacing={1.25}>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleRandomNames}
-              sx={{
-                flex: 1,
-                minHeight: 38,
-                px: 1.5,
-                fontSize: 13,
-              }}
-            >
-              {t("randomNames")}
-            </Button>
-          </Stack>
 
           <Box
             sx={{

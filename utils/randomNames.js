@@ -51,14 +51,11 @@ function shuffle(items) {
 }
 
 /**
- * Builds a four-slot roster. Slot 0 is always the local player label
- * ("Myself" / "Yo"); the rest are unique draws from the name pool.
+ * Builds a four-slot roster of unique draws from the name pool.
  */
-export function buildRandomRoster(count, selfName) {
-  const needed = Math.max(0, Math.min(count, 4) - 1);
-  const picks = shuffle(
-    NAME_POOL.filter((name) => name.toLowerCase() !== selfName.toLowerCase())
-  ).slice(0, needed);
+export function buildRandomRoster(count) {
+  const needed = Math.max(0, Math.min(count, 4));
+  const picks = shuffle(NAME_POOL).slice(0, needed);
 
-  return [selfName, picks[0] ?? "", picks[1] ?? "", picks[2] ?? ""];
+  return [picks[0] ?? "", picks[1] ?? "", picks[2] ?? "", picks[3] ?? ""];
 }
