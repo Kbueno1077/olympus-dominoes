@@ -2,13 +2,11 @@
 
 import useToast from "@/hooks/useToast";
 import { useTranslation } from "@/i18n/useTranslation";
-import AddIcon from "@mui/icons-material/Add";
-import { TextField } from "@mui/material";
-import Button from "@mui/material/Button";
+import { FONT_HAND } from "@/muiTheme/typography";
+import { Button, TextField, Typography } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { alpha } from "@mui/material/styles";
 import * as React from "react";
@@ -16,15 +14,22 @@ import * as React from "react";
 export default function AddScoreDialog({
   addScore,
   teamNumber,
-  disabled,
   teamKey = "team1",
   teamLabel,
 }) {
   const [open, setOpen] = React.useState(false);
   const [score, setScore] = React.useState("");
+  const inputRef = React.useRef(null);
   const displayToast = useToast();
   const { t, teamName } = useTranslation();
   const label = teamLabel || teamName(teamNumber);
+
+  const focusAndSelect = () => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.focus();
+    el.select();
+  };
 
   const handleClickOpen = () => {
     setScore("");
@@ -42,7 +47,6 @@ export default function AddScoreDialog({
     setOpen(false);
   };
 
-  // Enter should submit: scoring is repetitive and the keyboard is already up.
   const handleKeyDown = (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -54,24 +58,32 @@ export default function AddScoreDialog({
     <React.Fragment>
       <Button
         fullWidth
-        size="medium"
+        disableRipple
         onClick={handleClickOpen}
-        variant="outlined"
-        disabled={disabled}
-        startIcon={<AddIcon sx={{ fontSize: 20 }} />}
+        aria-label={t("addPointsTitle", { team: label })}
         sx={{
-          minHeight: 44,
-          py: 1.25,
-          color: (theme) => theme.palette[teamKey].dark,
-          borderColor: (theme) => alpha(theme.palette[teamKey].main, 0.4),
+          minHeight: 30,
+          minWidth: 0,
+          py: 0.4,
+          borderRadius: 0,
+          borderBottom: "1px dashed",
+          borderColor: "divider",
+          color: (theme) => alpha(theme.palette[teamKey].main, 0.72),
+          fontFamily: FONT_HAND,
+          fontSize: 22,
+          fontWeight: 500,
+          lineHeight: 1,
+          letterSpacing: 0,
           "&:hover": {
-            borderColor: (theme) => theme.palette[teamKey].main,
             backgroundColor: (theme) =>
-              alpha(theme.palette[teamKey].main, 0.07),
+              alpha(theme.palette[teamKey].main, 0.06),
+            borderBottom: "1px dashed",
+            borderColor: (theme) => theme.palette[teamKey].main,
+            color: (theme) => theme.palette[teamKey].dark,
           },
         }}
       >
-        {t("add")}
+        +
       </Button>
 
       <Dialog
@@ -80,24 +92,43 @@ export default function AddScoreDialog({
         fullWidth
         maxWidth="xs"
         aria-labelledby="add-score-title"
+        TransitionProps={{ onEntered: focusAndSelect }}
       >
-        <DialogTitle id="add-score-title">
+        <DialogTitle id="add-score-title" sx={{ pb: 0.5 }}>
           {t("addPointsTitle", { team: label })}
         </DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ mb: 2, fontSize: 14 }}>
+          <Typography
+            variant="caption"
+            sx={{ display: "block", color: "text.secondary", mb: 1.5 }}
+          >
             {t("addPointsBody")}
-          </DialogContentText>
+          </Typography>
           <TextField
-            autoFocus
-            label={t("points")}
+            inputRef={inputRef}
             fullWidth
+            variant="standard"
             value={score}
-            onChange={(e) => setScore(e.target.value)}
+            onChange={(e) =>
+              setScore(e.target.value.replace(/[^\d]/g, ""))
+            }
+            onFocus={(e) => e.target.select()}
             onKeyDown={handleKeyDown}
-            type="number"
-            InputLabelProps={{ shrink: true }}
-            inputProps={{ inputMode: "numeric", pattern: "[0-9]*", min: 1 }}
+            type="text"
+            inputProps={{
+              inputMode: "numeric",
+              pattern: "[0-9]*",
+              "aria-label": t("points"),
+            }}
+            sx={{
+              "& .MuiInputBase-input": {
+                fontFamily: FONT_HAND,
+                fontSize: 36,
+                fontWeight: 600,
+                textAlign: "center",
+                py: 0.75,
+              },
+            }}
           />
         </DialogContent>
         <DialogActions>

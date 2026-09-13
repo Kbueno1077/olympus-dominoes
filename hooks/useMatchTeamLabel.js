@@ -11,14 +11,13 @@ import {
   player4Recoil,
   playersAmountRecoil,
 } from "@/recoil/recoilState";
-import { FREE_FOR_ALL, teamInitialLabelsByNumber } from "@/utils/teams";
+import {
+  FREE_FOR_ALL,
+  teamFullLabelsByNumber,
+  teamInitialLabelsByNumber,
+} from "@/utils/teams";
 
-/**
- * Live-match team label: player initials (KJ / RaRu), falling back to
- * "Team N" when a side has no names yet.
- */
-export function useMatchTeamLabel() {
-  const { teamName } = useTranslation();
+function useMatchRoster() {
   const playersAmount = useRecoilValue(playersAmountRecoil);
   const gameMode = useRecoilValue(gameModeRecoil);
   const player1 = useRecoilValue(player1Recoil);
@@ -31,14 +30,40 @@ export function useMatchTeamLabel() {
     [player1, player2, player3, player4]
   );
 
+  return {
+    playersAmount,
+    modeLabel: gameMode?.label ?? FREE_FOR_ALL,
+    players,
+  };
+}
+
+/**
+ * Live-match team label: player initials (KJ / RaRu), falling back to
+ * "Team N" when a side has no names yet.
+ */
+export function useMatchTeamLabel() {
+  const { teamName } = useTranslation();
+  const { playersAmount, modeLabel, players } = useMatchRoster();
+
   const byNumber = useMemo(
-    () =>
-      teamInitialLabelsByNumber(
-        playersAmount,
-        gameMode?.label ?? FREE_FOR_ALL,
-        players
-      ),
-    [players, playersAmount, gameMode?.label]
+    () => teamInitialLabelsByNumber(playersAmount, modeLabel, players),
+    [players, playersAmount, modeLabel]
+  );
+
+  return useCallback(
+    (teamNumber) => byNumber[teamNumber] || teamName(teamNumber),
+    [byNumber, teamName]
+  );
+}
+
+/** Live-match team label: "Carlos & Hector", falling back to "Team N". */
+export function useMatchTeamFullLabel() {
+  const { teamName } = useTranslation();
+  const { playersAmount, modeLabel, players } = useMatchRoster();
+
+  const byNumber = useMemo(
+    () => teamFullLabelsByNumber(playersAmount, modeLabel, players),
+    [players, playersAmount, modeLabel]
   );
 
   return useCallback(

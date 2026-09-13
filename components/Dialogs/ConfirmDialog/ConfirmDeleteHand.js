@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslation } from "@/i18n/useTranslation";
-import { FONT_HAND } from "@/muiTheme/typography";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -9,19 +8,14 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
+import { alpha } from "@mui/material/styles";
 import * as React from "react";
-
-function runningTotal(teamDatas, index) {
-  return (
-    teamDatas.slice(0, index).reduce((a, b) => a + b, 0) + teamDatas[index]
-  );
-}
 
 export default function ConfirmDeleteHand({
   onCofirm,
-  teamDatas,
-  index,
-  isFirst,
+  summary,
+  scored,
+  children,
 }) {
   const [open, setOpen] = React.useState(false);
   const { t } = useTranslation();
@@ -33,30 +27,28 @@ export default function ConfirmDeleteHand({
     setOpen(false);
   };
 
-  const scored = isFirst ? "x" : teamDatas[index];
-  const total = isFirst ? teamDatas[0] : runningTotal(teamDatas, index);
-  const summary = `${scored} — ${total}`;
-
   return (
     <React.Fragment>
       <Button
         fullWidth
-        size="small"
-        color="error"
-        variant="outlined"
+        color="inherit"
+        variant="text"
         onClick={() => setOpen(true)}
-        endIcon={<DeleteOutline sx={{ fontSize: 16 }} />}
         aria-label={t("deleteHandAria", { points: scored })}
         sx={{
-          my: 0.4,
-          py: 0.2,
-          // Matches the pencilled rows these buttons stand in for.
-          fontFamily: FONT_HAND,
-          fontSize: 19,
-          fontWeight: 700,
+          display: "block",
+          minWidth: 0,
+          minHeight: 0,
+          py: 0,
+          px: 0,
+          borderRadius: 0,
+          color: "inherit",
+          "&:hover": {
+            backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
+          },
         }}
       >
-        {summary}
+        {children}
       </Button>
 
       <Dialog

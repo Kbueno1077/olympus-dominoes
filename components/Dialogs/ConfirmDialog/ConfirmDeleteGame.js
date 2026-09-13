@@ -9,6 +9,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
+import { alpha } from "@mui/material/styles";
 import * as React from "react";
 
 export default function ConfirmDeleteGame({ onCofirm, index }) {
@@ -27,11 +28,23 @@ export default function ConfirmDeleteGame({ onCofirm, index }) {
       <Tooltip title={t("deleteGameTooltip")}>
         <IconButton
           onClick={() => setOpen(true)}
-          color="error"
           size="small"
+          color="default"
           aria-label={t("deleteGameAria", { n: index + 1 })}
+          sx={{
+            width: 34,
+            height: 34,
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 1,
+            "&:hover": {
+              borderColor: (theme) => alpha(theme.palette.error.main, 0.45),
+              backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
+              color: "error.main",
+            },
+          }}
         >
-          <DeleteOutline sx={{ fontSize: 19 }} />
+          <DeleteOutline fontSize="small" />
         </IconButton>
       </Tooltip>
 

@@ -79,6 +79,19 @@ export function resolveTeamInitialLabels(teamsMemberNames) {
   return short;
 }
 
+/** teamNumber → "Carlos & Hector" for the current roster seating. */
+export function teamFullLabelsByNumber(playersAmount, modeLabel, players) {
+  const teams = teamsFromRoster(playersAmount, modeLabel, players);
+  const out = {};
+  teams.forEach((team) => {
+    const names = team.members
+      .map((member) => String(member.name ?? "").trim())
+      .filter(Boolean);
+    out[team.number] = names.join(" & ");
+  });
+  return out;
+}
+
 /** teamNumber → initials label for the current roster seating. */
 export function teamInitialLabelsByNumber(playersAmount, modeLabel, players) {
   const teams = teamsFromRoster(playersAmount, modeLabel, players);

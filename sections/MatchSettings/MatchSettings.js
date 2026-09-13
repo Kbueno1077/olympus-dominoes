@@ -89,7 +89,7 @@ function buildTeams(playersAmount, isFreeForAll, slots) {
  * the strip has to wrap on a narrow screen a line never begins with a stray
  * dot.
  */
-export function MatchSummary() {
+export function MatchSummary({ includeTeams = true }) {
   const { t, teamName } = useTranslation();
 
   const [playersAmount] = useRecoilState(playersAmountRecoil);
@@ -108,7 +108,9 @@ export function MatchSummary() {
     { number: 3, value: player3 },
     { number: 4, value: player4 },
   ];
-  const teams = buildTeams(playersAmount, isFreeForAll, slots);
+  const teams = includeTeams
+    ? buildTeams(playersAmount, isFreeForAll, slots)
+    : [];
 
   const facts = [
     { key: "players", text: t("playersCount", { n: playersAmount }) },
@@ -122,15 +124,17 @@ export function MatchSummary() {
       ),
     },
     { key: "target", text: t("firstTo", { n: maxPoints }) },
-    ...teams.map((team) => ({
-      key: team.key,
-      teamKey: team.key,
-      text:
-        team.members
-          .map((member) => member.value)
-          .filter(Boolean)
-          .join(" & ") || teamName(team.number),
-    })),
+    ...(includeTeams
+      ? teams.map((team) => ({
+          key: team.key,
+          teamKey: team.key,
+          text:
+            team.members
+              .map((member) => member.value)
+              .filter(Boolean)
+              .join(" & ") || teamName(team.number),
+        }))
+      : []),
   ];
 
   return (
