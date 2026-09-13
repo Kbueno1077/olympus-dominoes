@@ -24,11 +24,16 @@ export const CHANGELOG: ChangelogRelease[] = [
     date: "2026-09-11",
     schema: 25,
     summary:
-      "Watch a live table in the browser from the phone QR.",
+      "A Cuban score notepad, live watch from the phone QR, and Podium that shares first when it is a tie.",
     highlights: [
-      "Scan the QR on the phone scorepad to follow the game here. Scores update as hands are entered.",
-      "This night and Style points show for the people at that table.",
-      "Stop watching anytime. From Tools you can see who is on a share and kick them off.",
+      "Score notepad reads as paper: handwritten initials, a pencil fold between the teams, and full names on the standing.",
+      "Match setup drops the You seat. Random names fills the chairs, and Race to Other lets you type a target without it snapping back to 100.",
+      "Delete a hand that had already gone over the race-to and the pad unlocks, so you can keep scoring.",
+      "Scan the QR on the phone scorepad to follow the game here. Pick a name or skip for a nickname, and see who else is in the room.",
+      "This Match, This night, and Style points update for the people at that table. Stop watching anytime. From Tools you can see who is on a share and kick them off.",
+      "On a phone, Stats, History, Tools, and Watch keep the pad full-width — the side rails become a button.",
+      "Podium: tied players share 1st. New trophies — The Floor, Human ATM, Is That Your Big Hand?, and Seasonal Menu. Got Nothing is gone. Keeps Coming Back favors people who kept showing up to lose, not a two-game wipeout.",
+      "Compare now shows style points for both sides of a matchup.",
     ],
   },
   {
