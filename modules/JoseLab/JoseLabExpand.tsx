@@ -33,7 +33,12 @@ export function LabExpandable({
     <Box sx={{ minWidth: 0, flex: 1 }}>
       <Typography
         variant="subtitle2"
-        sx={{ fontWeight: 700, mb: hint ? 0.25 : 0 }}
+        sx={{
+          fontWeight: 700,
+          mb: hint ? 0.25 : 0,
+          overflowWrap: "anywhere",
+          lineHeight: 1.3,
+        }}
       >
         {title}
       </Typography>
@@ -44,6 +49,7 @@ export function LabExpandable({
             display: "block",
             color: "text.secondary",
             lineHeight: 1.35,
+            overflowWrap: "anywhere",
           }}
         >
           {hint}
@@ -84,9 +90,10 @@ export function LabExpandable({
             sx={{
               width: "100%",
               minWidth: 0,
-              height: 280,
-              "@container (min-width: 300px)": { height: 340 },
-              "@container (min-width: 500px)": { height: 400 },
+              height: 260,
+              "@container (min-width: 280px)": { height: 320 },
+              "@container (min-width: 360px)": { height: 380 },
+              "@container (min-width: 480px)": { height: 420 },
             }}
           >
             {children}

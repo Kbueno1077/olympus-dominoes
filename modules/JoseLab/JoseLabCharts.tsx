@@ -14,7 +14,7 @@ import { JOSES_ACCENT } from "@/modules/Analytics/dashboardChrome";
 import { LabExpandable } from "@/modules/JoseLab/JoseLabExpand";
 import { Box, Chip, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { memo, useEffect, useState, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
@@ -417,17 +417,27 @@ function PinNamesLabel({
   x,
   y,
   value,
+  tight,
 }: {
   x?: number | string;
   y?: number | string;
   value?: unknown;
+  tight?: boolean;
 }) {
-  const text = typeof value === "string" ? value : "";
+  const raw = typeof value === "string" ? value : "";
+  const text = tight ? clipTick(raw, true) : raw;
   const px = asNumber(x);
   const py = asNumber(y);
   if (!text || px == null || py == null) return null;
   return (
-    <text x={px} y={py} dy={-10} textAnchor="middle" fontSize={11} fill="#241D14">
+    <text
+      x={px}
+      y={py}
+      dy={tight ? -8 : -10}
+      textAnchor="middle"
+      fontSize={tight ? 9 : 11}
+      fill="#241D14"
+    >
       {text}
     </text>
   );
@@ -529,6 +539,44 @@ function SqrtTooltip({
   );
 }
 
+/** Prefer at least this many CSS pixels per chart before adding a column. */
+const CHART_COL_MIN_PX = 280;
+const CHART_COL_GAP_PX = 12;
+const TIGHT_CHART_PX = 400;
+
+function tickSx(tight: boolean) {
+  return { fontSize: tight ? 10 : 11 };
+}
+
+function clipTick(value: unknown, tight: boolean): string {
+  const text = String(value ?? "");
+  if (!tight || text.length <= 9) return text;
+  return `${text.slice(0, 8)}…`;
+}
+
+function ChartPlot({ children }: { children: (tight: boolean) => ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [tight, setTight] = useState(true);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const apply = (width: number) => setTight(width < TIGHT_CHART_PX);
+    apply(el.clientWidth);
+    const ro = new ResizeObserver((entries) => {
+      apply(entries[0]?.contentRect.width ?? el.clientWidth);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <Box ref={ref} sx={{ width: "100%", height: "100%", minWidth: 0 }}>
+      {children(tight)}
+    </Box>
+  );
+}
+
 function ChartCard({
   title,
   hint,
@@ -538,11 +586,11 @@ function ChartCard({
   title: string;
   hint?: string;
   header?: ReactNode;
-  children: ReactNode;
+  children: (tight: boolean) => ReactNode;
 }) {
   return (
     <LabExpandable title={title} hint={hint} header={header} kind="chart">
-      {children}
+      <ChartPlot>{children}</ChartPlot>
     </LabExpandable>
   );
 }
@@ -716,16 +764,26 @@ function LeadExtraScatter({
   points,
   restFill,
   yName,
+  tight,
 }: {
   points: MixPoint[];
   restFill: string;
   yName: string;
+  tight: boolean;
 }) {
   const pins = points.filter((row) => row.pin);
   const rest = points.filter((row) => !row.pin);
+  const tick = tickSx(tight);
   return (
     <ResponsiveContainer width="100%" height="100%" debounce={80}>
-      <ScatterChart margin={{ top: 28, right: 12, left: 4, bottom: 4 }}>
+      <ScatterChart
+        margin={{
+          top: tight ? 18 : 28,
+          right: tight ? 8 : 12,
+          left: 0,
+          bottom: 4,
+        }}
+      >
         <CartesianGrid
           strokeDasharray="3 3"
           stroke={alpha("#241D14", 0.12)}
@@ -734,13 +792,16 @@ function LeadExtraScatter({
           type="number"
           dataKey="lead"
           name="lead"
-          tick={{ fontSize: 11 }}
+          tick={tick}
+          tickCount={tight ? 4 : undefined}
         />
         <YAxis
           type="number"
           dataKey="extras"
           name={yName}
-          tick={{ fontSize: 11 }}
+          tick={tick}
+          width={tight ? 36 : 44}
+          tickCount={tight ? 4 : undefined}
         />
         <Tooltip content={<MixTooltip yName={yName} />} />
         <ReferenceLine x={0} stroke={alpha("#241D14", 0.35)} />
@@ -751,12 +812,14 @@ function LeadExtraScatter({
           fill={restFill}
           isAnimationActive={false}
         >
-          <LabelList
-            dataKey="ratioLabel"
-            position="top"
-            fontSize={10}
-            fill={alpha("#241D14", 0.7)}
-          />
+          {tight ? null : (
+            <LabelList
+              dataKey="ratioLabel"
+              position="top"
+              fontSize={10}
+              fill={alpha("#241D14", 0.7)}
+            />
+          )}
         </Scatter>
         <Scatter
           name="pinned"
@@ -764,7 +827,12 @@ function LeadExtraScatter({
           fill={PIN}
           isAnimationActive={false}
         >
-          <LabelList dataKey="name" position="top" fontSize={11} />
+          <LabelList
+            dataKey="name"
+            position="top"
+            fontSize={tight ? 9 : 11}
+            formatter={(value: unknown) => clipTick(value, tight)}
+          />
         </Scatter>
       </ScatterChart>
     </ResponsiveContainer>
@@ -772,6 +840,22 @@ function LeadExtraScatter({
 }
 
 export type ChartsPerRow = 1 | 2 | 3 | 4 | 5;
+
+function chartGridSx(columns: ChartsPerRow) {
+  const queries: Record<string, { gridTemplateColumns: string }> = {};
+  for (let n = 2; n <= columns; n += 1) {
+    const minWidth = n * CHART_COL_MIN_PX + (n - 1) * CHART_COL_GAP_PX;
+    queries[`@container (min-width: ${minWidth}px)`] = {
+      gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`,
+    };
+  }
+  return {
+    display: "grid",
+    gap: 1.5,
+    gridTemplateColumns: "minmax(0, 1fr)",
+    ...queries,
+  };
+}
 
 type Props = {
   formula: FormulaId;
@@ -912,25 +996,22 @@ export default memo(function JoseLabCharts({
   const sqrtYMax = Math.max(10, Math.ceil(weightsC.kSqrt * 10));
 
   return (
-    <Box sx={{ width: "100%", minWidth: 0 }}>
-      <Box
-        sx={{
-          display: "grid",
-          gap: 1.5,
-          gridTemplateColumns: {
-            xs: "minmax(0, 1fr)",
-            sm: `repeat(${columns}, minmax(0, 1fr))`,
-          },
-        }}
-      >
+    <Box sx={{ width: "100%", minWidth: 0, containerType: "inline-size" }}>
+      <Box sx={chartGridSx(columns)}>
       <ChartCard
         title="Lead vs net games"
         hint={`Dots = ${pinLabel}`}
       >
+        {(tight) => (
         <ResponsiveContainer width="100%" height="100%" debounce={80}>
           <ComposedChart
             data={leadCurve}
-            margin={{ top: 36, right: 28, left: 4, bottom: 4 }}
+            margin={{
+              top: tight ? 22 : 36,
+              right: tight ? 12 : 28,
+              left: 0,
+              bottom: tight ? 8 : 4,
+            }}
           >
             <CartesianGrid
               strokeDasharray="3 3"
@@ -940,11 +1021,15 @@ export default memo(function JoseLabCharts({
               type="number"
               dataKey="n"
               domain={[-30, 30]}
-              tick={{ fontSize: 11 }}
+              tick={tickSx(tight)}
+              tickCount={tight ? 5 : 7}
             />
-            <YAxis tick={{ fontSize: 11 }} />
+            <YAxis tick={tickSx(tight)} width={tight ? 36 : 44} />
             <Tooltip content={<LeadTooltip />} />
-            <Legend />
+            <Legend
+              iconSize={tight ? 8 : 10}
+              wrapperStyle={{ fontSize: tight ? 11 : 12 }}
+            />
             <ReferenceLine y={0} stroke={alpha("#241D14", 0.35)} />
             <Line
               type="monotone"
@@ -994,25 +1079,57 @@ export default memo(function JoseLabCharts({
                   return <g />;
                 }
                 return (
-                  <circle cx={props.cx} cy={props.cy} r={4} fill={PIN} />
+                  <circle
+                    cx={props.cx}
+                    cy={props.cy}
+                    r={tight ? 3 : 4}
+                    fill={PIN}
+                  />
                 );
               }}
             >
-              <LabelList dataKey="pinNames" content={PinNamesLabel} />
+              <LabelList
+                dataKey="pinNames"
+                content={(props) => (
+                  <PinNamesLabel {...props} tight={tight} />
+                )}
+              />
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
+        )}
       </ChartCard>
 
       <ChartCard title="R vs n · all in this set, names = pinned">
+        {(tight) => (
         <ResponsiveContainer width="100%" height="100%" debounce={80}>
-          <ScatterChart margin={{ top: 28, right: 12, left: 4, bottom: 4 }}>
+          <ScatterChart
+            margin={{
+              top: tight ? 18 : 28,
+              right: tight ? 8 : 12,
+              left: 0,
+              bottom: 4,
+            }}
+          >
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={alpha("#241D14", 0.12)}
             />
-            <XAxis type="number" dataKey="n" name="n" tick={{ fontSize: 11 }} />
-            <YAxis type="number" dataKey="r" name="R" tick={{ fontSize: 11 }} />
+            <XAxis
+              type="number"
+              dataKey="n"
+              name="n"
+              tick={tickSx(tight)}
+              tickCount={tight ? 4 : undefined}
+            />
+            <YAxis
+              type="number"
+              dataKey="r"
+              name="R"
+              tick={tickSx(tight)}
+              width={tight ? 36 : 44}
+              tickCount={tight ? 4 : undefined}
+            />
             <Tooltip content={<ScatterTooltip />} />
             <ReferenceLine y={0} stroke={alpha("#241D14", 0.35)} />
             <Scatter
@@ -1022,32 +1139,49 @@ export default memo(function JoseLabCharts({
               isAnimationActive={false}
             />
             <Scatter name="pinned" data={scatterPins} fill={PIN} isAnimationActive={false}>
-              <LabelList dataKey="name" position="top" fontSize={11} />
+              <LabelList
+                dataKey="name"
+                position="top"
+                fontSize={tight ? 9 : 11}
+                formatter={(value: unknown) => clipTick(value, tight)}
+              />
             </Scatter>
           </ScatterChart>
         </ResponsiveContainer>
+        )}
       </ChartCard>
 
       <ChartCard title={`Breakdown · ${pinLabel}`}>
+        {(tight) => (
         <ResponsiveContainer width="100%" height="100%" debounce={80}>
           <BarChart
             layout="vertical"
             data={breakdown}
-            margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+            margin={{
+              top: 8,
+              right: tight ? 8 : 16,
+              left: 4,
+              bottom: tight ? 28 : 24,
+            }}
           >
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={alpha("#241D14", 0.12)}
             />
-            <XAxis type="number" tick={{ fontSize: 11 }} />
+            <XAxis type="number" tick={tickSx(tight)} tickCount={tight ? 4 : undefined} />
             <YAxis
               type="category"
               dataKey="name"
-              width={110}
-              tick={{ fontSize: 12 }}
+              width={tight ? 68 : 110}
+              tick={{ fontSize: tight ? 10 : 12 }}
+              tickFormatter={(value: unknown) => clipTick(value, tight)}
             />
             <Tooltip content={(props) => <BreakdownTooltip {...props} formula={formula} />} />
-            <Legend itemSorter={breakdownLegendOrder(formula)} />
+            <Legend
+              iconSize={tight ? 8 : 10}
+              wrapperStyle={{ fontSize: tight ? 10 : 12 }}
+              itemSorter={breakdownLegendOrder(formula)}
+            />
             <ReferenceLine x={0} stroke={alpha("#241D14", 0.35)} />
             {breakdownBars(formula).map((bar) => (
               <Bar
@@ -1061,22 +1195,32 @@ export default memo(function JoseLabCharts({
             ))}
           </BarChart>
         </ResponsiveContainer>
+        )}
       </ChartCard>
 
       <ChartCard title={`Volume · ${pinLabel}`}>
+        {(tight) => (
         <ResponsiveContainer width="100%" height="100%" debounce={80}>
           <LineChart
             data={volume}
-            margin={{ top: 8, right: 12, left: 4, bottom: 4 }}
+            margin={{
+              top: 8,
+              right: tight ? 8 : 12,
+              left: 0,
+              bottom: tight ? 8 : 4,
+            }}
           >
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={alpha("#241D14", 0.12)}
             />
-            <XAxis dataKey="G" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <XAxis dataKey="G" tick={tickSx(tight)} interval={tight ? 2 : 0} />
+            <YAxis tick={tickSx(tight)} width={tight ? 36 : 44} />
             <Tooltip content={<VolumeTooltip />} />
-            <Legend />
+            <Legend
+              iconSize={tight ? 8 : 10}
+              wrapperStyle={{ fontSize: tight ? 11 : 12 }}
+            />
             {volumeKeys.map((name, i) => (
               <Line
                 key={name}
@@ -1091,17 +1235,21 @@ export default memo(function JoseLabCharts({
             ))}
           </LineChart>
         </ResponsiveContainer>
+        )}
       </ChartCard>
 
       <ChartCard
         title="Lead vs extras · all in this set"
         hint="X = games term. Y = everything else. Closers sit right; volume sits up. Ratio = extras / lead."
       >
+        {(tight) => (
         <LeadExtraScatter
           points={mix}
           restFill={scatterFill(formula)}
           yName="extras"
+          tight={tight}
         />
+        )}
       </ChartCard>
 
       <ChartCard
@@ -1138,7 +1286,8 @@ export default memo(function JoseLabCharts({
           ) : null
         }
       >
-        {waterfallSteps.length === 0 ? (
+        {(tight) =>
+        waterfallSteps.length === 0 ? (
           <Box
             sx={{
               height: "100%",
@@ -1147,6 +1296,8 @@ export default memo(function JoseLabCharts({
               justifyContent: "center",
               color: "text.secondary",
               fontSize: 13,
+              px: 1,
+              textAlign: "center",
             }}
           >
             Pin someone in the table to see the waterfall.
@@ -1155,14 +1306,26 @@ export default memo(function JoseLabCharts({
           <ResponsiveContainer width="100%" height="100%" debounce={80}>
             <BarChart
               data={waterfallSteps}
-              margin={{ top: 8, right: 12, left: 4, bottom: 4 }}
+              margin={{
+                top: 8,
+                right: tight ? 8 : 12,
+                left: 0,
+                bottom: tight ? 36 : 8,
+              }}
             >
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke={alpha("#241D14", 0.12)}
               />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} />
-              <YAxis tick={{ fontSize: 11 }} />
+              <XAxis
+                dataKey="name"
+                interval={0}
+                tick={tickSx(tight)}
+                angle={tight ? -35 : 0}
+                textAnchor={tight ? "end" : "middle"}
+                height={tight ? 48 : 30}
+              />
+              <YAxis tick={tickSx(tight)} width={tight ? 36 : 44} />
               <Tooltip content={<WaterfallTooltip />} />
               <ReferenceLine y={0} stroke={alpha("#241D14", 0.35)} />
               <Bar
@@ -1179,7 +1342,8 @@ export default memo(function JoseLabCharts({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        )}
+        )
+        }
       </ChartCard>
 
       {extraMix.map(({ spec, points }) => (
@@ -1188,38 +1352,51 @@ export default memo(function JoseLabCharts({
           title={`${spec.title} · all in this set`}
           hint={`X = games term. Y = ${spec.yName}. Ratio = ${spec.yName} / lead.`}
         >
+          {(tight) => (
           <LeadExtraScatter
             points={points}
             restFill={alpha(spec.fill, 0.45)}
             yName={spec.yName}
+            tight={tight}
           />
+          )}
         </ChartCard>
       ))}
 
       {formula === "C" ? (
         <ChartCard title="√(G/2) as G grows · OG F(x)">
+          {(tight) => (
           <ResponsiveContainer width="100%" height="100%" debounce={80}>
             <LineChart
               data={sqrtCurve}
-              margin={{ top: 16, right: 28, left: 4, bottom: 4 }}
+              margin={{
+                top: tight ? 8 : 16,
+                right: tight ? 12 : 28,
+                left: 0,
+                bottom: tight ? 8 : 4,
+              }}
             >
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke={alpha("#241D14", 0.12)}
               />
-              <XAxis dataKey="G" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="G" tick={tickSx(tight)} interval={tight ? 2 : 0} />
               <YAxis
                 type="number"
                 domain={[0, sqrtYMax]}
                 allowDataOverflow
-                tick={{ fontSize: 11 }}
+                tick={tickSx(tight)}
+                width={tight ? 36 : 44}
               />
               <Tooltip
                 content={<SqrtTooltip />}
                 isAnimationActive={false}
                 filterNull
               />
-              <Legend />
+              <Legend
+                iconSize={tight ? 8 : 10}
+                wrapperStyle={{ fontSize: tight ? 11 : 12 }}
+              />
               <Line
                 type="monotone"
                 dataKey="raw"
@@ -1241,6 +1418,7 @@ export default memo(function JoseLabCharts({
               />
             </LineChart>
           </ResponsiveContainer>
+          )}
         </ChartCard>
       ) : null}
       </Box>

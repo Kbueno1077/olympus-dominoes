@@ -82,7 +82,7 @@ type TestRow = {
 const README_ROWS: ReadmeRow[] = [
   { id: "pedro", name: "Pedro", W: 24, L: 6, G: 30, dDW: 56, dPF: 2010, dPo: 3, dZap: 1, pin: true },
   { id: "dominant-pair", name: "DominantPair", W: 18, L: 7, G: 25, dDW: 39, dPF: 1375, dPo: 3, dZap: 2, pin: false },
-  // PanteonV2.csv · 2 vs 2 · 55 · Cesar+Ariel vs Randy (Eliecer 10, Guillermo 65)
+  // PanteonV4.csv · 8 matches · 2 vs 2 · 55
   { id: "cesar", name: "Cesar (CSV)", W: 41, L: 34, G: 75, dDW: 11, dPF: 601, dPo: 3, dZap: -2, pin: true, HF: 239, HA: 228, PF: 9317, PA: 8716, PoF: 9, PoA: 6, ZapF: 6, ZapA: 8 },
   { id: "ariel", name: "Ariel (CSV)", W: 41, L: 34, G: 75, dDW: 11, dPF: 601, dPo: 3, dZap: -2, pin: false, HF: 239, HA: 228, PF: 9317, PA: 8716, PoF: 9, PoA: 6, ZapF: 6, ZapA: 8 },
   { id: "ana", name: "Ana", W: 18, L: 12, G: 30, dDW: 9, dPF: 330, dPo: 1, dZap: 0, pin: true },
@@ -92,7 +92,7 @@ const README_ROWS: ReadmeRow[] = [
   { id: "grinder100", name: "Grinder100", W: 52, L: 48, G: 100, dDW: 11, dPF: 380, dPo: 1, dZap: 0, pin: true },
   { id: "ugly-plus4", name: "Ugly+4", W: 17, L: 13, G: 30, dDW: -17, dPF: -600, dPo: -2, dZap: -1, pin: true },
   { id: "luis", name: "Luis", W: 16, L: 14, G: 30, dDW: 8, dPF: 260, dPo: 2, dZap: 2, pin: true },
-  { id: "eliecer", name: "Eliecer (CSV)", W: 6, L: 4, G: 10, dDW: 7, dPF: 268, dPo: -1, dZap: 1, pin: false },
+  { id: "eliecer", name: "Eliecer (CSV)", W: 6, L: 4, G: 10, dDW: 7, dPF: 268, dPo: -1, dZap: 1, pin: false, HF: 33, HA: 26, PF: 1208, PA: 940, PoF: 1, PoA: 2, ZapF: 1, ZapA: 0 },
   { id: "omar80loud", name: "Omar80loud", W: 41, L: 39, G: 80, dDW: 13, dPF: 455, dPo: 3, dZap: 2, pin: false },
   { id: "omar80", name: "Omar80", W: 41, L: 39, G: 80, dDW: 5, dPF: 190, dPo: 1, dZap: 0, pin: false },
   { id: "quiet-plus2", name: "Quiet+2", W: 16, L: 14, G: 30, dDW: 1, dPF: 40, dPo: 0, dZap: 0, pin: false },
@@ -101,11 +101,12 @@ const README_ROWS: ReadmeRow[] = [
   { id: "comeback", name: "Comeback", W: 16, L: 19, G: 35, dDW: 12, dPF: 445, dPo: -1, dZap: 0, pin: false },
   { id: "randy", name: "Randy (CSV)", W: 34, L: 41, G: 75, dDW: -11, dPF: -601, dPo: -3, dZap: 2, pin: true, HF: 228, HA: 239, PF: 8716, PA: 9317, PoF: 6, PoA: 9, ZapF: 8, ZapA: 6 },
   { id: "guillermo", name: "Guillermo (CSV)", W: 28, L: 37, G: 65, dDW: -18, dPF: -869, dPo: -2, dZap: 1, pin: false, HF: 195, HA: 213, PF: 7508, PA: 8377, PoF: 5, PoA: 7, ZapF: 7, ZapA: 6 },
-  // Valhalla.csv · 2 vs 2 · 55 · 21 games (Kevin+Jose vs Raulito+Rudelys)
-  { id: "kevin", name: "Kevin (CSV)", W: 11, L: 10, G: 21, dDW: 9, dPF: 388, dPo: 5, dZap: -1, pin: true, HF: 70, HA: 61, PF: 2765, PA: 2377, PoF: 5, PoA: 0, ZapF: 1, ZapA: 2 },
-  { id: "jose", name: "Jose (CSV)", W: 11, L: 10, G: 21, dDW: 9, dPF: 388, dPo: 5, dZap: -1, pin: false, HF: 70, HA: 61, PF: 2765, PA: 2377, PoF: 5, PoA: 0, ZapF: 1, ZapA: 2 },
-  { id: "raulito", name: "Raulito (CSV)", W: 10, L: 11, G: 21, dDW: -9, dPF: -388, dPo: -5, dZap: 1, pin: false, HF: 61, HA: 70, PF: 2377, PA: 2765, PoF: 0, PoA: 5, ZapF: 2, ZapA: 1 },
-  { id: "rudelys", name: "Rudelys (CSV)", W: 10, L: 11, G: 21, dDW: -9, dPF: -388, dPo: -5, dZap: 1, pin: false, HF: 61, HA: 70, PF: 2377, PA: 2765, PoF: 0, PoA: 5, ZapF: 2, ZapA: 1 },
+  // PanteonV4.csv · Kevin/Jose/Raulito/Rudelys seasons plus Jorge (1 game)
+  { id: "kevin", name: "Kevin (CSV)", W: 26, L: 29, G: 55, dDW: -4, dPF: -56, dPo: 5, dZap: -1, pin: true, HF: 165, HA: 169, PF: 6660, PA: 6716, PoF: 9, PoA: 4, ZapF: 4, ZapA: 5 },
+  { id: "jose", name: "Jose (CSV)", W: 30, L: 25, G: 55, dDW: 24, dPF: 872, dPo: 5, dZap: 1, pin: true, HF: 179, HA: 155, PF: 7124, PA: 6252, PoF: 9, PoA: 4, ZapF: 5, ZapA: 4 },
+  { id: "raulito", name: "Raulito (CSV)", W: 29, L: 25, G: 54, dDW: 6, dPF: 157, dPo: -5, dZap: 1, pin: false, HF: 166, HA: 160, PF: 6600, PA: 6443, PoF: 4, PoA: 9, ZapF: 5, ZapA: 4 },
+  { id: "rudelys", name: "Rudelys (CSV)", W: 25, L: 30, G: 55, dDW: -24, dPF: -872, dPo: -5, dZap: -1, pin: false, HF: 155, HA: 179, PF: 6252, PA: 7124, PoF: 4, PoA: 9, ZapF: 4, ZapA: 5 },
+  { id: "jorge", name: "Jorge (CSV)", W: 0, L: 1, G: 1, dDW: -2, dPF: -101, dPo: 0, dZap: 0, pin: false, HF: 3, HA: 5, PF: 116, PA: 217, PoF: 0, PoA: 0, ZapF: 0, ZapA: 0 },
 ];
 
 const TEST_ROWS: TestRow[] = [
@@ -154,9 +155,9 @@ export const TEST_PLAYERS: LabPlayer[] = TEST_ROWS.map((row) => ({
 
 export const DEFAULT_CSV_PINS = [
   "kevin",
+  "jose",
   "raulito",
   "cesar",
-  "eliecer",
   "randy",
   "guillermo",
 ] as const;

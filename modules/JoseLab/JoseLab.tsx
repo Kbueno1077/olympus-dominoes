@@ -133,6 +133,9 @@ function ChartsPerRowStepper({
         pl: 1.25,
         pr: 0.4,
         py: 0.25,
+        maxWidth: "100%",
+        minWidth: 0,
+        flexWrap: "wrap",
         border: "1px solid",
         borderColor: (theme: Theme) => alpha(theme.palette.grey[700], 0.28),
         borderRadius: "10px",
@@ -141,9 +144,9 @@ function ChartsPerRowStepper({
     >
       <Typography
         variant="caption"
-        sx={{ fontWeight: 700, color: "text.secondary", mr: 0.5 }}
+        sx={{ fontWeight: 700, color: "text.secondary", mr: 0.5, whiteSpace: "nowrap" }}
       >
-        Charts per row
+        Max per row
       </Typography>
       <IconButton
         size="small"
@@ -1598,7 +1601,7 @@ export default function JoseLab() {
           justifyContent="space-between"
           alignItems={{ xs: "stretch", sm: "center" }}
           gap={1}
-          sx={{ mb: 2 }}
+          sx={{ mb: 2, minWidth: 0 }}
         >
           <ChartsPerRowStepper
             value={chartsPerRow}
@@ -1635,7 +1638,7 @@ export default function JoseLab() {
         >
           <LabSection
             title="CSV · real seasons"
-            hint="Valhalla (Kevin, Jose, Raulito, Rudelys) plus Cesar, Ariel, Eliecer, Randy, Guillermo. Pin a row to put that person on the charts."
+            hint="PanteonV4: Kevin, Jose, Raulito, Rudelys, Jorge, Cesar, Ariel, Eliecer, Randy, Guillermo. Pin a row to put that person on the charts."
           >
             <JoseLabCharts
               formula={formula}
