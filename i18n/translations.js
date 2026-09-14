@@ -95,7 +95,7 @@ const en = {
   howToUsePhoneBody:
     "The app is still the real record. Keep score at the table, leave a few matches open, and share a CSV here when you want the full picture.",
   howToUsePhoneDetail:
-    "Score at the mesa, leave sit-out matches open, and export a backup from Settings when you want the charts on a bigger screen.",
+    "Score at the mesa, leave sit-out matches open, and export a backup from Settings when you want the charts on a bigger screen. Android can also install the APK from this site — not Google Play.",
   howToUseWebTitle: "On this site",
   howToUsePlayTitle: "Play against bots",
   howToUsePlayBody:
@@ -187,6 +187,10 @@ const en = {
   homeWebQrHint: "Scan to open this site on your phone.",
   homeAppStore: "Download on the App Store",
   homePlayStore: "Get it on Google Play",
+  homeApk: "Install APK",
+  qrApk: "Android APK",
+  qrApkBody:
+    "Direct install, not Google Play. Android may ask you to allow this site.",
 
   // Analytics
   analyticsTitle: "Analytics",
@@ -1253,7 +1257,7 @@ const es = {
   howToUsePhoneBody:
     "La app sigue siendo el registro de verdad. Anota en la mesa, deja varias partidas abiertas, y comparte un CSV aquí cuando quieras ver el panorama.",
   howToUsePhoneDetail:
-    "Anota en la mesa, deja partidas en espera abiertas, y exporta un respaldo desde Ajustes cuando quieras los gráficos en una pantalla grande.",
+    "Anota en la mesa, deja partidas en espera abiertas, y exporta un respaldo desde Ajustes cuando quieras los gráficos en una pantalla grande. En Android también puedes instalar el APK desde este sitio — no Google Play.",
   howToUseWebTitle: "En este sitio",
   howToUsePlayTitle: "Jugar contra bots",
   howToUsePlayBody:
@@ -1348,6 +1352,10 @@ const es = {
   homeWebQrHint: "Escanea para abrir este sitio en el teléfono.",
   homeAppStore: "Descargar en el App Store",
   homePlayStore: "Consíguelo en Google Play",
+  homeApk: "Instalar APK",
+  qrApk: "APK de Android",
+  qrApkBody:
+    "Instalación directa, no Google Play. Android puede pedirte permiso para este sitio.",
 
   // Analytics
   analyticsTitle: "Analítica",

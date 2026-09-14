@@ -4,9 +4,12 @@ import DominoTile from "@/components/DominoTile";
 import Iconify from "@/components/Iconify";
 import QrCodeDialog from "@/components/QrCodeDialog";
 import {
+  ANDROID_APK_FILENAME,
+  ANDROID_APK_PATH,
   ANDROID_APP_URL,
   IOS_APP_URL,
   SITE_URL,
+  androidApkHref,
 } from "@/lib/appLinks";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useHasMounted } from "@/hooks/useHasMounted";
@@ -100,18 +103,21 @@ function StoreLinkRow({
   icon,
   disabled = false,
   comingSoon = false,
+  downloadName,
   onShowQr,
 }) {
-  const isExternal = Boolean(href) && !disabled;
+  const canNavigate = Boolean(href) && !disabled;
+  const isHttp = canNavigate && /^https?:\/\//i.test(href);
 
   return (
     <Stack direction="row" spacing={1} alignItems="stretch" sx={{ width: "100%" }}>
       <Button
-        component={isExternal ? "a" : "button"}
-        href={isExternal ? href : undefined}
-        target={isExternal ? "_blank" : undefined}
-        rel={isExternal ? "noopener noreferrer" : undefined}
-        onClick={isExternal || disabled ? undefined : onShowQr}
+        component={canNavigate ? "a" : "button"}
+        href={canNavigate ? href : undefined}
+        target={isHttp ? "_blank" : undefined}
+        rel={isHttp ? "noopener noreferrer" : undefined}
+        download={downloadName || undefined}
+        onClick={canNavigate || disabled ? undefined : onShowQr}
         disabled={disabled}
         variant="contained"
         size="large"
@@ -242,7 +248,7 @@ function InlineQrStamp({ href, label, comingSoon = false, onOpen }) {
   );
 }
 
-function SideActions({ sideId, t, onShowQr }) {
+function SideActions({ sideId, t, onShowQr, apkHref }) {
   switch (sideId) {
     case "phone":
       return (
@@ -278,6 +284,25 @@ function SideActions({ sideId, t, onShowQr }) {
                 title: t("qrAndroid"),
                 href: ANDROID_APP_URL,
                 comingSoon: ANDROID_DISABLED,
+              })
+            }
+          />
+          <StoreLinkRow
+            t={t}
+            href={ANDROID_APK_PATH}
+            label={t("homeApk")}
+            downloadName={ANDROID_APK_FILENAME}
+            icon={
+              <Iconify
+                icon="ion:logo-android"
+                sx={{ width: 26, height: 26 }}
+              />
+            }
+            onShowQr={() =>
+              onShowQr({
+                title: t("qrApk"),
+                href: apkHref,
+                hint: t("qrApkBody"),
               })
             }
           />
@@ -403,6 +428,10 @@ function HowItWorks({ t }) {
 function AppVsWebDetails({ t }) {
   const [openId, setOpenId] = useState(null);
   const [qr, setQr] = useState(null);
+  const hasMounted = useHasMounted();
+  const apkHref = androidApkHref(
+    hasMounted ? window.location.origin : null
+  );
 
   return (
     <Box>
@@ -456,6 +485,7 @@ function AppVsWebDetails({ t }) {
                   sideId={side.id}
                   t={t}
                   onShowQr={setQr}
+                  apkHref={apkHref}
                 />
               </Box>
               <Button
@@ -516,6 +546,7 @@ function AppVsWebDetails({ t }) {
         title={qr?.title ?? ""}
         href={qr?.href ?? null}
         comingSoon={Boolean(qr?.comingSoon)}
+        hint={qr?.hint}
       />
     </Box>
   );
