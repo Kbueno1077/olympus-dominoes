@@ -34,6 +34,7 @@ export const CHANGELOG: ChangelogRelease[] = [
       "On a phone, Stats, History, Tools, and Watch keep the pad full-width — the side rails become a button.",
       "Podium: tied players share 1st. New trophies — The Floor, Human ATM, Is That Your Big Hand?, and Seasonal Menu. Got Nothing is gone. Keeps Coming Back favors people who kept showing up to lose, not a two-game wipeout.",
       "Compare now shows style points for both sides of a matchup.",
+      "Android: install the APK from the home Phone card (button or QR). Not Google Play.",
     ],
   },
   {

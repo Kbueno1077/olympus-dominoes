@@ -20,6 +20,7 @@ type QrCodeDialogProps = {
   title: string;
   href: string | null;
   comingSoon?: boolean;
+  hint?: string;
 };
 
 export default function QrCodeDialog({
@@ -28,6 +29,7 @@ export default function QrCodeDialog({
   title,
   href,
   comingSoon = false,
+  hint,
 }: QrCodeDialogProps) {
   const { t } = useTranslation();
   const [src, setSrc] = useState<string | null>(null);
@@ -123,6 +125,15 @@ export default function QrCodeDialog({
               >
                 {href}
               </Typography>
+              {hint ? (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  textAlign="center"
+                >
+                  {hint}
+                </Typography>
+              ) : null}
             </>
           )}
           <Button onClick={onClose} variant="contained" fullWidth>

@@ -32,6 +32,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Sideload APK is too large for git / Vercel (174MB). Local `public/downloads/`
+# for `next dev`; production rewrites the same path to the GitHub Release.
+/public/downloads/*.apk
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
