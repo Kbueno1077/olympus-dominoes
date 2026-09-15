@@ -8,9 +8,9 @@ import {
   IOS_APP_URL,
   SITE_URL,
 } from "@/lib/appLinks";
-import { useTranslation } from "@/i18n/useTranslation";
 import { useHasMounted } from "@/hooks/useHasMounted";
-import { isGameStartedRecoil } from "@/recoil/recoilState";
+import { useTranslation } from "@/i18n/useTranslation";
+import { useMatchStore } from "@/lib/matchStore";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
 import LanguageOutlined from "@mui/icons-material/LanguageOutlined";
@@ -31,7 +31,6 @@ import { alpha } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useRecoilValue } from "recoil";
 import QRCode from "qrcode";
 
 // The opening hand: a spread of tiles that doubles as the hero art.
@@ -527,7 +526,7 @@ export default function Dashboard({
 }) {
   const { t } = useTranslation();
   const hasMounted = useHasMounted();
-  const isGameStarted = useRecoilValue(isGameStartedRecoil);
+  const isGameStarted = useMatchStore((s) => s.isGameStarted);
   // Persist only after mount so SSR HTML matches the first client paint.
   const matchInProgress = hasMounted && isGameStarted;
 
@@ -754,6 +753,7 @@ export default function Dashboard({
                   <Typography
                     component={Link}
                     href={href}
+                    transitionTypes={["nav-forward"]}
                     variant="caption"
                     sx={{
                       color: "text.disabled",

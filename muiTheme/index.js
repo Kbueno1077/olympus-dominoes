@@ -1,9 +1,5 @@
 import { CssBaseline } from "@mui/material";
-import {
-    createTheme,
-    StyledEngineProvider,
-    ThemeProvider,
-} from "@mui/material/styles";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 import PropTypes from "prop-types";
 import { useMemo } from "react";
 import componentsOverride from "./overrides";
@@ -30,12 +26,12 @@ export default function ThemeConfig({ children }) {
     const theme = createTheme(themeOptions);
     theme.components = componentsOverride(theme);
 
+    // Emotion cache lives in MuiEmotionCacheProvider (prepend: true) so
+    // CssBaseline globals stream into <head> instead of next to the first Box.
     return (
-        <StyledEngineProvider injectFirst>
-            <ThemeProvider theme={theme}>
-                <CssBaseline />
-                {children}
-            </ThemeProvider>
-        </StyledEngineProvider>
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            {children}
+        </ThemeProvider>
     );
 }

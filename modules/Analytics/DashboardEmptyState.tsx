@@ -6,11 +6,10 @@ import {
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
 import { useTranslation } from "@/i18n/useTranslation";
-import { statsDataDrawerOpenRecoil } from "@/recoil/recoilState";
+import { useMatchStore } from "@/lib/matchStore";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useSetRecoilState } from "recoil";
 import { type ReactNode } from "react";
 
 export function DashboardChromeShell({
@@ -80,7 +79,7 @@ export default function DashboardEmptyState({
   errorMessage = null,
 }: Props) {
   const { t } = useTranslation();
-  const openDataDrawer = useSetRecoilState(statsDataDrawerOpenRecoil);
+  const openDataDrawer = useMatchStore((s) => s.setStatsDataDrawerOpen);
 
   const title = (() => {
     switch (page) {

@@ -56,7 +56,7 @@ export default function Leaderboard() {
   const openPlayerStats = (playerId: number) => {
     if (!activeMode) return;
     stashStatsLaunch({ modeLabel: activeMode, playerId, tileSet });
-    router.push("/stats");
+    router.push("/stats", { transitionTypes: ["nav-forward"] });
   };
 
   if (loading) {

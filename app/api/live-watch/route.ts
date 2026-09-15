@@ -16,7 +16,7 @@ export function OPTIONS() {
 }
 
 export async function GET(req: Request) {
-  if (!isLiveWatchAdmin(req)) {
+  if (!(await isLiveWatchAdmin(req))) {
     return liveWatchJson({ error: "unauthorized" }, 401);
   }
   const sessions = (await listLiveWatchSessions()).map((s) => ({

@@ -13,7 +13,7 @@ export function OPTIONS() {
   return liveWatchOptions();
 }
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(req: Request, { params }: Ctx) {
   if (!isLiveWatchEnabled()) {
@@ -22,6 +22,8 @@ export async function POST(req: Request, { params }: Ctx) {
       503
     );
   }
+
+  const { id } = await params;
 
   let body: {
     action?: "join" | "heartbeat" | "leave";
@@ -38,7 +40,7 @@ export async function POST(req: Request, { params }: Ctx) {
 
   switch (action) {
     case "join": {
-      const result = await joinLiveWatchViewer(params.id, {
+      const result = await joinLiveWatchViewer(id, {
         viewerId: body.viewerId,
         displayName: body.displayName,
       });
@@ -67,7 +69,7 @@ export async function POST(req: Request, { params }: Ctx) {
       if (!body.viewerId) {
         return liveWatchJson({ error: "missing_viewer" }, 400);
       }
-      const result = await heartbeatLiveWatchViewer(params.id, body.viewerId);
+      const result = await heartbeatLiveWatchViewer(id, body.viewerId);
       if (!result.ok) {
         return liveWatchJson({ error: result.error }, 404);
       }
@@ -80,7 +82,7 @@ export async function POST(req: Request, { params }: Ctx) {
       if (!body.viewerId) {
         return liveWatchJson({ error: "missing_viewer" }, 400);
       }
-      await leaveLiveWatchViewer(params.id, body.viewerId);
+      await leaveLiveWatchViewer(id, body.viewerId);
       return liveWatchJson({ ok: true });
     }
     default: {

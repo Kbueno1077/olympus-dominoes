@@ -412,7 +412,7 @@ export default function LiveWatchClient() {
         lead={copy.lead}
         body={copy.body}
         actionLabel={t("liveWatchGoHome")}
-        onAction={() => router.push("/")}
+        onAction={() => router.push("/", { transitionTypes: ["nav-back"] })}
       />
     );
   }

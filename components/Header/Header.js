@@ -2,8 +2,8 @@
 
 import NavMenu from "@/components/Header/NavMenu";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useMatchStore } from "@/lib/matchStore";
 import StatsDataDrawer from "@/modules/Analytics/StatsDataDrawer";
-import { statsDataDrawerOpenRecoil } from "@/recoil/recoilState";
 import FolderOpenOutlined from "@mui/icons-material/FolderOpenOutlined";
 import {
   AppBar,
@@ -18,22 +18,20 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRecoilState } from "recoil";
 
 const HEADER_PX = 64;
 const APP_ICON_SRC = "/app-icon.png";
 
 /**
  * Site chrome for most routes. /play hides this bar only while a match is
- * dealt — setup keeps the navbar; see AppShell + playTableActiveRecoil.
+ * dealt — setup keeps the navbar; see AppShell + playTableActive.
  */
 export default function Header() {
   const theme = useTheme();
   const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [dataDrawerOpen, setDataDrawerOpen] = useRecoilState(
-    statsDataDrawerOpenRecoil
-  );
+  const dataDrawerOpen = useMatchStore((s) => s.statsDataDrawerOpen);
+  const setDataDrawerOpen = useMatchStore((s) => s.setStatsDataDrawerOpen);
 
   useEffect(() => {
     // Document scroll is locked; AppShell section owns scroll on mobile.
@@ -80,6 +78,7 @@ export default function Header() {
         )}`,
         boxShadow: isScrolled ? theme.customShadows.z8 : "none",
         transition: "border-color 200ms ease, box-shadow 200ms ease",
+        viewTransitionName: "site-header",
       }}
     >
       <Container
@@ -112,6 +111,7 @@ export default function Header() {
               <Stack
                 component={Link}
                 href="/"
+                transitionTypes={["nav-back"]}
                 aria-label="Olympus Dominoes"
                 direction="row"
                 alignItems="center"

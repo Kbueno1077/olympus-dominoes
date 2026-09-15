@@ -2,11 +2,7 @@
 
 import DominoTile from "@/components/DominoTile";
 import { useTranslation } from "@/i18n/useTranslation";
-import {
-  dominoSetRecoil,
-  gameModeRecoil,
-  playersAmountRecoil,
-} from "@/recoil/recoilState";
+import { useMatchStore } from "@/lib/matchStore";
 import {
   tileSetFromDominoSetId,
   tileSetIcon,
@@ -15,7 +11,6 @@ import { ModeFormatIcon } from "@/modules/Analytics/ModeFormatMark";
 import { getDominoSet } from "@/utils/dominoSets";
 import { Box, Card, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useRecoilValue } from "recoil";
 
 const TILES_PLAYED = 3;
 
@@ -229,9 +224,9 @@ function Rack({ vertical, teamColor, count }) {
 
 export default function TableDraw() {
   const { t, teamName } = useTranslation();
-  const gameMode = useRecoilValue(gameModeRecoil);
-  const playersAmount = useRecoilValue(playersAmountRecoil);
-  const dominoSetId = useRecoilValue(dominoSetRecoil);
+  const gameMode = useMatchStore((s) => s.gameMode);
+  const playersAmount = useMatchStore((s) => s.playersAmount);
+  const dominoSetId = useMatchStore((s) => s.dominoSet);
   const dominoSet = getDominoSet(dominoSetId);
 
   const isFreeForAll = gameMode?.label === "Free For All";

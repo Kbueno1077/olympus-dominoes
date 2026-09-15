@@ -125,6 +125,7 @@ export default function HowToUse() {
       <Typography
         component={Link}
         href="/"
+        transitionTypes={["nav-back"]}
         variant="body2"
         sx={{
           display: "inline-block",

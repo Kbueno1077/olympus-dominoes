@@ -8,8 +8,12 @@ export default function HomePage() {
 
   return (
     <Dashboard
-      onPlayWithBots={() => router.push("/play")}
-      onStartScorepad={() => router.push("/match")}
+      onPlayWithBots={() =>
+        router.push("/play", { transitionTypes: ["nav-forward"] })
+      }
+      onStartScorepad={() =>
+        router.push("/match", { transitionTypes: ["nav-forward"] })
+      }
     />
   );
 }

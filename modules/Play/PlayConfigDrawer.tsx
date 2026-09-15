@@ -12,7 +12,7 @@ import {
   botLevelFromMs,
 } from "@/modules/Play/paceLevels";
 import { pressableRowSx, pressableSx, tapFeedback } from "@/modules/Play/pressFeedback";
-import { isGameStartedRecoil } from "@/recoil/recoilState";
+import { useMatchStore } from "@/lib/matchStore";
 import BarChartOutlined from "@mui/icons-material/BarChartOutlined";
 import CallMergeOutlined from "@mui/icons-material/CallMergeOutlined";
 import ScienceOutlined from "@mui/icons-material/ScienceOutlined";
@@ -42,6 +42,7 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { navTransitionTypes } from "@/lib/navTransition";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -50,7 +51,6 @@ import {
   useState,
   type SyntheticEvent,
 } from "react";
-import { useRecoilValue } from "recoil";
 
 export type PlayPaceControls = {
   botDelayMs: number;
@@ -129,7 +129,7 @@ export default function PlayConfigDrawer({
   };
   const pathname = usePathname();
   const hasMounted = useHasMounted();
-  const isGameStarted = useRecoilValue(isGameStartedRecoil);
+  const isGameStarted = useMatchStore((s) => s.isGameStarted);
   const matchInProgress = hasMounted && isGameStarted;
 
   const defaultSection: ConfigSection = pace
@@ -498,6 +498,7 @@ export default function PlayConfigDrawer({
                     key={item.href}
                     component={Link}
                     href={item.href}
+                    transitionTypes={navTransitionTypes(pathname, item.href)}
                     onPointerDown={tapFeedback}
                     onClick={onClose}
                     sx={{

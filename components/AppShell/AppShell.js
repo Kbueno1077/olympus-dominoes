@@ -1,11 +1,10 @@
 "use client";
 
 import Header from "@/components/Header/Header";
-import { playTableActiveRecoil } from "@/recoil/recoilState";
+import { useMatchStore } from "@/lib/matchStore";
 import { Box } from "@mui/material";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { useRecoilValue } from "recoil";
 
 const FULL_BLEED_PATHS = new Set([
   "/stats",
@@ -34,7 +33,7 @@ const VIEWPORT_HEIGHT = {
  */
 export default function AppShell({ children }) {
   const pathname = usePathname();
-  const playTableActive = useRecoilValue(playTableActiveRecoil);
+  const playTableActive = useMatchStore((s) => s.playTableActive);
   const fullBleed =
     FULL_BLEED_PATHS.has(pathname) ||
     pathname.startsWith("/history/") ||

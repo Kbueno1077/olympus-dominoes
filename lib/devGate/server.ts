@@ -36,11 +36,12 @@ export function passwordMatches(gate: GateId, password: string): boolean {
   return sameToken(tokenFor(password), tokenFor(expected));
 }
 
-export function isGateOpen(gate: GateId): boolean {
+export async function isGateOpen(gate: GateId): Promise<boolean> {
   if (isLocalDev()) return true;
   const expected = gatePassword(gate);
   if (expected == null) return false;
-  const raw = cookies().get(GATE_COOKIE[gate])?.value;
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(GATE_COOKIE[gate])?.value;
   if (!raw) return false;
   try {
     return sameToken(Buffer.from(raw, "hex"), tokenFor(expected));
@@ -49,10 +50,11 @@ export function isGateOpen(gate: GateId): boolean {
   }
 }
 
-export function setGateCookie(gate: GateId): void {
+export async function setGateCookie(gate: GateId): Promise<void> {
   const expected = gatePassword(gate);
   if (expected == null) return;
-  cookies().set(GATE_COOKIE[gate], tokenFor(expected).toString("hex"), {
+  const cookieStore = await cookies();
+  cookieStore.set(GATE_COOKIE[gate], tokenFor(expected).toString("hex"), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

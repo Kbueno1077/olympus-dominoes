@@ -16,6 +16,7 @@ export default function PrivacyPage() {
       <p className="mb-6 text-sm text-[rgb(var(--text-muted))]">
         <Link
           href="/"
+          transitionTypes={["nav-back"]}
           className="underline decoration-[rgb(var(--border))] underline-offset-2 hover:text-[rgb(var(--primary))]"
         >
           ← Olympus Dominoes
@@ -33,6 +34,7 @@ export default function PrivacyPage() {
           <p className="text-xs font-medium tracking-wide text-[rgb(var(--text-muted))]">
             <Link
               href="/changelog"
+              transitionTypes={["nav-forward"]}
               className="underline decoration-[rgb(var(--border))] underline-offset-2 hover:text-[rgb(var(--primary))]"
             >
               {APP_UI_SIGNATURE}

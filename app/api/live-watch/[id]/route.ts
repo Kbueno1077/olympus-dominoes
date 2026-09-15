@@ -16,7 +16,7 @@ export function OPTIONS() {
   return liveWatchOptions();
 }
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 function updateErrorStatus(
   error: "not_found" | "unauthorized" | "expired"
@@ -46,7 +46,8 @@ export async function GET(_req: Request, { params }: Ctx) {
       503
     );
   }
-  const session = await getLiveWatchSession(params.id);
+  const { id } = await params;
+  const session = await getLiveWatchSession(id);
   if (!session) {
     return liveWatchJson({ status: "not_found", error: "not_found" }, 404);
   }
@@ -80,13 +81,14 @@ export async function POST(req: Request, { params }: Ctx) {
       503
     );
   }
+  const { id } = await params;
   let body: { viewerId?: string; displayName?: string } = {};
   try {
     body = await req.json();
   } catch {
     body = {};
   }
-  const result = await joinLiveWatchViewer(params.id, {
+  const result = await joinLiveWatchViewer(id, {
     viewerId: body.viewerId,
     displayName: body.displayName,
   });
@@ -105,6 +107,7 @@ export async function PUT(req: Request, { params }: Ctx) {
       503
     );
   }
+  const { id } = await params;
   const secret = req.headers.get("x-live-watch-secret") ?? "";
   let body: { snapshot?: LiveWatchSnapshot };
   try {
@@ -116,7 +119,7 @@ export async function PUT(req: Request, { params }: Ctx) {
     return liveWatchJson({ error: "missing_snapshot" }, 400);
   }
   const result = await updateLiveWatchSession(
-    params.id,
+    id,
     secret,
     body.snapshot
   );
@@ -132,8 +135,9 @@ export async function PUT(req: Request, { params }: Ctx) {
 }
 
 export async function DELETE(req: Request, { params }: Ctx) {
+  const { id } = await params;
   const secret = req.headers.get("x-live-watch-secret") ?? "";
-  const deleted = await deleteLiveWatchSession(params.id, secret);
+  const deleted = await deleteLiveWatchSession(id, secret);
   if (!deleted) {
     return liveWatchJson({ error: "not_found_or_unauthorized" }, 404);
   }
