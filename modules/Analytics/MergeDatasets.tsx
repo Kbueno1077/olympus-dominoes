@@ -324,7 +324,7 @@ export default function MergeDatasets() {
         excludeMatchKeys,
       });
       displayToast(t("toastMergeCreated"), "success");
-      router.push("/history");
+      router.push("/history", { transitionTypes: ["nav-back"] });
     } catch (err) {
       const code = err instanceof Error ? err.message : "failed";
       if (code === "empty_name") setLocalError(t("datasetsEmptyName"));

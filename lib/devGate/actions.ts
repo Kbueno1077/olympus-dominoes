@@ -17,7 +17,7 @@ export async function unlockDevGate(
   if (!passwordMatches(gate, password)) {
     return { ok: false };
   }
-  setGateCookie(gate);
+  await setGateCookie(gate);
   revalidatePath(GATE_PATH[gate]);
   return { ok: true };
 }
@@ -32,7 +32,7 @@ export async function refreshDevGateCookie(
   } catch {
     return { ok: false };
   }
-  if (!isGateOpen(gate)) return { ok: false };
-  setGateCookie(gate);
+  if (!(await isGateOpen(gate))) return { ok: false };
+  await setGateCookie(gate);
   return { ok: true };
 }

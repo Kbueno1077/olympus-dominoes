@@ -2,10 +2,9 @@
 
 import { useTranslation } from "@/i18n/useTranslation";
 import { ToolsQuietCard } from "@/modules/Analytics/ToolsChrome";
-import { statsDataDrawerOpenRecoil } from "@/recoil/recoilState";
+import { useMatchStore } from "@/lib/matchStore";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import { Button } from "@mui/material";
-import { useSetRecoilState } from "recoil";
 
 export default function ToolsNeedData({
   overline,
@@ -15,7 +14,7 @@ export default function ToolsNeedData({
   message?: string;
 }) {
   const { t } = useTranslation();
-  const openDataDrawer = useSetRecoilState(statsDataDrawerOpenRecoil);
+  const openDataDrawer = useMatchStore((s) => s.setStatsDataDrawerOpen);
 
   return (
     <ToolsQuietCard

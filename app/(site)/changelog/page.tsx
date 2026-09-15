@@ -27,6 +27,7 @@ export default function ChangelogPage() {
       <p className="mb-6 text-sm text-[rgb(var(--text-muted))]">
         <Link
           href="/"
+          transitionTypes={["nav-back"]}
           className="underline decoration-[rgb(var(--border))] underline-offset-2 hover:text-[rgb(var(--primary))]"
         >
           ← Olympus Dominoes

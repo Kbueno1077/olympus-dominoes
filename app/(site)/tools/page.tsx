@@ -3,8 +3,8 @@ import { isGateConfigured, isGateOpen, isLocalDev } from "@/lib/devGate/server";
 import { notFound } from "next/navigation";
 import ToolsPageClient from "./ToolsPageClient";
 
-export default function ToolsPage() {
-  if (isLocalDev() || isGateOpen("merge")) {
+export default async function ToolsPage() {
+  if (isLocalDev() || (await isGateOpen("merge"))) {
     return <ToolsPageClient />;
   }
   if (!isGateConfigured("merge")) {

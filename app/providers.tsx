@@ -2,8 +2,10 @@
 
 import LanguageProvider from "@/i18n/LanguageProvider";
 import { AnalyticsProvider } from "@/lib/analytics/AnalyticsProvider";
+import { useMatchStore } from "@/lib/matchStore";
+import { MuiEmotionCacheProvider } from "@/lib/muiEmotionCache";
 import { SnackbarProvider } from "notistack";
-import { RecoilRoot } from "recoil";
+import { useEffect } from "react";
 import ThemeConfig from "../muiTheme";
 
 export function Providers({
@@ -13,21 +15,24 @@ export function Providers({
   children: React.ReactNode;
   initialLanguage: string;
 }) {
+  useEffect(() => {
+    void useMatchStore.persist.rehydrate();
+  }, []);
   return (
-    <LanguageProvider initialLanguage={initialLanguage}>
-      <ThemeConfig>
-        <SnackbarProvider
-          anchorOrigin={{
-            vertical: "bottom",
-            horizontal: "right",
-          }}
-          maxSnack={3}
-        >
-          <RecoilRoot>
+    <MuiEmotionCacheProvider>
+      <LanguageProvider initialLanguage={initialLanguage}>
+        <ThemeConfig>
+          <SnackbarProvider
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            maxSnack={3}
+          >
             <AnalyticsProvider>{children}</AnalyticsProvider>
-          </RecoilRoot>
-        </SnackbarProvider>
-      </ThemeConfig>
-    </LanguageProvider>
+          </SnackbarProvider>
+        </ThemeConfig>
+      </LanguageProvider>
+    </MuiEmotionCacheProvider>
   );
 }

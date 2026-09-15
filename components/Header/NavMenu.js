@@ -3,7 +3,8 @@
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { LANGUAGES } from "@/i18n/translations";
 import { useTranslation } from "@/i18n/useTranslation";
-import { isGameStartedRecoil } from "@/recoil/recoilState";
+import { navTransitionTypes } from "@/lib/navTransition";
+import { useMatchStore } from "@/lib/matchStore";
 import BarChartOutlined from "@mui/icons-material/BarChartOutlined";
 import CompareArrowsOutlined from "@mui/icons-material/CompareArrowsOutlined";
 import EmojiEventsOutlined from "@mui/icons-material/EmojiEventsOutlined";
@@ -30,7 +31,6 @@ import { alpha } from "@mui/material/styles";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useRecoilValue } from "recoil";
 
 /**
  * Standard nav dropdown — closed trigger shows the current section.
@@ -40,7 +40,7 @@ export default function NavMenu({ dense = false }) {
   const { t, language, setLanguage } = useTranslation();
   const pathname = usePathname();
   const hasMounted = useHasMounted();
-  const isGameStarted = useRecoilValue(isGameStartedRecoil);
+  const isGameStarted = useMatchStore((s) => s.isGameStarted);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const matchInProgress = hasMounted && isGameStarted;
@@ -229,6 +229,7 @@ export default function NavMenu({ dense = false }) {
               key={item.href}
               component={Link}
               href={item.href}
+              transitionTypes={navTransitionTypes(pathname, item.href)}
               onClick={() => setAnchorEl(null)}
               sx={{
                 py: 1.1,

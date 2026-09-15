@@ -3,25 +3,20 @@
 import ConfirmDeleteGame from "@/components/Dialogs/ConfirmDialog/ConfirmDeleteGame";
 import Note from "@/components/Notes/Note";
 import { useMatchTeamLabel } from "@/hooks/useMatchTeamLabel";
-import {
-  completedGamesRecoil,
-  gameModeRecoil,
-  playersAmountRecoil,
-} from "@/recoil/recoilState";
+import { useMatchStore } from "@/lib/matchStore";
 import { useTranslation } from "@/i18n/useTranslation";
 import { activeTeamNumbers, teamNumberFrom } from "@/utils/matchSettings";
 import { Box, Card, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
-import { useRecoilState, useRecoilValue } from "recoil";
 
 export default function NotesDone() {
   const { t } = useTranslation();
   const teamLabel = useMatchTeamLabel();
-  const [completedGames, setCompletedGame] =
-    useRecoilState(completedGamesRecoil);
+  const completedGames = useMatchStore((s) => s.completedGames);
+  const setCompletedGame = useMatchStore((s) => s.setCompletedGame);
 
-  const playersAmount = useRecoilValue(playersAmountRecoil);
-  const gameMode = useRecoilValue(gameModeRecoil);
+  const playersAmount = useMatchStore((s) => s.playersAmount);
+  const gameMode = useMatchStore((s) => s.gameMode);
 
   const removeGame = (index) => {
     const remaining = completedGames.filter((_, i) => i !== index);

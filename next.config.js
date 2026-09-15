@@ -3,6 +3,8 @@ const APK_RELEASE_URL =
   "https://github.com/Kbueno1077/olympus-dominoes/releases/download/android-4.9/olympus-dominoes.v4.9.apk";
 
 const nextConfig = {
+  // Next 16 writes AGENTS.md / CLAUDE.md on `next dev` unless this is off.
+  agentRules: false,
   async redirects() {
     const rules = [
       { source: "/merge", destination: "/tools", permanent: true },

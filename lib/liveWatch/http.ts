@@ -24,9 +24,9 @@ export function liveWatchJson(
 }
 
 /** Admin unlock for local dev, Tools cookie, or LIVE_WATCH_ADMIN_PASSWORD / MERGE_PASSWORD. */
-export function isLiveWatchAdmin(req: Request): boolean {
+export async function isLiveWatchAdmin(req: Request): Promise<boolean> {
   if (process.env.NODE_ENV === "development") return true;
-  if (isGateOpen("merge")) return true;
+  if (await isGateOpen("merge")) return true;
   const header =
     req.headers.get("x-live-watch-admin") ??
     req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");

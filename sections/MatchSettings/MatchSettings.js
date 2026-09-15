@@ -35,19 +35,8 @@ import {
 import { DOMINO_SETS, getDominoSet } from "@/utils/dominoSets";
 import { gameModes2, gameModes3, gameModes4 } from "@/utils/matchSettings";
 import { buildRandomRoster } from "@/utils/randomNames";
-import {
-  dominoSetRecoil,
-  gameModeRecoil,
-  isGameStartedRecoil,
-  maxPointsRecoil,
-  player1Recoil,
-  player2Recoil,
-  player3Recoil,
-  player4Recoil,
-  playersAmountRecoil,
-  renderGameModesRecoil,
-} from "@/recoil/recoilState";
-import { useRecoilState } from "recoil";
+import { useMatchStore } from "@/lib/matchStore";
+import { useShallow } from "zustand/react/shallow";
 
 const PLAYER_COUNTS = [2, 3, 4];
 const TARGET_PRESETS = [100, 150, 200];
@@ -92,14 +81,27 @@ function buildTeams(playersAmount, isFreeForAll, slots) {
 export function MatchSummary({ includeTeams = true }) {
   const { t, teamName } = useTranslation();
 
-  const [playersAmount] = useRecoilState(playersAmountRecoil);
-  const [gameMode] = useRecoilState(gameModeRecoil);
-  const [dominoSet] = useRecoilState(dominoSetRecoil);
-  const [maxPoints] = useRecoilState(maxPointsRecoil);
-  const [player1] = useRecoilState(player1Recoil);
-  const [player2] = useRecoilState(player2Recoil);
-  const [player3] = useRecoilState(player3Recoil);
-  const [player4] = useRecoilState(player4Recoil);
+  const {
+    playersAmount,
+    gameMode,
+    dominoSet,
+    maxPoints,
+    player1,
+    player2,
+    player3,
+    player4,
+  } = useMatchStore(
+    useShallow((s) => ({
+      playersAmount: s.playersAmount,
+      gameMode: s.gameMode,
+      dominoSet: s.dominoSet,
+      maxPoints: s.maxPoints,
+      player1: s.player1,
+      player2: s.player2,
+      player3: s.player3,
+      player4: s.player4,
+    }))
+  );
 
   const isFreeForAll = gameMode?.label === "Free For All";
   const slots = [
@@ -357,13 +359,49 @@ export default function MatchSettings({ onStart }) {
   const { t } = useTranslation();
   const { formatLabel, tileLabel } = useModeFormatCopy();
 
-  const [playersAmount, setPlayersAmount] = useRecoilState(playersAmountRecoil);
-  const [renderGameModes, setRenderGamesModes] = useRecoilState(
-    renderGameModesRecoil
+  const {
+    playersAmount,
+    setPlayersAmount,
+    renderGameModes,
+    setRenderGamesModes,
+    gameMode,
+    setGameMode,
+    dominoSet,
+    setDominoSet,
+    maxPoints,
+    setMaxPoints,
+    player1,
+    setPlayer1,
+    player2,
+    setPlayer2,
+    player3,
+    setPlayer3,
+    player4,
+    setPlayer4,
+    isGameStarted,
+  } = useMatchStore(
+    useShallow((s) => ({
+      playersAmount: s.playersAmount,
+      setPlayersAmount: s.setPlayersAmount,
+      renderGameModes: s.renderGameModes,
+      setRenderGamesModes: s.setRenderGamesModes,
+      gameMode: s.gameMode,
+      setGameMode: s.setGameMode,
+      dominoSet: s.dominoSet,
+      setDominoSet: s.setDominoSet,
+      maxPoints: s.maxPoints,
+      setMaxPoints: s.setMaxPoints,
+      player1: s.player1,
+      setPlayer1: s.setPlayer1,
+      player2: s.player2,
+      setPlayer2: s.setPlayer2,
+      player3: s.player3,
+      setPlayer3: s.setPlayer3,
+      player4: s.player4,
+      setPlayer4: s.setPlayer4,
+      isGameStarted: s.isGameStarted,
+    }))
   );
-  const [gameMode, setGameMode] = useRecoilState(gameModeRecoil);
-  const [dominoSet, setDominoSet] = useRecoilState(dominoSetRecoil);
-  const [maxPoints, setMaxPoints] = useRecoilState(maxPointsRecoil);
   const isPresetTarget = TARGET_PRESETS.includes(Number(maxPoints));
   const [firstToDraft, setFirstToDraft] = useState(
     isPresetTarget ? "" : String(maxPoints)
@@ -372,13 +410,6 @@ export default function MatchSettings({ onStart }) {
   useEffect(() => {
     setFirstToDraft(isPresetTarget ? "" : String(maxPoints));
   }, [maxPoints, isPresetTarget]);
-
-  const [player1, setPlayer1] = useRecoilState(player1Recoil);
-  const [player2, setPlayer2] = useRecoilState(player2Recoil);
-  const [player3, setPlayer3] = useRecoilState(player3Recoil);
-  const [player4, setPlayer4] = useRecoilState(player4Recoil);
-
-  const [isGameStarted] = useRecoilState(isGameStartedRecoil);
 
   const isFreeForAll = gameMode?.label === "Free For All";
 

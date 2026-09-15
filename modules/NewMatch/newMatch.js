@@ -1,19 +1,7 @@
 "use client";
 
 import EndMatchControl from "@/components/Header/EndMatchControl";
-import {
-  completedGamesRecoil,
-  currentGameRecoil,
-  gameModeRecoil,
-  isGameStartedRecoil,
-  maxPointsRecoil,
-  player1Recoil,
-  player2Recoil,
-  player3Recoil,
-  player4Recoil,
-  playersAmountRecoil,
-  whoWonRecoil,
-} from "@/recoil/recoilState";
+import { useMatchStore } from "@/lib/matchStore";
 import MatchSettings, {
   MatchSummary,
 } from "@/sections/MatchSettings/MatchSettings";
@@ -36,7 +24,7 @@ import {
 import { Box, Card, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useMemo } from "react";
-import { useRecoilState } from "recoil";
+import { useShallow } from "zustand/react/shallow";
 import useToast from "@/hooks/useToast";
 
 function MarkStat({ label, value, live, align = "left" }) {
@@ -327,20 +315,41 @@ export default function NewMatch() {
   const displayToast = useToast();
   const { t } = useTranslation();
 
-  const [playersAmount] = useRecoilState(playersAmountRecoil);
-  const [gameMode] = useRecoilState(gameModeRecoil);
-  const [maxPoints] = useRecoilState(maxPointsRecoil);
-
-  const [player1] = useRecoilState(player1Recoil);
-  const [player2] = useRecoilState(player2Recoil);
-  const [player3] = useRecoilState(player3Recoil);
-  const [player4] = useRecoilState(player4Recoil);
-
-  const [isGameStarted, setStartGame] = useRecoilState(isGameStartedRecoil);
-  const [whoWon, setWhoWon] = useRecoilState(whoWonRecoil);
-  const [completedGames, setCompletedGame] =
-    useRecoilState(completedGamesRecoil);
-  const [currentGame, setCurrentGame] = useRecoilState(currentGameRecoil);
+  const {
+    playersAmount,
+    gameMode,
+    maxPoints,
+    player1,
+    player2,
+    player3,
+    player4,
+    isGameStarted,
+    setStartGame,
+    whoWon,
+    setWhoWon,
+    completedGames,
+    setCompletedGame,
+    currentGame,
+    setCurrentGame,
+  } = useMatchStore(
+    useShallow((s) => ({
+      playersAmount: s.playersAmount,
+      gameMode: s.gameMode,
+      maxPoints: s.maxPoints,
+      player1: s.player1,
+      player2: s.player2,
+      player3: s.player3,
+      player4: s.player4,
+      isGameStarted: s.isGameStarted,
+      setStartGame: s.setStartGame,
+      whoWon: s.whoWon,
+      setWhoWon: s.setWhoWon,
+      completedGames: s.completedGames,
+      setCompletedGame: s.setCompletedGame,
+      currentGame: s.currentGame,
+      setCurrentGame: s.setCurrentGame,
+    }))
+  );
 
   const handleStartGame = () => {
     const layout = [player1, player2, player3, player4].filter((item) => item);

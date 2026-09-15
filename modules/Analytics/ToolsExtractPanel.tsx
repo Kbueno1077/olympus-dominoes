@@ -69,7 +69,7 @@ export default function ToolsExtractPanel() {
     try {
       createExtractedDataset(name, { dateRange, playerIds: selectedIds });
       displayToast(t("toastExtractCreated"), "success");
-      router.push("/history");
+      router.push("/history", { transitionTypes: ["nav-back"] });
     } catch (err) {
       const code = err instanceof Error ? err.message : "failed";
       if (code === "empty_name") setLocalError(t("datasetsEmptyName"));

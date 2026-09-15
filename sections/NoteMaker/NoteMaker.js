@@ -5,7 +5,7 @@ import PadColumn from "@/components/Notes/PadColumn";
 import { useMatchTeamLabel } from "@/hooks/useMatchTeamLabel";
 import { useTranslation } from "@/i18n/useTranslation";
 import { FONT_HAND } from "@/muiTheme/typography";
-import { currentGameRecoil, gameEditionModeRecoil } from "@/recoil/recoilState";
+import { useMatchStore } from "@/lib/matchStore";
 import { activeTeamNumbers, TEAM_KEYS, teamNumberFrom } from "@/utils/matchSettings";
 import { Icon } from "@iconify/react";
 import { ArrowForward } from "@mui/icons-material";
@@ -21,7 +21,6 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useRecoilState, useRecoilValue } from "recoil";
 import NoteHand from "./NoteHand";
 
 function TeamColumn({
@@ -126,10 +125,9 @@ export default function NoteMaker({
 }) {
   const { t } = useTranslation();
   const teamLabel = useMatchTeamLabel();
-  const [gameEditionMode, setGameEditionMode] = useRecoilState(
-    gameEditionModeRecoil
-  );
-  const currentGame = useRecoilValue(currentGameRecoil);
+  const gameEditionMode = useMatchStore((s) => s.gameEditionMode);
+  const setGameEditionMode = useMatchStore((s) => s.setGameEditionMode);
+  const currentGame = useMatchStore((s) => s.currentGame);
 
   const isFreeForAll = gameMode?.label === "Free For All";
   const teamNumbers = activeTeamNumbers(playersAmount, isFreeForAll);

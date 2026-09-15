@@ -56,8 +56,9 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { navTransitionTypes } from "@/lib/navTransition";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   startTransition,
   useEffect,
@@ -114,6 +115,7 @@ function StatLine({
 export default function Analytics() {
   const { t } = useTranslation();
   const router = useRouter();
+  const pathname = usePathname();
   const {
     data,
     error,
@@ -200,7 +202,9 @@ export default function Analytics() {
       tileSet,
     });
     setPendingCompare(launch);
-    router.push(`/compare?${compareLaunchToSearchParams(launch).toString()}`);
+    router.push(`/compare?${compareLaunchToSearchParams(launch).toString()}`, {
+      transitionTypes: navTransitionTypes(pathname, "/compare"),
+    });
   };
 
   const selectPlayer = (id: number) => {

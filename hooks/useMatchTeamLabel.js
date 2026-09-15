@@ -1,16 +1,9 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useRecoilValue } from "recoil";
+import { useShallow } from "zustand/react/shallow";
 import { useTranslation } from "@/i18n/useTranslation";
-import {
-  gameModeRecoil,
-  player1Recoil,
-  player2Recoil,
-  player3Recoil,
-  player4Recoil,
-  playersAmountRecoil,
-} from "@/recoil/recoilState";
+import { useMatchStore } from "@/lib/matchStore";
 import {
   FREE_FOR_ALL,
   teamFullLabelsByNumber,
@@ -18,12 +11,17 @@ import {
 } from "@/utils/teams";
 
 function useMatchRoster() {
-  const playersAmount = useRecoilValue(playersAmountRecoil);
-  const gameMode = useRecoilValue(gameModeRecoil);
-  const player1 = useRecoilValue(player1Recoil);
-  const player2 = useRecoilValue(player2Recoil);
-  const player3 = useRecoilValue(player3Recoil);
-  const player4 = useRecoilValue(player4Recoil);
+  const { playersAmount, gameMode, player1, player2, player3, player4 } =
+    useMatchStore(
+      useShallow((s) => ({
+        playersAmount: s.playersAmount,
+        gameMode: s.gameMode,
+        player1: s.player1,
+        player2: s.player2,
+        player3: s.player3,
+        player4: s.player4,
+      }))
+    );
 
   const players = useMemo(
     () => [player1, player2, player3, player4],

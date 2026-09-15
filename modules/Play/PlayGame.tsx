@@ -47,7 +47,7 @@ import {
 } from "@/modules/Play/paceLevels";
 import { useTranslation } from "@/i18n/useTranslation";
 import { organizeHand, setConfig } from "@/lib/play/tiles";
-import { playTableActiveRecoil } from "@/recoil/recoilState";
+import { useMatchStore } from "@/lib/matchStore";
 import AutoModeOutlined from "@mui/icons-material/AutoModeOutlined";
 import MenuBookOutlined from "@mui/icons-material/MenuBookOutlined";
 import SortOutlined from "@mui/icons-material/SortOutlined";
@@ -71,7 +71,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { useSetRecoilState } from "recoil";
 
 type SeatPos = "top" | "left" | "right" | "bottom";
 
@@ -127,7 +126,7 @@ export default function PlayGame() {
   const [maxPoints, setMaxPoints] = useState(150);
   const [drawRule, setDrawRule] = useState<DrawRuleId>("classic");
   const [match, setMatch] = useState<MatchSnapshot | null>(null);
-  const setPlayTableActive = useSetRecoilState(playTableActiveRecoil);
+  const setPlayTableActive = useMatchStore((s) => s.setPlayTableActive);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [logOpen, setLogOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);

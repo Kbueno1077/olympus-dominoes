@@ -69,6 +69,7 @@ import {
   Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { navTransitionTypes } from "@/lib/navTransition";
 import { useParams, useRouter } from "next/navigation";
 import {
   startTransition,
@@ -614,11 +615,17 @@ export default function History() {
   );
 
   const openMatch = (id: number) => {
-    startTransition(() => router.push(`/history/${id}`));
+    startTransition(() =>
+      router.push(`/history/${id}`, {
+        transitionTypes: navTransitionTypes("/history", `/history/${id}`),
+      })
+    );
   };
 
   const backToList = () => {
-    startTransition(() => router.push("/history"));
+    startTransition(() =>
+      router.push("/history", { transitionTypes: ["nav-back"] })
+    );
   };
 
   const openCompare = () => {
@@ -631,7 +638,7 @@ export default function History() {
     });
     if (!launch) return;
     setPendingCompare(launch);
-    router.push("/compare");
+    router.push("/compare", { transitionTypes: ["nav-forward"] });
   };
 
   const canCompare = useMemo(() => {
