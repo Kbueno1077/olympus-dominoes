@@ -10,11 +10,12 @@ export const DASHBOARD_VIEWPORT_HEIGHT = "calc(100vh - 64px)";
  * Chart tiles keep the original 1 / 2 / 3-up packing.
  * Extra columns only kick in on very wide panes (≈ 2560px+).
  */
+const ULTRAWIDE_CHART_MEDIA = "@media (min-width:2560px)";
+
 export const chartGridDenseColumns = {
   xs: "minmax(0, 1fr)",
   sm: "repeat(2, minmax(0, 1fr))",
   xl: "repeat(3, minmax(0, 1fr))",
-  "@media (min-width:2560px)": "repeat(4, minmax(0, 1fr))",
 };
 
 export const chartGridDenseSx = {
@@ -24,12 +25,22 @@ export const chartGridDenseSx = {
   maxWidth: "100%",
   minWidth: 0,
   gridTemplateColumns: chartGridDenseColumns,
+  // Custom queries belong at the sx root. Nested under gridTemplateColumns,
+  // React 19 treats `min-width` as a kebab-case style key.
+  [ULTRAWIDE_CHART_MEDIA]: {
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+  },
 };
 
 export const chartGridCompareColumns = {
   xs: "minmax(0, 1fr)",
   md: "repeat(2, minmax(0, 1fr))",
-  "@media (min-width:2560px)": "repeat(3, minmax(0, 1fr))",
+};
+
+export const chartGridCompareSxExtra = {
+  [ULTRAWIDE_CHART_MEDIA]: {
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  },
 };
 
 /** Outer Stats / History / Compare row — fills parent; panes scroll alone on md+. */
