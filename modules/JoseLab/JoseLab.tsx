@@ -1276,7 +1276,7 @@ export default function JoseLab() {
   const [mockPins, setMockPins] = useState<string[]>([...DEFAULT_MOCK_PINS]);
   const [extras, setExtras] = useState<ExtraMap>({});
   const [chartsPerRow, setChartsPerRow] = useState<ChartsPerRow>(3);
-  const [showMocks, setShowMocks] = useState(true);
+  const [showMocks, setShowMocks] = useState(false);
 
   const deferredK = useDeferredValue(weightsK);
   const deferredC = useDeferredValue(weightsC);
@@ -1532,7 +1532,7 @@ export default function JoseLab() {
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.25 }}>
             Sliders live here. The bench uses the full pane — CSV seasons
-            first, mocks beside them when the screen is wide enough.
+            first. Show mocks when you want invented scenarios beside them.
           </Typography>
           <Stack
             direction="row"
