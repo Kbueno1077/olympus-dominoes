@@ -199,6 +199,33 @@ partners vs Free For All, pad-hand strip in `teamScoresFromGame`.
 
 **Do not “fix” the test if:** seats 1+3 are no longer partners in 2 vs 2.
 
+### `utils/matchSettings.test.ts`
+
+**Protects:** scorepad mode lists and empty-game defaults used by the Zustand
+match store.
+
+**Update this test when:** default race-to, player counts, or mode labels change.
+
+### `lib/matchStoreState.test.ts`
+
+**Protects:** Recoil `recoil-persist` keys copy into the Zustand match slice;
+unknown keys are ignored.
+
+**Update this test when:** persisted notepad fields are added or renamed.
+
+### `lib/navTransition.test.ts`
+
+**Protects:** path rank and `nav-forward` / `nav-back` types for in-app Links.
+
+**Update this test when:** the site route order or transition types change.
+
+### `lib/liveWatch/*.test.ts`
+
+**Protects:** relay snapshot → pad mapping, display names, and in-memory store
+rules for `/watch/[id]` and the Tools monitor.
+
+**Update this test when:** the live-watch payload or viewer list contract changes.
+
 ---
 
 ## Not in this layer (yet)

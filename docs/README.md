@@ -10,4 +10,5 @@ Player-facing product copy lives in the in-app changelog, not here.
 | [imports-and-datasets.md](imports-and-datasets.md) | CSV export schema, `db_meta`, localStorage dataset keys |
 
 Keep formula and schema docs in sync with `lib/analytics/` and the mobile app
-(`olympus-dominoes-app`). The product README stays a short how-to-run guide.
+(`olympus-dominoes-app`). The product README is the map of stack, routes, and
+folders; these files stay formula / schema / test catalog.

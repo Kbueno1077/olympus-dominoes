@@ -1,28 +1,40 @@
 # Olympus Dominoes
 
-Cuban double-nine dominoes scorepad on the web (Next.js / React).
-Havana theme, English and Spanish. Live matches stay in the browser via
-Recoil + `recoil-persist` (localStorage). Stats, history, and compare read
-Olympus exports (CSV) from the mobile app, stored as named datasets in
-localStorage.
+Cuban double-nine dominoes on the web: a scorepad, a bot table, and analytics
+for mobile exports. Havana theme, English and Spanish.
 
 **Live:** [https://olympus-dominoes.kbueno-studio.com/](https://olympus-dominoes.kbueno-studio.com/)
 
 Companion mobile app: `olympus-dominoes-app` (Expo / React Native). Jose's
-Coefficient and export table shapes stay aligned across both.
+Coefficient and export table shapes stay aligned across both. iOS is on the
+[App Store](https://apps.apple.com/us/app/olympus-dominoes/id6799737142);
+Android Play listing is not live yet.
+
+## Stack
+
+| | |
+|--|--|
+| App | Next.js 16 (App Router; Turbopack in `next dev`) |
+| UI | React 19, MUI 5, Havana theme (`muiTheme/`). Tailwind utilities with preflight off so CssBaseline owns the base layer |
+| Live match | Zustand persist (`localStorage` key `olympus-match`). First load copies a leftover Recoil `recoil-persist` blob if present |
+| Analytics | CSV datasets in `localStorage` (`olympus-web-datasets-v1` + per-slot payloads) |
+| Tests | Vitest |
+| Deploy | Vercel. GitHub Actions runs typecheck + tests on PRs and `master` |
 
 ## Prerequisites
 
-- Node 20+ and npm
+- Node 20+ and npm (CI uses Node 22)
 
 ```bash
 npm install
 ```
 
+`.npmrc` sets `legacy-peer-deps=true` so MUI 5 can install next to React 19.
+
 ## Running it
 
 ```bash
-npm run dev      # Next.js dev server (http://localhost:3000)
+npm run dev      # http://localhost:3000
 npm run build    # production build
 npm start        # serve the production build
 ```
@@ -45,56 +57,83 @@ Pull requests and pushes to `master` run typecheck + `npm test`
 
 | Path | Purpose |
 |------|---------|
-| `/` | Home dashboard — start a match or open stats |
-| `/match` | Live scorepad (settings, notes, table draw) |
+| `/` | Home — play with bots, score notepad, store / site links |
+| `/play` | Full table vs bots (setup + dealt table) |
+| `/match` | Live score notepad (settings, notes, table draw) |
 | `/stats` | Player stats dashboard (leaderboard, KPIs, charts) |
 | `/compare` | Multi-player / matchup compare |
 | `/history` | Match history list + filters |
 | `/history/[matchId]` | Deep link into one imported match |
 | `/leaderboard` | Ranking by Jose's Coefficient |
 | `/podium` | System AI podium |
-| `/tools` | Password-gated Tools (dataset ops + **Live watch** monitor) |
+| `/tools` | Password-gated Tools (dataset ops + **Live watch** monitor). `/merge` redirects here |
 | `/watch/[id]` | Read-only live scoreboard (phone-published relay) |
+| `/f-lab` | Password-gated Jose formula lab (open in local `next dev`) |
+| `/how-to-use` | How the pad and exports fit together |
+| `/changelog` | In-app release notes |
+| `/privacy` | Privacy policy |
 
 Local live-watch setup: see the phone repo `docs/live-watch.md`.
 Production shares live in Upstash Redis (`UPSTASH_REDIS_REST_URL` +
 `UPSTASH_REDIS_REST_TOKEN`, or the `KV_REST_API_*` aliases). Without those,
 Vercel lambdas cannot list or update the same live match.
 
+`/tools` and `/f-lab` are gated in production (`MERGE_PASSWORD`,
+`F_LAB_PASSWORD`). Local `next dev` skips the gate.
+
 Analytics pages share full-bleed chrome (frosted left sidebar + scrollable
-main). Import / rename / switch datasets via **Manage data**. Use **Merge** to
-union players and matches by stable `public_id` (with conflict review).
+main). Import / rename / switch datasets via **Manage data**. Use **Merge** on
+Tools to union players and matches by stable `public_id` (with conflict review).
+
+In-app navigation uses React 19 `<ViewTransition>` plus Next
+`transitionTypes` (`nav-forward` / `nav-back`) so the site header stays put.
 
 ## Layout
 
 ```
-app/                      Next.js App Router (site routes + providers)
+app/                      App Router — root layout, providers, (site) pages, live-watch API
 modules/
-  NewMatch/               Live match shell
-  Analytics/              Stats, compare, datasets drawer, charts, chrome
+  NewMatch/               Live notepad shell
+  Play/                   Bot table (setup, seats, chain, scorepad)
+  Analytics/              Stats, compare, datasets drawer, charts, Tools chrome
   History/                Imported match list + detail
-sections/                 Match UI blocks (settings, note maker, table draw, done)
-components/               Header, AppShell, Dashboard, dialogs, DominoTile
-lib/analytics/            Export parse, datasets, selectors, Jose, history, compare
+  LiveWatch/              Watcher scoreboard + Tools monitor
+  JoseLab/                F-lab sliders, charts, mock/CSV benches
+  HowToUse/               How-to page
+  DevGate/                Password forms for Tools / F-lab
+sections/                 Notepad UI blocks (settings, note maker, table draw, done)
+components/               Header, AppShell, home Dashboard, page transition, dialogs, tiles
+lib/
+  matchStore.ts           Zustand live-match store + Recoil persist migration
+  analytics/              Export parse, datasets, selectors, Jose, history, compare
+  play/                   Bot engine, tiles, chain layout (no React)
+  liveWatch/              Relay types, store, HTTP helpers
+  joseLab/                Formula compute + lab fixtures
+  devGate/                Cookie / env gates
+  navTransition.ts        Path rank + forward/back transition types
+  muiEmotionCache.tsx     Emotion SSR cache (styles in <head>)
 docs/                     Team/agent notes (Jose formula, CSV schema, tests)
-recoil/                   Live match atoms (persisted)
 i18n/                     EN / ES copy + LanguageProvider
 muiTheme/                 Havana palette, type, MUI overrides
 hooks/                    Toast, responsive, mount gate for persisted state
-utils/                    Match modes, teams, random names
-public/                   Static assets
+utils/                    Match modes, teams, random names, domino sets
+public/                   Favicon, sample CSVs under examples/
+.github/workflows/        CI (typecheck + Vitest)
 ```
+
+Imports use `@/*` from the repo root (`tsconfig` paths).
 
 ### Architecture rules (humans + agents)
 
-Prefer co-location. Keep analytics math free of React UI.
+Prefer co-location. Keep analytics and play math free of React UI.
 
 | Concern | Put it in | Do not |
 |---------|-----------|--------|
 | Export parse, Jose, history filters, matchup stats, dataset I/O | `lib/analytics/` | Import MUI / page components into `lib/` |
+| Bot rules, tiles, chain geometry | `lib/play/` | Put deal / legal-move logic in `modules/Play` |
 | Stats / Compare / History screens | `modules/Analytics`, `modules/History` | Duplicate chrome tokens — use `dashboardChrome.js` |
-| Live in-progress match | `recoil/recoilState.js` + `sections/` | Persist finished Olympus exports only in Recoil |
-| Named import datasets | `lib/analytics/datasets.ts` (localStorage) | Mix export blobs into Recoil match atoms |
+| Live in-progress notepad | `lib/matchStore.ts` + `sections/` | Persist finished Olympus exports in the match store |
+| Named import datasets | `lib/analytics/datasets.ts` (localStorage) | Mix export blobs into match-store fields |
 | Copy (EN / ES) | `i18n/translations.js` | Hard-code user-facing strings in modules |
 | Theme / AppBar / sidebar frost | `muiTheme/` + shared chrome | Invent a second palette |
 
@@ -104,8 +143,9 @@ UI modules consume selectors / helpers. Jose's formula must stay in sync with
 
 ## Features
 
-- **Scorepad** — 2–4 players, modes (e.g. 2 vs 2), datas / points, winner, notes
-- **Table draw** — double-nine layout helper while a match is open
+- **Score notepad** — 2–4 players, modes (e.g. 2 vs 2), datas / points, winner, notes
+- **Play with bots** — deal a Cuban table in the browser (`/play`)
+- **Table draw** — double-nine layout helper while a notepad match is open
 - **Stats** — import an Olympus export; leaderboard by Jose's Coefficient;
   per-player KPIs and charts; Sync Jose's Coefficient
 - **Compare** — pick players (and optional team sides for matchups); charts + table
@@ -113,6 +153,7 @@ UI modules consume selectors / helpers. Jose's formula must stay in sync with
   launch Compare from seating
 - **Datasets** — multiple named localStorage slots; switch / rename / delete;
   import CSV export from the mobile app
+- **Live watch** — phone publishes a match; `/watch/[id]` is the spectator board
 - **i18n** — English and Spanish (cookie-backed language)
 
 ## Docs (team / agents)
@@ -131,8 +172,9 @@ Keep Jose in sync with `lib/analytics/joseCoefficient.ts` and the mobile app
 
 ## Notes
 
-- No account or cloud sync. Match state and imports stay in this browser.
-- Clearing site data wipes live matches and datasets.
+- No account or cloud sync for scorepads or datasets. Live-watch relay is the
+  exception (Redis).
+- Clearing site data wipes the notepad (`olympus-match`) and imported datasets.
 - Winners / mode labels follow the same language-independent conventions as
   the mobile export where applicable.
 - The table drawing accounts for all 55 tiles of a double-nine set.
