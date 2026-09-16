@@ -26,10 +26,11 @@ failing test to silence a regression.
 npm test            # CI / before commit
 npm run test:watch  # while editing domain logic
 npm run typecheck
+npm run lint
 ```
 
-Pull requests and pushes to `master` run the same checks in GitHub Actions
-(`.github/workflows/ci.yml`).
+Pull requests and pushes to `master` run typecheck, lint, and tests in GitHub
+Actions (`.github/workflows/ci.yml`).
 
 ## When to change tests vs code
 
