@@ -1,4 +1,3 @@
-import PropTypes from "prop-types";
 import { Icon } from "@iconify/react";
 import { Box } from "@mui/material";
 

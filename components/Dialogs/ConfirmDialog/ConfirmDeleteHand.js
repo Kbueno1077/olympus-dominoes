@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslation } from "@/i18n/useTranslation";
-import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";

@@ -22,7 +22,7 @@ export const MODE_LABEL_KEYS = {
   "Free For All": "modeFreeForAll",
 };
 
-/** Domino set ids are stored in Recoil; map them to display strings. */
+/** Domino set ids are stored in the match store; map them to display strings. */
 export const SET_LABEL_KEYS = {
   double_nine: "setDoubleNine",
   double_six: "setDoubleSix",

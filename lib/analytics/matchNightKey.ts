@@ -75,7 +75,7 @@ function seatRows(
     .slice()
     .sort((a, b) => asNumber(a.seat) - asNumber(b.seat));
 
-  let active = seats.filter(
+  const active = seats.filter(
     (row) => asNumber(row.seat) >= 1 && asNumber(row.seat) <= playersAmount
   );
 

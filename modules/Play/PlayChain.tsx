@@ -125,7 +125,6 @@ export default function PlayChain({
       break;
     }
   }
-  const compactChrome = tileScale !== "default";
   // Mobile L/R targets are oversized for touch; shrink 30% so they don't dominate.
   const dropAnchorSize = Math.round(
     face * (tileScale === "default" ? 1.5 : 2.05 * 0.7)

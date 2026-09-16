@@ -18,8 +18,8 @@ Android Play listing is not live yet.
 | UI | React 19, MUI 5, Havana theme (`muiTheme/`). Tailwind utilities with preflight off so CssBaseline owns the base layer |
 | Live match | Zustand persist (`localStorage` key `olympus-match`). First load copies a leftover Recoil `recoil-persist` blob if present |
 | Analytics | CSV datasets in `localStorage` (`olympus-web-datasets-v1` + per-slot payloads) |
-| Tests | Vitest |
-| Deploy | Vercel. GitHub Actions runs typecheck + tests on PRs and `master` |
+| Tests | Vitest + ESLint |
+| Deploy | Vercel. GitHub Actions runs typecheck, lint, and tests on PRs and `master`. Merges to `master` require the **Test & typecheck** check |
 
 ## Prerequisites
 
@@ -49,9 +49,11 @@ npm start        # serve the production build
 | `npm test` | Unit tests (Vitest, `lib/` + `utils/`) |
 | `npm run test:watch` | Vitest watch mode |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | ESLint (`eslint-config-next`) |
 
-Pull requests and pushes to `master` run typecheck + `npm test`
-(`.github/workflows/ci.yml`). See [docs/testing.md](docs/testing.md).
+Pull requests and pushes to `master` run typecheck, lint, and `npm test`
+(`.github/workflows/ci.yml`). Merges into `master` require that check to pass.
+See [docs/testing.md](docs/testing.md).
 
 ## Routes
 

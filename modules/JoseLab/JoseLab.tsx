@@ -72,7 +72,6 @@ import {
 } from "@mui/material";
 import { alpha, type Theme } from "@mui/material/styles";
 import {
-  memo,
   startTransition,
   useCallback,
   useDeferredValue,
