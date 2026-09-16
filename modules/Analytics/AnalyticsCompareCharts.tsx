@@ -7,7 +7,10 @@ import {
 } from "@/components/ui/chart";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import type { PlayerStatsView } from "@/lib/analytics/types";
-import { chartGridCompareColumns } from "@/modules/Analytics/dashboardChrome";
+import {
+  chartGridCompareColumns,
+  chartGridCompareSxExtra,
+} from "@/modules/Analytics/dashboardChrome";
 import { Box, Card, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 import {
@@ -121,6 +124,7 @@ export default function AnalyticsCompareCharts({ players, t }: Props) {
         maxWidth: "100%",
         minWidth: 0,
         gridTemplateColumns: chartGridCompareColumns,
+        ...chartGridCompareSxExtra,
       }}
     >
       <ChartCard title={t("statsChartCoef")}>
