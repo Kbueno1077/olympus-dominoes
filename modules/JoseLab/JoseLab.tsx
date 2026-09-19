@@ -16,6 +16,15 @@ import {
   type WeightsC,
   type WeightsK,
 } from "@/lib/joseLab/compute";
+import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
+import {
+  DEFAULT_FORMAT_LABEL,
+  DEFAULT_TILE_SET,
+  isFormatLabel,
+  isTileSet,
+  type TileSet,
+} from "@/lib/analytics/modeFormat";
+import { listLeaderboard } from "@/lib/analytics/selectors";
 import {
   DEFAULT_CSV_PINS,
   DEFAULT_MOCK_PINS,
@@ -23,6 +32,10 @@ import {
   TEST_PLAYERS,
   type LabPlayer,
 } from "@/lib/joseLab/data";
+import {
+  defaultLivePins,
+  labPlayersFromLeaderboard,
+} from "@/lib/joseLab/fromDataset";
 import {
   BumpValueCell,
   RecordBumpCell,
@@ -39,6 +52,7 @@ import {
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
+import ModeFormatFilters from "@/modules/Analytics/ModeFormatFilters";
 import JoseLabCharts, {
   type ChartsPerRow,
 } from "@/modules/JoseLab/JoseLabCharts";
@@ -58,6 +72,7 @@ import {
   Button,
   Card,
   Chip,
+  CircularProgress,
   IconButton,
   Slider,
   Stack,
@@ -85,6 +100,30 @@ import {
 const JOSE_K = "rgb(180, 110, 30)";
 const JOSE_C = "rgb(61, 108, 140)";
 const JOSE_KJ = "rgb(31, 107, 88)";
+
+type CsvSource = "static" | "active";
+
+function seasonSectionCopy(
+  source: CsvSource,
+  datasetName: string | null
+): { title: string; hint: string } {
+  switch (source) {
+    case "static":
+      return {
+        title: "CSV · real seasons",
+        hint: "PanteonV4: Kevin, Jose, Raulito, Rudelys, Jorge, Cesar, Ariel, Eliecer, Randy, Guillermo. Pin a row to put that person on the charts.",
+      };
+    case "active":
+      return {
+        title: datasetName ? `Active · ${datasetName}` : "Active dataset",
+        hint: "Same player stats as Stats / Rankings for the Mode and Format below. Pin a row to put that person on the charts.",
+      };
+    default: {
+      const _never: never = source;
+      return _never;
+    }
+  }
+}
 
 const cellSx = {
   py: 0.4,
@@ -1267,15 +1306,21 @@ function TestTable({
 }
 
 export default function JoseLab() {
+  const { data, loading, activeDataset } = useAnalytics();
   const [formula, setFormula] = useState<FormulaId>("KJ");
   const [weightsK, setWeightsK] = useState<WeightsK>(DEFAULT_K);
   const [weightsC, setWeightsC] = useState<WeightsC>(DEFAULT_C);
   const [weightsKJ, setWeightsKJ] = useState<WeightsK>(DEFAULT_KJ);
+  const [csvSource, setCsvSource] = useState<CsvSource>("static");
+  const [modeLabel, setModeLabel] = useState<string>(DEFAULT_FORMAT_LABEL);
+  const [tileSet, setTileSet] = useState<TileSet>(DEFAULT_TILE_SET);
   const [csvPins, setCsvPins] = useState<string[]>([...DEFAULT_CSV_PINS]);
+  const [livePins, setLivePins] = useState<string[]>([]);
   const [mockPins, setMockPins] = useState<string[]>([...DEFAULT_MOCK_PINS]);
   const [extras, setExtras] = useState<ExtraMap>({});
   const [chartsPerRow, setChartsPerRow] = useState<ChartsPerRow>(3);
   const [showMocks, setShowMocks] = useState(false);
+  const lastLivePinScope = useRef("");
 
   const deferredK = useDeferredValue(weightsK);
   const deferredC = useDeferredValue(weightsC);
@@ -1305,11 +1350,37 @@ export default function JoseLab() {
       pins.includes(id) ? pins.filter((pin) => pin !== id) : [...pins, id]
     );
   }, []);
+  const toggleLivePin = useCallback((id: string) => {
+    setLivePins((pins) =>
+      pins.includes(id) ? pins.filter((pin) => pin !== id) : [...pins, id]
+    );
+  }, []);
   const toggleMockPin = useCallback((id: string) => {
     setMockPins((pins) =>
       pins.includes(id) ? pins.filter((pin) => pin !== id) : [...pins, id]
     );
   }, []);
+
+  const activeMode = isFormatLabel(modeLabel)
+    ? modeLabel
+    : DEFAULT_FORMAT_LABEL;
+  const activeTile = isTileSet(tileSet) ? tileSet : DEFAULT_TILE_SET;
+
+  const liveSeasonPlayers = useMemo(() => {
+    if (!data) return [];
+    return labPlayersFromLeaderboard(
+      listLeaderboard(data, activeMode, activeTile)
+    );
+  }, [data, activeMode, activeTile]);
+
+  const livePinScope = `${activeDataset?.id ?? ""}:${activeMode}:${activeTile}:${liveSeasonPlayers
+    .map((player) => player.id)
+    .join(",")}`;
+  useEffect(() => {
+    if (lastLivePinScope.current === livePinScope) return;
+    lastLivePinScope.current = livePinScope;
+    setLivePins(defaultLivePins(liveSeasonPlayers));
+  }, [livePinScope, liveSeasonPlayers]);
 
   const scoredReadme = useMemo(
     () =>
@@ -1364,6 +1435,57 @@ export default function JoseLab() {
     () => [...liveReadme, ...liveTest],
     [liveReadme, liveTest]
   );
+  const scoredLive = useMemo(
+    () =>
+      scoreRows(
+        liveSeasonPlayers,
+        deferredExtras,
+        formula,
+        deferredK,
+        deferredC,
+        deferredKJ
+      ),
+    [liveSeasonPlayers, formula, deferredK, deferredC, deferredKJ, deferredExtras]
+  );
+  const liveDatasetPlayers = useMemo(
+    () => scoredLive.map((row) => row.player),
+    [scoredLive]
+  );
+  const datasetName = activeDataset?.displayName ?? data?.fileName ?? null;
+  const seasonView = (() => {
+    switch (csvSource) {
+      case "static": {
+        const copy = seasonSectionCopy("static", null);
+        return {
+          ...copy,
+          scored: scoredReadmeCsv,
+          players: liveReadme,
+          pins: csvPins,
+          onTogglePin: toggleCsvPin,
+          tableTitle: "CSV seasons · T–G–P, nets, live R",
+          tableHint:
+            "Tap G, W, L, or a delta to age that person. Wins and losses also add to G. Pin the row to plot.",
+        };
+      }
+      case "active": {
+        const copy = seasonSectionCopy("active", datasetName);
+        return {
+          ...copy,
+          scored: scoredLive,
+          players: liveDatasetPlayers,
+          pins: livePins,
+          onTogglePin: toggleLivePin,
+          tableTitle: "Active seasons · T–G–P, nets, live R",
+          tableHint:
+            "Same bumpers as the static bench. Pin a row to plot. Mode and Format match Stats / Rankings.",
+        };
+      }
+      default: {
+        const _never: never = csvSource;
+        return _never;
+      }
+    }
+  })();
   const bumpCount = extraCount(extras);
 
   const sliderGroups: SliderGroup[] = (() => {
@@ -1517,6 +1639,64 @@ export default function JoseLab() {
     </Card>
   );
 
+  const seasonCharts = (
+    <>
+      <JoseLabCharts
+        formula={formula}
+        weightsK={deferredK}
+        weightsC={deferredC}
+        weightsKJ={deferredKJ}
+        players={seasonView.players}
+        scored={seasonView.scored}
+        pinnedIds={seasonView.pins}
+        columns={chartsPerRow}
+      />
+      <ReadmeTable
+        title={seasonView.tableTitle}
+        hint={seasonView.tableHint}
+        rows={seasonView.scored}
+        failIds={EMPTY_FAIL_IDS}
+        formula={formula}
+        pinnedIds={seasonView.pins}
+        onTogglePin={seasonView.onTogglePin}
+        extras={deferredExtras}
+        onBump={bump}
+        onResetField={resetOneField}
+        onResetPerson={resetOnePerson}
+      />
+    </>
+  );
+
+  let seasonBody: ReactNode;
+  switch (csvSource) {
+    case "static":
+      seasonBody = seasonCharts;
+      break;
+    case "active":
+      if (loading) {
+        seasonBody = (
+          <Box sx={{ display: "grid", placeItems: "center", py: 6 }}>
+            <CircularProgress size={28} />
+          </Box>
+        );
+      } else if (seasonView.scored.length === 0) {
+        seasonBody = (
+          <Typography variant="body2" color="text.secondary">
+            {data
+              ? "No games in this Mode and Format. Switch filters, or go back to Static for the PanteonV4 bench."
+              : "No active dataset yet. Import one from Manage data, or stay on Static for the PanteonV4 bench."}
+          </Typography>
+        );
+      } else {
+        seasonBody = seasonCharts;
+      }
+      break;
+    default: {
+      const _never: never = csvSource;
+      seasonBody = _never;
+    }
+  }
+
   return (
     <Box sx={dashboardShellSx}>
       <Box
@@ -1530,8 +1710,9 @@ export default function JoseLab() {
             F-lab
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.25 }}>
-            Sliders live here. The bench uses the full pane — CSV seasons
-            first. Show mocks when you want invented scenarios beside them.
+            Sliders live here. The bench uses the full pane — static PanteonV4
+            or the active dataset. Show mocks when you want invented scenarios
+            beside them.
           </Typography>
           <Stack
             direction="row"
@@ -1606,15 +1787,34 @@ export default function JoseLab() {
             value={chartsPerRow}
             onChange={setChartsPerRow}
           />
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={showMocks ? <VisibilityOff /> : <Visibility />}
-            onClick={() => setShowMocks((open) => !open)}
-            sx={resetMatchToggleSx}
+          <Stack
+            direction="row"
+            gap={1}
+            alignItems="stretch"
+            flexWrap="wrap"
+            sx={{ minWidth: 0 }}
           >
-            {showMocks ? "Hide mocks" : "Show mocks"}
-          </Button>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={csvSource}
+              onChange={(_, value: CsvSource | null) => {
+                if (value) setCsvSource(value);
+              }}
+            >
+              <ToggleButton value="static">Static</ToggleButton>
+              <ToggleButton value="active">Active dataset</ToggleButton>
+            </ToggleButtonGroup>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={showMocks ? <VisibilityOff /> : <Visibility />}
+              onClick={() => setShowMocks((open) => !open)}
+              sx={resetMatchToggleSx}
+            >
+              {showMocks ? "Hide mocks" : "Show mocks"}
+            </Button>
+          </Stack>
         </Stack>
         <Box
           sx={{
@@ -1636,32 +1836,22 @@ export default function JoseLab() {
           }}
         >
           <LabSection
-            title="CSV · real seasons"
-            hint="PanteonV4: Kevin, Jose, Raulito, Rudelys, Jorge, Cesar, Ariel, Eliecer, Randy, Guillermo. Pin a row to put that person on the charts."
+            title={seasonView.title}
+            hint={seasonView.hint}
           >
-            <JoseLabCharts
-              formula={formula}
-              weightsK={deferredK}
-              weightsC={deferredC}
-              weightsKJ={deferredKJ}
-              players={liveReadme}
-              scored={scoredReadmeCsv}
-              pinnedIds={csvPins}
-              columns={chartsPerRow}
-            />
-            <ReadmeTable
-              title="CSV seasons · T–G–P, nets, live R"
-              hint="Tap G, W, L, or a delta to age that person. Wins and losses also add to G. Pin the row to plot."
-              rows={scoredReadmeCsv}
-              failIds={EMPTY_FAIL_IDS}
-              formula={formula}
-              pinnedIds={csvPins}
-              onTogglePin={toggleCsvPin}
-              extras={deferredExtras}
-              onBump={bump}
-              onResetField={resetOneField}
-              onResetPerson={resetOnePerson}
-            />
+            {csvSource === "active" ? (
+              <Box sx={{ maxWidth: 560 }}>
+                <ModeFormatFilters
+                  tileSet={tileSet}
+                  onTileSet={(next) => {
+                    if (isTileSet(next)) setTileSet(next);
+                  }}
+                  modeLabel={modeLabel}
+                  onModeLabel={setModeLabel}
+                />
+              </Box>
+            ) : null}
+            {seasonBody}
           </LabSection>
 
           {showMocks ? (

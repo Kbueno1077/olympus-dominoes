@@ -2,6 +2,8 @@
 
 export type LabKind = "csv" | "mock";
 
+export type LabDataset = "readme" | "test" | "live";
+
 export type LabPlayer = {
   id: string;
   name: string;
@@ -13,7 +15,7 @@ export type LabPlayer = {
   dPo: number;
   dZap: number;
   pin: boolean;
-  dataset: "readme" | "test";
+  dataset: LabDataset;
   kind: LabKind;
   HF?: number;
   HA?: number;
@@ -35,10 +37,18 @@ function kindFromName(name: string): LabKind {
 
 /** Chart / table label: Cesar, not “Cesar (CSV)”. Keep test suffixes that distinguish people. */
 export function personName(p: LabPlayer): string {
-  if (p.dataset === "readme") {
-    return p.name.replace(" (CSV)", "");
+  switch (p.dataset) {
+    case "readme":
+      return p.name.replace(" (CSV)", "");
+    case "test":
+      return p.name.replace(" (CSV stocks)", "").replace(" (test)", " · test");
+    case "live":
+      return p.name;
+    default: {
+      const _never: never = p.dataset;
+      return _never;
+    }
   }
-  return p.name.replace(" (CSV stocks)", "").replace(" (test)", " · test");
 }
 
 type ReadmeRow = {
