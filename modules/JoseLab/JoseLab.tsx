@@ -16,13 +16,26 @@ import {
   type WeightsC,
   type WeightsK,
 } from "@/lib/joseLab/compute";
+import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
 import {
-  DEFAULT_CSV_PINS,
+  DEFAULT_FORMAT_LABEL,
+  DEFAULT_TILE_SET,
+  isFormatLabel,
+  isTileSet,
+  type TileSet,
+} from "@/lib/analytics/modeFormat";
+import { listLeaderboard } from "@/lib/analytics/selectors";
+import {
   DEFAULT_MOCK_PINS,
   README_PLAYERS,
   TEST_PLAYERS,
   type LabPlayer,
 } from "@/lib/joseLab/data";
+import {
+  defaultLivePins,
+  labPlayersFromLeaderboard,
+} from "@/lib/joseLab/fromDataset";
+import useToast from "@/hooks/useToast";
 import {
   BumpValueCell,
   RecordBumpCell,
@@ -39,11 +52,13 @@ import {
   dashboardMainSx,
   dashboardShellSx,
 } from "@/modules/Analytics/dashboardChrome";
+import ModeFormatFilters from "@/modules/Analytics/ModeFormatFilters";
 import JoseLabCharts, {
   type ChartsPerRow,
 } from "@/modules/JoseLab/JoseLabCharts";
 import { LabExpandable } from "@/modules/JoseLab/JoseLabExpand";
 import Add from "@mui/icons-material/Add";
+import Refresh from "@mui/icons-material/Refresh";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import PushPin from "@mui/icons-material/PushPin";
 import PushPinOutlined from "@mui/icons-material/PushPinOutlined";
@@ -58,6 +73,7 @@ import {
   Button,
   Card,
   Chip,
+  CircularProgress,
   IconButton,
   Slider,
   Stack,
@@ -1267,15 +1283,22 @@ function TestTable({
 }
 
 export default function JoseLab() {
+  const { data, loading, activeDataset, recomputeActiveAggregates } =
+    useAnalytics();
+  const displayToast = useToast();
   const [formula, setFormula] = useState<FormulaId>("KJ");
   const [weightsK, setWeightsK] = useState<WeightsK>(DEFAULT_K);
   const [weightsC, setWeightsC] = useState<WeightsC>(DEFAULT_C);
   const [weightsKJ, setWeightsKJ] = useState<WeightsK>(DEFAULT_KJ);
-  const [csvPins, setCsvPins] = useState<string[]>([...DEFAULT_CSV_PINS]);
+  const [modeLabel, setModeLabel] = useState<string>(DEFAULT_FORMAT_LABEL);
+  const [tileSet, setTileSet] = useState<TileSet>(DEFAULT_TILE_SET);
+  const [livePins, setLivePins] = useState<string[]>([]);
   const [mockPins, setMockPins] = useState<string[]>([...DEFAULT_MOCK_PINS]);
   const [extras, setExtras] = useState<ExtraMap>({});
   const [chartsPerRow, setChartsPerRow] = useState<ChartsPerRow>(3);
   const [showMocks, setShowMocks] = useState(false);
+  const [recomputing, setRecomputing] = useState(false);
+  const lastLivePinScope = useRef("");
 
   const deferredK = useDeferredValue(weightsK);
   const deferredC = useDeferredValue(weightsC);
@@ -1300,8 +1323,8 @@ export default function JoseLab() {
     setExtras((prev) => resetPerson(prev, id));
   }, []);
 
-  const toggleCsvPin = useCallback((id: string) => {
-    setCsvPins((pins) =>
+  const toggleLivePin = useCallback((id: string) => {
+    setLivePins((pins) =>
       pins.includes(id) ? pins.filter((pin) => pin !== id) : [...pins, id]
     );
   }, []);
@@ -1310,6 +1333,44 @@ export default function JoseLab() {
       pins.includes(id) ? pins.filter((pin) => pin !== id) : [...pins, id]
     );
   }, []);
+
+  const recalculateActive = useCallback(() => {
+    if (!data) {
+      displayToast("No active dataset to recalculate.", "warning");
+      return;
+    }
+    setRecomputing(true);
+    try {
+      recomputeActiveAggregates();
+      displayToast("Rebuilt seasons from the active save.", "success");
+    } catch (err) {
+      console.error(err);
+      displayToast("Could not recalculate the active save.", "error");
+    } finally {
+      setRecomputing(false);
+    }
+  }, [data, displayToast, recomputeActiveAggregates]);
+
+  const activeMode = isFormatLabel(modeLabel)
+    ? modeLabel
+    : DEFAULT_FORMAT_LABEL;
+  const activeTile = isTileSet(tileSet) ? tileSet : DEFAULT_TILE_SET;
+
+  const liveSeasonPlayers = useMemo(() => {
+    if (!data) return [];
+    return labPlayersFromLeaderboard(
+      listLeaderboard(data, activeMode, activeTile)
+    );
+  }, [data, activeMode, activeTile]);
+
+  const livePinScope = `${activeDataset?.id ?? ""}:${activeMode}:${activeTile}:${liveSeasonPlayers
+    .map((player) => player.id)
+    .join(",")}`;
+  useEffect(() => {
+    if (lastLivePinScope.current === livePinScope) return;
+    lastLivePinScope.current = livePinScope;
+    setLivePins(defaultLivePins(liveSeasonPlayers));
+  }, [livePinScope, liveSeasonPlayers]);
 
   const scoredReadme = useMemo(
     () =>
@@ -1336,10 +1397,6 @@ export default function JoseLab() {
     [formula, deferredK, deferredC, deferredKJ, deferredExtras]
   );
 
-  const scoredReadmeCsv = useMemo(
-    () => scoredReadme.filter((row) => row.player.kind === "csv"),
-    [scoredReadme]
-  );
   const scoredReadmeMock = useMemo(
     () => scoredReadme.filter((row) => row.player.kind === "mock"),
     [scoredReadme]
@@ -1364,6 +1421,23 @@ export default function JoseLab() {
     () => [...liveReadme, ...liveTest],
     [liveReadme, liveTest]
   );
+  const scoredLive = useMemo(
+    () =>
+      scoreRows(
+        liveSeasonPlayers,
+        deferredExtras,
+        formula,
+        deferredK,
+        deferredC,
+        deferredKJ
+      ),
+    [liveSeasonPlayers, formula, deferredK, deferredC, deferredKJ, deferredExtras]
+  );
+  const liveDatasetPlayers = useMemo(
+    () => scoredLive.map((row) => row.player),
+    [scoredLive]
+  );
+  const datasetName = activeDataset?.displayName ?? data?.fileName ?? null;
   const bumpCount = extraCount(extras);
 
   const sliderGroups: SliderGroup[] = (() => {
@@ -1530,8 +1604,9 @@ export default function JoseLab() {
             F-lab
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.25 }}>
-            Sliders live here. The bench uses the full pane — CSV seasons
-            first. Show mocks when you want invented scenarios beside them.
+            Sliders live here. Real seasons come from the active save.
+            Recalculate to rebuild those stats from its matches. Show mocks
+            when you want invented scenarios beside them.
           </Typography>
           <Stack
             direction="row"
@@ -1606,15 +1681,33 @@ export default function JoseLab() {
             value={chartsPerRow}
             onChange={setChartsPerRow}
           />
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={showMocks ? <VisibilityOff /> : <Visibility />}
-            onClick={() => setShowMocks((open) => !open)}
-            sx={resetMatchToggleSx}
+          <Stack
+            direction="row"
+            gap={1}
+            alignItems="stretch"
+            flexWrap="wrap"
+            sx={{ minWidth: 0 }}
           >
-            {showMocks ? "Hide mocks" : "Show mocks"}
-          </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<Refresh />}
+              onClick={recalculateActive}
+              disabled={!data || recomputing}
+              sx={resetMatchToggleSx}
+            >
+              {recomputing ? "Recalculating…" : "Recalculate active"}
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={showMocks ? <VisibilityOff /> : <Visibility />}
+              onClick={() => setShowMocks((open) => !open)}
+              sx={resetMatchToggleSx}
+            >
+              {showMocks ? "Hide mocks" : "Show mocks"}
+            </Button>
+          </Stack>
         </Stack>
         <Box
           sx={{
@@ -1636,32 +1729,56 @@ export default function JoseLab() {
           }}
         >
           <LabSection
-            title="CSV · real seasons"
-            hint="PanteonV4: Kevin, Jose, Raulito, Rudelys, Jorge, Cesar, Ariel, Eliecer, Randy, Guillermo. Pin a row to put that person on the charts."
+            title={datasetName ? `Real seasons · ${datasetName}` : "Real seasons"}
+            hint="Same player stats as Stats / Rankings for the Mode and Format below. Recalculate rebuilds them from the active save's matches. Pin a row to put that person on the charts."
           >
-            <JoseLabCharts
-              formula={formula}
-              weightsK={deferredK}
-              weightsC={deferredC}
-              weightsKJ={deferredKJ}
-              players={liveReadme}
-              scored={scoredReadmeCsv}
-              pinnedIds={csvPins}
-              columns={chartsPerRow}
-            />
-            <ReadmeTable
-              title="CSV seasons · T–G–P, nets, live R"
-              hint="Tap G, W, L, or a delta to age that person. Wins and losses also add to G. Pin the row to plot."
-              rows={scoredReadmeCsv}
-              failIds={EMPTY_FAIL_IDS}
-              formula={formula}
-              pinnedIds={csvPins}
-              onTogglePin={toggleCsvPin}
-              extras={deferredExtras}
-              onBump={bump}
-              onResetField={resetOneField}
-              onResetPerson={resetOnePerson}
-            />
+            <Box sx={{ maxWidth: 560 }}>
+              <ModeFormatFilters
+                tileSet={tileSet}
+                onTileSet={(next) => {
+                  if (isTileSet(next)) setTileSet(next);
+                }}
+                modeLabel={modeLabel}
+                onModeLabel={setModeLabel}
+              />
+            </Box>
+            {loading ? (
+              <Box sx={{ display: "grid", placeItems: "center", py: 6 }}>
+                <CircularProgress size={28} />
+              </Box>
+            ) : scoredLive.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {data
+                  ? "No games in this Mode and Format. Switch filters, or recalculate the active save."
+                  : "No active dataset yet. Import one from Manage data."}
+              </Typography>
+            ) : (
+              <>
+                <JoseLabCharts
+                  formula={formula}
+                  weightsK={deferredK}
+                  weightsC={deferredC}
+                  weightsKJ={deferredKJ}
+                  players={liveDatasetPlayers}
+                  scored={scoredLive}
+                  pinnedIds={livePins}
+                  columns={chartsPerRow}
+                />
+                <ReadmeTable
+                  title="Active seasons · T–G–P, nets, live R"
+                  hint="Tap G, W, L, or a delta to age that person. Wins and losses also add to G. Pin the row to plot."
+                  rows={scoredLive}
+                  failIds={EMPTY_FAIL_IDS}
+                  formula={formula}
+                  pinnedIds={livePins}
+                  onTogglePin={toggleLivePin}
+                  extras={deferredExtras}
+                  onBump={bump}
+                  onResetField={resetOneField}
+                  onResetPerson={resetOnePerson}
+                />
+              </>
+            )}
           </LabSection>
 
           {showMocks ? (
