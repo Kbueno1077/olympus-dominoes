@@ -66,7 +66,10 @@ import {
 import { recalculateAllJosesCoefficients } from "./joseCoefficient";
 import { repairSave as rebuildSave } from "./repairSave";
 import type { RepairSaveReport } from "./repairSave";
-import { withStatsFilledFromMatches } from "./recomputeFromMatches";
+import {
+  recomputeAggregatesFromMatches,
+  withStatsFilledFromMatches,
+} from "./recomputeFromMatches";
 import type { OlympusExportData } from "./types";
 
 type AnalyticsContextValue = {
@@ -118,6 +121,11 @@ type AnalyticsContextValue = {
   restoreHiddenPlayer: (playerId: number) => void;
   /** Recompute Jose's Coefficient for every player from saved aggregates. */
   syncJosesCoefficients: () => void;
+  /**
+   * Rebuild player_stats / h2h from the active save's matches, then Jose.
+   * If there are no match rows, re-score the stored aggregates instead.
+   */
+  recomputeActiveAggregates: () => void;
   setPendingCompare: (launch: CompareLaunch | null) => void;
   peekPendingCompare: () => CompareLaunch | null;
   clearPendingCompare: () => void;
@@ -581,6 +589,18 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     persistActiveData(recalculateAllJosesCoefficients(data));
   }, [data, persistActiveData]);
 
+  const recomputeActiveAggregates = useCallback(() => {
+    if (!data) {
+      throw new Error("no_data");
+    }
+    const matchCount = (data.tables.matches ?? data.matches ?? []).length;
+    persistActiveData(
+      matchCount > 0
+        ? recomputeAggregatesFromMatches(data)
+        : recalculateAllJosesCoefficients(data)
+    );
+  }, [data, persistActiveData]);
+
   const activeDataset =
     registry.datasets.find((d) => d.id === registry.activeDatasetId) ?? null;
 
@@ -608,6 +628,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       setPlayersHidden,
       restoreHiddenPlayer,
       syncJosesCoefficients,
+      recomputeActiveAggregates,
       setPendingCompare,
       peekPendingCompare,
       clearPendingCompare,
@@ -635,6 +656,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       setPlayersHidden,
       restoreHiddenPlayer,
       syncJosesCoefficients,
+      recomputeActiveAggregates,
       setPendingCompare,
       peekPendingCompare,
       clearPendingCompare,
