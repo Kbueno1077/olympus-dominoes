@@ -20,6 +20,15 @@ export type ChangelogRelease = {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: "4.10.0",
+    date: "2026-10-25",
+    schema: 25,
+    summary: "F-lab seasons now score directly from the active save.",
+    highlights: [
+      "F-lab builds its real seasons from the active dataset, so its results stay in step with the games you have saved.",
+    ],
+  },
+  {
     version: "4.9.0",
     date: "2026-09-11",
     schema: 25,
