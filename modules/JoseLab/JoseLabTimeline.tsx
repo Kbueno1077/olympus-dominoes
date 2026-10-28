@@ -95,10 +95,20 @@ export default function JoseLabTimeline({
   );
 
   return (
+    <Box
+      sx={{
+        width: "100%",
+        minWidth: 0,
+        height: "100%",
+        gridRow: "span 2",
+        minHeight: { xs: 440, sm: 520 },
+      }}
+    >
     <LabExpandable
       title="Jose through history"
       hint="Whole save, after each match ends. Sliders rescale the lines. Pins draw thicker. Table bumps are not on this chart."
       kind="chart"
+      tile
       header={
         <Stack
           direction="row"
@@ -149,5 +159,6 @@ export default function JoseLabTimeline({
         />
       </Box>
     </LabExpandable>
+    </Box>
   );
 }

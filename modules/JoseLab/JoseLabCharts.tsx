@@ -866,6 +866,8 @@ type Props = {
   scored: { player: LabPlayer; br: Breakdown | null }[];
   pinnedIds: string[];
   columns?: ChartsPerRow;
+  /** First grid cell. Spans rows itself when it should sit beside other charts. */
+  leading?: ReactNode;
 };
 
 const LINE_COLORS = [
@@ -888,6 +890,7 @@ export default memo(function JoseLabCharts({
   scored,
   pinnedIds,
   columns = 3,
+  leading = null,
 }: Props) {
   const pinnedSet = new Set(pinnedIds);
   const pinnedPlayers = pick(players, pinnedIds);
@@ -998,6 +1001,7 @@ export default memo(function JoseLabCharts({
   return (
     <Box sx={{ width: "100%", minWidth: 0, containerType: "inline-size" }}>
       <Box sx={chartGridSx(columns)}>
+      {leading}
       <ChartCard
         title="Lead vs net games"
         hint={`Dots = ${pinLabel}`}
