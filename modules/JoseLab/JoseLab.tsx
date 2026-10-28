@@ -17,6 +17,7 @@ import {
   type WeightsK,
 } from "@/lib/joseLab/compute";
 import { useAnalytics } from "@/lib/analytics/AnalyticsProvider";
+import { buildCoefficientTimeline } from "@/lib/analytics/coefficientTimeline";
 import {
   DEFAULT_FORMAT_LABEL,
   DEFAULT_TILE_SET,
@@ -56,6 +57,7 @@ import ModeFormatFilters from "@/modules/Analytics/ModeFormatFilters";
 import JoseLabCharts, {
   type ChartsPerRow,
 } from "@/modules/JoseLab/JoseLabCharts";
+import JoseLabTimeline from "@/modules/JoseLab/JoseLabTimeline";
 import { LabExpandable } from "@/modules/JoseLab/JoseLabExpand";
 import Add from "@mui/icons-material/Add";
 import Refresh from "@mui/icons-material/Refresh";
@@ -1363,6 +1365,12 @@ export default function JoseLab() {
     );
   }, [data, activeMode, activeTile]);
 
+  const globalTimeline = useMemo(
+    () =>
+      data ? buildCoefficientTimeline(data) : { players: [], points: [] },
+    [data]
+  );
+
   const livePinScope = `${activeDataset?.id ?? ""}:${activeMode}:${activeTile}:${liveSeasonPlayers
     .map((player) => player.id)
     .join(",")}`;
@@ -1649,6 +1657,23 @@ export default function JoseLab() {
           }}
         >
           <Stack gap={1.25}>
+            <Box>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 800, display: "block", mb: 0.75 }}
+              >
+                {datasetName ? `Real seasons · ${datasetName}` : "Real seasons"}
+              </Typography>
+              <ModeFormatFilters
+                compact
+                tileSet={tileSet}
+                onTileSet={(next) => {
+                  if (isTileSet(next)) setTileSet(next);
+                }}
+                modeLabel={modeLabel}
+                onModeLabel={setModeLabel}
+              />
+            </Box>
             {formulaCard}
             <LabAccordion title="Worth" defaultExpanded>
               <ExchangeTable
@@ -1728,20 +1753,22 @@ export default function JoseLab() {
               : null),
           }}
         >
-          <LabSection
-            title={datasetName ? `Real seasons · ${datasetName}` : "Real seasons"}
-            hint="Same player stats as Stats / Rankings for the Mode and Format below. Recalculate rebuilds them from the active save's matches. Pin a row to put that person on the charts."
-          >
-            <Box sx={{ maxWidth: 560 }}>
-              <ModeFormatFilters
-                tileSet={tileSet}
-                onTileSet={(next) => {
-                  if (isTileSet(next)) setTileSet(next);
-                }}
-                modeLabel={modeLabel}
-                onModeLabel={setModeLabel}
+          {data ? (
+            <Box sx={{ gridColumn: "1 / -1", minWidth: 0, maxWidth: 560 }}>
+              <JoseLabTimeline
+                timeline={globalTimeline}
+                formula={formula}
+                weightsK={deferredK}
+                weightsC={deferredC}
+                weightsKJ={deferredKJ}
+                pinnedIds={livePins}
               />
             </Box>
+          ) : null}
+          <LabSection
+            title={datasetName ? `Real seasons · ${datasetName}` : "Real seasons"}
+            hint="Same player stats as Stats / Rankings for the Mode and Format in the sidebar. Recalculate rebuilds them from the active save's matches. Pin a row to put that person on the charts."
+          >
             {loading ? (
               <Box sx={{ display: "grid", placeItems: "center", py: 6 }}>
                 <CircularProgress size={28} />

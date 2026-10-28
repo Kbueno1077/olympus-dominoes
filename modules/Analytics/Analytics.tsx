@@ -19,6 +19,7 @@ import {
   buildH2HCompareLaunch,
   compareLaunchToSearchParams,
 } from "@/lib/analytics/compareLaunch";
+import { buildCoefficientTimeline } from "@/lib/analytics/coefficientTimeline";
 import { formatJosesCoefficient } from "@/lib/analytics/joseCoefficient";
 import {
   BREAKDOWN_STAT_DEFS,
@@ -155,6 +156,15 @@ export default function Analytics() {
       scopedData ? listLeaderboard(scopedData, activeMode, tileSet) : [],
     [scopedData, activeMode, tileSet]
   );
+
+  const coefficientTimeline = useMemo(() => {
+    if (!data) return { players: [], points: [] };
+    return buildCoefficientTimeline(data, {
+      modeLabel: activeMode,
+      tileSet,
+      dateRange: dateFilter.range,
+    });
+  }, [data, activeMode, tileSet, dateFilter.range]);
 
   const selectedPlayerId = useMemo(() => {
     if (playerId && leaderboard.some((r) => r.playerId === playerId)) {
@@ -481,6 +491,8 @@ export default function Analytics() {
               leaderboard={leaderboard}
               activeStats={activeStats}
               playerName={selectedPlayer?.name ?? null}
+              timeline={coefficientTimeline}
+              highlightPlayerId={selectedPlayerId}
               t={t}
             />
 

@@ -95,9 +95,11 @@ export function ModeFormatSectionTitle({
 
 export function ModeFormatToggleLabel({
   icon,
+  iconSize = 16,
   children,
 }: {
   icon: string;
+  iconSize?: number;
   children: ReactNode;
 }) {
   return (
@@ -106,11 +108,11 @@ export function ModeFormatToggleLabel({
       sx={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 0.75,
+        gap: iconSize < 16 ? 0.4 : 0.75,
         minWidth: 0,
       }}
     >
-      <ModeFormatIcon icon={icon} />
+      <ModeFormatIcon icon={icon} size={iconSize} />
       {children}
     </Box>
   );

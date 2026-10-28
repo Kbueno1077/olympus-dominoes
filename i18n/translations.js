@@ -844,6 +844,12 @@ const en = {
   statsFor: "For",
   statsAgainst: "Against",
   statsChartCoef: "Jose's Coefficient",
+  statsChartCoefOverTime: "Jose's Coefficient over time",
+  statsChartCoefOverTimeHint:
+    "After each finished History match in this mode, format, and date range.",
+  statsTimelineEarlier: "Earlier",
+  statsTimelineLater: "Later",
+  statsTimelineScroll: "Scroll match dates",
   syncJosesCoefficient: "Sync Jose's Coefficient",
   syncJosesCoefficientHint:
     "Recompute the ranking score for every player from saved stats. Use after a formula change.",
@@ -2012,6 +2018,12 @@ const es = {
   statsFor: "A favor",
   statsAgainst: "En contra",
   statsChartCoef: "Coeficiente de José",
+  statsChartCoefOverTime: "Coeficiente de José en el tiempo",
+  statsChartCoefOverTimeHint:
+    "Después de cada partida terminada del historial, en este modo, formato y rango de fechas.",
+  statsTimelineEarlier: "Anteriores",
+  statsTimelineLater: "Posteriores",
+  statsTimelineScroll: "Desplazar fechas",
   syncJosesCoefficient: "Sincronizar coeficiente de José",
   syncJosesCoefficientHint:
     "Recalcula la puntuación de todos los jugadores a partir de las estadísticas guardadas. Úsalo si cambió la fórmula.",
