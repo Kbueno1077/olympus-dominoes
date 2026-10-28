@@ -10,13 +10,26 @@ import {
   perGameRatePct,
   perHandAverage,
 } from "@/lib/analytics/signedDiff";
+import type { CoefficientTimeline } from "@/lib/analytics/coefficientTimeline";
 import type { LeaderboardRow, PlayerStatsView } from "@/lib/analytics/types";
+import { StatsJosesCoefficientTimeline } from "@/modules/Analytics/JosesCoefficientTimelineChart";
 import {
   JOSES_ACCENT,
   chartGridDenseSx,
 } from "@/modules/Analytics/dashboardChrome";
-import { Box, Card, Stack, Typography } from "@mui/material";
-import { useMemo } from "react";
+import Close from "@mui/icons-material/Close";
+import OpenInFull from "@mui/icons-material/OpenInFull";
+import {
+  Box,
+  Card,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -41,6 +54,8 @@ type Props = {
   leaderboard: LeaderboardRow[];
   activeStats: PlayerStatsView | null;
   playerName: string | null;
+  timeline: CoefficientTimeline;
+  highlightPlayerId: number | null;
   t: (key: string, values?: Record<string, string | number>) => string;
 };
 
@@ -53,38 +68,100 @@ function ChartCard({
   children: React.ReactNode;
   tall?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
   return (
-    <Card
-      sx={{
-        p: { xs: 1.5, sm: 2 },
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        minHeight: tall ? { xs: 240, sm: 280 } : { xs: 220, sm: 240 },
-        minWidth: 0,
-        maxWidth: "100%",
-        overflow: "hidden",
-      }}
-    >
-      <Typography
-        variant="overline"
-        component="p"
-        sx={{ color: "text.secondary", mb: 1 }}
-      >
-        {title}
-      </Typography>
-      <Box
+    <>
+      <Card
         sx={{
-          flex: 1,
-          minHeight: { xs: 200, sm: 220 },
+          p: { xs: 1.5, sm: 2 },
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: tall ? { xs: 240, sm: 280 } : { xs: 220, sm: 240 },
           minWidth: 0,
-          width: "100%",
-          position: "relative",
+          maxWidth: "100%",
+          overflow: "hidden",
         }}
       >
-        {children}
-      </Box>
-    </Card>
+        <Stack
+          direction="row"
+          alignItems="flex-start"
+          justifyContent="space-between"
+          gap={0.5}
+          sx={{ mb: 1 }}
+        >
+          <Typography
+            variant="overline"
+            component="p"
+            sx={{ color: "text.secondary", minWidth: 0 }}
+          >
+            {title}
+          </Typography>
+          <IconButton
+            size="small"
+            aria-label={`Open ${title} full screen`}
+            onClick={() => setOpen(true)}
+            sx={{ mt: -0.5, mr: -0.5 }}
+          >
+            <OpenInFull sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Stack>
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: { xs: 200, sm: 220 },
+            minWidth: 0,
+            width: "100%",
+            position: "relative",
+          }}
+        >
+          {children}
+        </Box>
+      </Card>
+      <Dialog
+        fullScreen
+        open={open}
+        onClose={() => setOpen(false)}
+        PaperProps={{
+          sx: { borderRadius: 0, display: "flex", flexDirection: "column" },
+        }}
+      >
+        <DialogTitle
+          component="div"
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 2,
+            pr: 1.5,
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, minWidth: 0 }}>
+            {title}
+          </Typography>
+          <IconButton
+            aria-label="Close full screen"
+            onClick={() => setOpen(false)}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            pb: 2.5,
+            "& [data-chart]": {
+              height: "min(72vh, 720px) !important",
+            },
+          }}
+        >
+          {children}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -95,6 +172,8 @@ export default function StatsDashboardCharts({
   leaderboard,
   activeStats,
   playerName,
+  timeline,
+  highlightPlayerId,
   t,
 }: Props) {
   const coefData = useMemo(
@@ -379,6 +458,13 @@ export default function StatsDashboardCharts({
     </Box>
 
     <Box sx={chartGridDenseSx}>
+      <StatsJosesCoefficientTimeline
+        timeline={timeline}
+        highlightPlayerId={highlightPlayerId}
+        title={t("statsChartCoefOverTime")}
+        hint={t("statsChartCoefOverTimeHint")}
+        emptyLabel={t("statsNoData")}
+      />
       <ChartCard title={t("statsChartPointsForAgainst")}>
         {!activeStats ? (
           empty

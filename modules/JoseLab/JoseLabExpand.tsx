@@ -12,7 +12,14 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
+
+const LabChartExpandedContext = createContext(false);
+
+/** True when this chart is the full-screen copy, false in the card. */
+export function useLabChartExpanded(): boolean {
+  return useContext(LabChartExpandedContext);
+}
 
 export function LabExpandable({
   title,
@@ -20,12 +27,15 @@ export function LabExpandable({
   header,
   children,
   kind,
+  tile = false,
 }: {
   title: string;
   hint?: string;
   header?: ReactNode;
   children: ReactNode;
   kind: "chart" | "table";
+  /** Stretch to the grid cell so the tile lines up with neighboring charts. */
+  tile?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -66,6 +76,9 @@ export function LabExpandable({
           minWidth: 0,
           containerType: "inline-size",
           overflow: "hidden",
+          ...(tile
+            ? { height: "100%", display: "flex", flexDirection: "column" }
+            : {}),
         }}
       >
         <Stack
@@ -87,16 +100,22 @@ export function LabExpandable({
         {header}
         {kind === "chart" ? (
           <Box
-            sx={{
-              width: "100%",
-              minWidth: 0,
-              height: 260,
-              "@container (min-width: 280px)": { height: 320 },
-              "@container (min-width: 360px)": { height: 380 },
-              "@container (min-width: 480px)": { height: 420 },
-            }}
+            sx={
+              tile
+                ? { flex: 1, width: "100%", minWidth: 0, minHeight: 360 }
+                : {
+                    width: "100%",
+                    minWidth: 0,
+                    height: 260,
+                    "@container (min-width: 280px)": { height: 320 },
+                    "@container (min-width: 360px)": { height: 380 },
+                    "@container (min-width: 480px)": { height: 420 },
+                  }
+            }
           >
-            {children}
+            <LabChartExpandedContext.Provider value={false}>
+              {children}
+            </LabChartExpandedContext.Provider>
           </Box>
         ) : (
           <Box sx={{ overflowX: "auto" }}>{children}</Box>
@@ -151,7 +170,9 @@ export function LabExpandable({
                 width: "100%",
               }}
             >
-              {children}
+              <LabChartExpandedContext.Provider value={true}>
+                {children}
+              </LabChartExpandedContext.Provider>
             </Box>
           ) : (
             <Box sx={{ overflowX: "auto", minWidth: 0 }}>{children}</Box>

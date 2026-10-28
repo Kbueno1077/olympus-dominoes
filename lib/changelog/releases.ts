@@ -21,11 +21,18 @@ export type ChangelogRelease = {
 export const CHANGELOG: ChangelogRelease[] = [
   {
     version: "4.10.0",
-    date: "2026-10-25",
+    date: "2026-10-28",
     schema: 25,
-    summary: "F-lab seasons now score directly from the active save.",
+    summary:
+      "F-lab seasons follow the active save, and Jose’s Coefficient can be read match by match.",
     highlights: [
       "F-lab builds its real seasons from the active dataset, so its results stay in step with the games you have saved.",
+      "Stats shows Jose’s Coefficient after each finished History match, for the mode, format, and dates you picked.",
+      "That chart opens on the latest matches. Scroll back for earlier ones. Full screen shows a longer stretch.",
+      "Hover a date to see each score and how it moved since the previous match.",
+      "F-lab draws the same chart for the whole save. Sliders rescale the lines, pins stand out, and you can plot every Nth match.",
+      "The other Stats charts open full screen too.",
+      "F-lab’s mode and format choices sit in the sidebar.",
     ],
   },
   {

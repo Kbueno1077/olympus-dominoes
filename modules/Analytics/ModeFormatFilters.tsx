@@ -17,6 +17,27 @@ import {
 import { useTranslation } from "@/i18n/useTranslation";
 import { Box, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material";
 
+const compactToggleGroupSx = {
+  flexWrap: "wrap",
+  gap: 0.5,
+  "& .MuiToggleButtonGroup-grouped": {
+    borderRadius: "8px !important",
+    border: "1px solid",
+    borderColor: "divider",
+    mx: 0,
+  },
+  "& .MuiToggleButton-root": {
+    flex: "0 0 auto",
+    gap: 0.4,
+    px: 0.75,
+    py: 0.15,
+    minHeight: 28,
+    fontSize: 12,
+    lineHeight: 1.2,
+    textTransform: "none" as const,
+  },
+};
+
 type Props = {
   tileSet: string;
   onTileSet: (next: string) => void;
@@ -24,6 +45,8 @@ type Props = {
   onModeLabel: (next: string) => void;
   /** History: All + every mode / format. Stats-style screens omit All. */
   includeAll?: boolean;
+  /** Tighter buttons for a sidebar. */
+  compact?: boolean;
 };
 
 export default function ModeFormatFilters({
@@ -32,6 +55,7 @@ export default function ModeFormatFilters({
   modeLabel,
   onModeLabel,
   includeAll = false,
+  compact = false,
 }: Props) {
   const { t } = useTranslation();
   const { formatLabel, tileLabel } = useModeFormatCopy();
@@ -43,19 +67,22 @@ export default function ModeFormatFilters({
     ? (["all", ...ALL_FORMAT_LABELS] as const)
     : ALL_FORMAT_LABELS;
 
+  const groupSx = compact ? compactToggleGroupSx : modeFormatToggleGroupSx;
+  const iconSize = compact ? 14 : 16;
+
   return (
-    <Stack spacing={1.5}>
+    <Stack spacing={compact ? 1 : 1.5}>
       <Box>
         <ModeFormatSectionTitle icon={MODE_SECTION_ICON} label={t("mode")} />
         <ToggleButtonGroup
           exclusive
           size="small"
-          fullWidth
+          fullWidth={!compact}
           value={tileSet}
           onChange={(_, value: string | null) => {
             if (value) onTileSet(value);
           }}
-          sx={modeFormatToggleGroupSx}
+          sx={groupSx}
         >
           {tileOptions.map((option) => (
             <ToggleButton
@@ -63,7 +90,7 @@ export default function ModeFormatFilters({
               value={option}
               aria-label={tileLabel(option)}
             >
-              <ModeFormatToggleLabel icon={tileSetIcon(option)}>
+              <ModeFormatToggleLabel icon={tileSetIcon(option)} iconSize={iconSize}>
                 {tileLabel(option)}
               </ModeFormatToggleLabel>
             </ToggleButton>
@@ -76,12 +103,12 @@ export default function ModeFormatFilters({
         <ToggleButtonGroup
           exclusive
           size="small"
-          fullWidth
+          fullWidth={!compact}
           value={modeLabel}
           onChange={(_, value: string | null) => {
             if (value) onModeLabel(value);
           }}
-          sx={modeFormatToggleGroupSx}
+          sx={groupSx}
         >
           {formatOptions.map((mode) => (
             <ToggleButton
@@ -89,7 +116,7 @@ export default function ModeFormatFilters({
               value={mode}
               aria-label={formatLabel(mode)}
             >
-              <ModeFormatToggleLabel icon={formatIcon(mode)}>
+              <ModeFormatToggleLabel icon={formatIcon(mode)} iconSize={iconSize}>
                 {formatLabel(mode)}
               </ModeFormatToggleLabel>
             </ToggleButton>
