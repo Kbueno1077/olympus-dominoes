@@ -1599,6 +1599,17 @@ export default function JoseLab() {
     </Card>
   );
 
+  const historyChart = data ? (
+    <JoseLabTimeline
+      timeline={globalTimeline}
+      formula={formula}
+      weightsK={deferredK}
+      weightsC={deferredC}
+      weightsKJ={deferredKJ}
+      pinnedIds={livePins}
+    />
+  ) : null;
+
   return (
     <Box sx={dashboardShellSx}>
       <Box
@@ -1753,18 +1764,6 @@ export default function JoseLab() {
               : null),
           }}
         >
-          {data ? (
-            <Box sx={{ gridColumn: "1 / -1", minWidth: 0, maxWidth: 560 }}>
-              <JoseLabTimeline
-                timeline={globalTimeline}
-                formula={formula}
-                weightsK={deferredK}
-                weightsC={deferredC}
-                weightsKJ={deferredKJ}
-                pinnedIds={livePins}
-              />
-            </Box>
-          ) : null}
           <LabSection
             title={datasetName ? `Real seasons · ${datasetName}` : "Real seasons"}
             hint="Same player stats as Stats / Rankings for the Mode and Format in the sidebar. Recalculate rebuilds them from the active save's matches. Pin a row to put that person on the charts."
@@ -1774,11 +1773,14 @@ export default function JoseLab() {
                 <CircularProgress size={28} />
               </Box>
             ) : scoredLive.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                {data
-                  ? "No games in this Mode and Format. Switch filters, or recalculate the active save."
-                  : "No active dataset yet. Import one from Manage data."}
-              </Typography>
+              <Stack spacing={2}>
+                {historyChart}
+                <Typography variant="body2" color="text.secondary">
+                  {data
+                    ? "No games in this Mode and Format. Switch filters, or recalculate the active save."
+                    : "No active dataset yet. Import one from Manage data."}
+                </Typography>
+              </Stack>
             ) : (
               <>
                 <JoseLabCharts
@@ -1790,6 +1792,7 @@ export default function JoseLab() {
                   scored={scoredLive}
                   pinnedIds={livePins}
                   columns={chartsPerRow}
+                  leading={historyChart}
                 />
                 <ReadmeTable
                   title="Active seasons · T–G–P, nets, live R"
