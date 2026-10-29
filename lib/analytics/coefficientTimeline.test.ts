@@ -4,6 +4,7 @@ import {
   coefficientAxisTicks,
   mapTimelineScores,
   thinTimelinePoints,
+  timelinePointsForPlayers,
   timelineStockToJosesInput,
   timelineWindowStart,
 } from "./coefficientTimeline";
@@ -178,6 +179,23 @@ describe("timelineWindowStart", () => {
   });
 });
 
+describe("timelinePointsForPlayers", () => {
+  it("drops a date when every player who sat it is off the chart", () => {
+    const points = [
+      { title: "March", playedIds: [1, 2, 3, 4] },
+      { title: "April", playedIds: [5, 2, 3, 4] },
+    ];
+
+    expect(
+      timelinePointsForPlayers(points, new Set([1])).map((point) => point.title)
+    ).toEqual(["March"]);
+    expect(
+      timelinePointsForPlayers(points, new Set([2])).map((point) => point.title)
+    ).toEqual(["March", "April"]);
+    expect(timelinePointsForPlayers(points, new Set())).toEqual([]);
+  });
+});
+
 describe("thinTimelinePoints", () => {
   it("keeps every match at stride 1 and always keeps the newest", () => {
     const points = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -215,6 +233,12 @@ describe("buildCoefficientTimeline", () => {
     });
 
     expect(timeline.points.map((point) => point.matchId)).toEqual([2, 1]);
+    expect([...(timeline.points[0]?.playedIds ?? [])].sort()).toEqual([
+      1, 2, 3, 4,
+    ]);
+    expect([...(timeline.points[1]?.playedIds ?? [])].sort()).toEqual([
+      2, 3, 4, 5,
+    ]);
     expect(scoreOf(timeline, 0, 1)).not.toBeNull();
     expect(timeline.points[1]?.stocks[1]).toEqual(timeline.points[0]?.stocks[1]);
     expect(timeline.points[0]?.stocks[2]?.gamesPlayed).toBe(1);
@@ -314,6 +338,7 @@ describe("buildCoefficientTimeline", () => {
     expect(timeline.players.map((person) => person.playerId)).not.toContain(4);
     expect(timeline.points[0]?.stocks[1]?.gamesPlayed).toBe(1);
     expect(timeline.points[0]?.stocks[4]).toBeUndefined();
+    expect(timeline.points[0]?.playedIds).not.toContain(4);
   });
 
   it("records an open table as one match, crediting only who sat", () => {

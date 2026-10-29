@@ -25,6 +25,7 @@ export function LabExpandable({
   title,
   hint,
   header,
+  actions,
   children,
   kind,
   tile = false,
@@ -32,6 +33,8 @@ export function LabExpandable({
   title: string;
   hint?: string;
   header?: ReactNode;
+  /** Icon buttons sitting just left of expand and of close. Called twice. */
+  actions?: () => ReactNode;
   children: ReactNode;
   kind: "chart" | "table";
   /** Stretch to the grid cell so the tile lines up with neighboring charts. */
@@ -89,13 +92,20 @@ export function LabExpandable({
           sx={{ mb: 0.75 }}
         >
           {heading}
-          <IconButton
-            size="small"
-            onClick={() => setOpen(true)}
-            aria-label={`Open ${title} full screen`}
+          <Stack
+            direction="row"
+            alignItems="flex-start"
+            sx={{ flexShrink: 0 }}
           >
-            <OpenInFull fontSize="small" />
-          </IconButton>
+            {actions?.()}
+            <IconButton
+              size="small"
+              onClick={() => setOpen(true)}
+              aria-label={`Open ${title} full screen`}
+            >
+              <OpenInFull fontSize="small" />
+            </IconButton>
+          </Stack>
         </Stack>
         {header}
         {kind === "chart" ? (
@@ -144,12 +154,15 @@ export function LabExpandable({
           }}
         >
           {heading}
-          <IconButton
-            onClick={() => setOpen(false)}
-            aria-label="Close full screen"
-          >
-            <Close />
-          </IconButton>
+          <Stack direction="row" alignItems="center" sx={{ flexShrink: 0 }}>
+            {actions?.()}
+            <IconButton
+              onClick={() => setOpen(false)}
+              aria-label="Close full screen"
+            >
+              <Close />
+            </IconButton>
+          </Stack>
         </DialogTitle>
         <DialogContent
           sx={{

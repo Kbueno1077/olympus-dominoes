@@ -850,6 +850,8 @@ const en = {
   statsTimelineEarlier: "Earlier",
   statsTimelineLater: "Later",
   statsTimelineScroll: "Scroll match dates",
+  statsTimelineOnlyMine: "Show only my Progress",
+  statsTimelineEverybody: "Show everybody",
   syncJosesCoefficient: "Sync Jose's Coefficient",
   syncJosesCoefficientHint:
     "Recompute the ranking score for every player from saved stats. Use after a formula change.",
@@ -2024,6 +2026,8 @@ const es = {
   statsTimelineEarlier: "Anteriores",
   statsTimelineLater: "Posteriores",
   statsTimelineScroll: "Desplazar fechas",
+  statsTimelineOnlyMine: "Ver solo mi progreso",
+  statsTimelineEverybody: "Ver a todos",
   syncJosesCoefficient: "Sincronizar coeficiente de José",
   syncJosesCoefficientHint:
     "Recalcula la puntuación de todos los jugadores a partir de las estadísticas guardadas. Úsalo si cambió la fórmula.",

@@ -180,10 +180,6 @@ export function formatMatchDate(
   }
 }
 
-/**
- * Mobile exports often store the English date as `title`. Treat that as empty
- * so the UI shows only the current-language timestamp.
- */
 function uniqueNamesPreserveOrder(names: readonly string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -225,6 +221,25 @@ function rowToSeat(row: Record<string, unknown>): HistorySeat {
   };
 }
 
+/**
+ * Phone saves store `title` as a formatted timestamp. Hermes and the browser
+ * disagree on narrow spaces, commas, and hour padding, so an exact compare
+ * treats that date as a custom name and the UI prints it again.
+ */
+function normalizeDateLabel(value: string): string {
+  return value
+    .replace(/[\u202f\u00a0\u2007\u2009\u200a]/g, " ")
+    .replace(/[.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/\b0(\d)\b/g, "$1");
+}
+
+function sameDateLabel(a: string, b: string): boolean {
+  return normalizeDateLabel(a) === normalizeDateLabel(b);
+}
+
 export function resolveMatchHeading(
   language: string,
   title: string,
@@ -238,7 +253,11 @@ export function resolveMatchHeading(
 
   const en = formatMatchDate("en", endedAt);
   const es = formatMatchDate("es", endedAt);
-  if (trimmed === en || trimmed === es || trimmed === localized) {
+  if (
+    sameDateLabel(trimmed, en) ||
+    sameDateLabel(trimmed, es) ||
+    sameDateLabel(trimmed, localized)
+  ) {
     return { heading: localized, showDateSubtitle: false };
   }
 
