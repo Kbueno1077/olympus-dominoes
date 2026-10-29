@@ -148,16 +148,18 @@ export default function JoseLabTimeline({
         </Stack>
       }
     >
-      <Box sx={{ width: "100%", height: "100%", minWidth: 0, minHeight: 0 }}>
-        <JosesCoefficientTimelinePlot
-          players={timeline.players}
-          points={shown}
-          highlightPlayerIds={highlightPlayerIds}
-          emptyLabel="No finished matches in this save yet."
-          formatValue={(value) => value.toFixed(2)}
-          digits={2}
-        />
-      </Box>
+      {() => (
+        <Box sx={{ width: "100%", height: "100%", minWidth: 0, minHeight: 0 }}>
+          <JosesCoefficientTimelinePlot
+            players={timeline.players}
+            points={shown}
+            highlightPlayerIds={highlightPlayerIds}
+            emptyLabel="No finished matches in this save yet."
+            formatValue={(value) => value.toFixed(2)}
+            digits={2}
+          />
+        </Box>
+      )}
     </LabExpandable>
     </Box>
   );

@@ -12,13 +12,49 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 
 const LabChartExpandedContext = createContext(false);
 
 /** True when this chart is the full-screen copy, false in the card. */
 export function useLabChartExpanded(): boolean {
   return useContext(LabChartExpandedContext);
+}
+
+type HiddenByView = { card: number[]; full: number[] };
+
+const ViewHiddenContext = createContext<{
+  hidden: HiddenByView;
+  setHidden: Dispatch<SetStateAction<HiddenByView>>;
+} | null>(null);
+
+/** Players turned off in this view. The card and full screen do not share a list. */
+export function useViewHiddenIds(): [
+  number[],
+  Dispatch<SetStateAction<number[]>>,
+] {
+  const expanded = useLabChartExpanded();
+  const view = expanded ? "full" : "card";
+  const ctx = useContext(ViewHiddenContext);
+  const [local, setLocal] = useState<number[]>([]);
+  if (!ctx) return [local, setLocal];
+  const hiddenIds = ctx.hidden[view];
+  const setHiddenIds: Dispatch<SetStateAction<number[]>> = (updater) => {
+    ctx.setHidden((current) => {
+      const prev = current[view];
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (next === prev) return current;
+      return { ...current, [view]: next };
+    });
+  };
+  return [hiddenIds, setHiddenIds];
 }
 
 export function LabExpandable({
@@ -33,14 +69,21 @@ export function LabExpandable({
   title: string;
   hint?: string;
   header?: ReactNode;
-  /** Icon buttons sitting just left of expand and of close. Called twice. */
-  actions?: () => ReactNode;
-  children: ReactNode;
+  /** Icon buttons sitting just left of expand and of close. Called once per view. */
+  actions?: (expanded: boolean) => ReactNode;
+  /** A function is called once for the card and once for full screen. */
+  children: ReactNode | ((expanded: boolean) => ReactNode);
   kind: "chart" | "table";
   /** Stretch to the grid cell so the tile lines up with neighboring charts. */
   tile?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [hiddenByView, setHiddenByView] = useState<HiddenByView>({
+    card: [],
+    full: [],
+  });
+  const chartBody = (expanded: boolean) =>
+    typeof children === "function" ? children(expanded) : children;
 
   const heading = (
     <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -72,6 +115,9 @@ export function LabExpandable({
   );
 
   return (
+    <ViewHiddenContext.Provider
+      value={{ hidden: hiddenByView, setHidden: setHiddenByView }}
+    >
     <>
       <Card
         sx={{
@@ -97,7 +143,7 @@ export function LabExpandable({
             alignItems="flex-start"
             sx={{ flexShrink: 0 }}
           >
-            {actions?.()}
+            {actions?.(false)}
             <IconButton
               size="small"
               onClick={() => setOpen(true)}
@@ -124,15 +170,16 @@ export function LabExpandable({
             }
           >
             <LabChartExpandedContext.Provider value={false}>
-              {children}
+              {chartBody(false)}
             </LabChartExpandedContext.Provider>
           </Box>
         ) : (
-          <Box sx={{ overflowX: "auto" }}>{children}</Box>
+          <Box sx={{ overflowX: "auto" }}>{chartBody(false)}</Box>
         )}
       </Card>
       <Dialog
         fullScreen
+        keepMounted={typeof children === "function"}
         open={open}
         onClose={() => setOpen(false)}
         PaperProps={{
@@ -155,7 +202,7 @@ export function LabExpandable({
         >
           {heading}
           <Stack direction="row" alignItems="center" sx={{ flexShrink: 0 }}>
-            {actions?.()}
+            {actions?.(true)}
             <IconButton
               onClick={() => setOpen(false)}
               aria-label="Close full screen"
@@ -184,14 +231,15 @@ export function LabExpandable({
               }}
             >
               <LabChartExpandedContext.Provider value={true}>
-                {children}
+                {chartBody(true)}
               </LabChartExpandedContext.Provider>
             </Box>
           ) : (
-            <Box sx={{ overflowX: "auto", minWidth: 0 }}>{children}</Box>
+            <Box sx={{ overflowX: "auto", minWidth: 0 }}>{chartBody(true)}</Box>
           )}
         </DialogContent>
       </Dialog>
     </>
+    </ViewHiddenContext.Provider>
   );
 }

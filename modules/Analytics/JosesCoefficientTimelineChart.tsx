@@ -21,6 +21,7 @@ import { JOSES_ACCENT } from "@/modules/Analytics/dashboardChrome";
 import {
   LabExpandable,
   useLabChartExpanded,
+  useViewHiddenIds,
 } from "@/modules/JoseLab/JoseLabExpand";
 import ChevronLeft from "@mui/icons-material/ChevronLeft";
 import ChevronRight from "@mui/icons-material/ChevronRight";
@@ -219,7 +220,7 @@ export function JosesCoefficientTimelinePlot({
   const { language, t } = useTranslation();
   const expanded = useLabChartExpanded();
   const pageSize = expanded ? WINDOW_FULL : WINDOW_INLINE;
-  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
+  const [hiddenIds, setHiddenIds] = useViewHiddenIds();
   const hidden = useMemo(() => new Set(hiddenIds), [hiddenIds]);
   const shown = useMemo(() => {
     const active = new Set<number>();
@@ -640,7 +641,7 @@ export function StatsJosesCoefficientTimeline({
   emptyLabel,
 }: StatsProps) {
   const { t } = useTranslation();
-  const [onlyMine, setOnlyMine] = useState(false);
+  const [onlyMine, setOnlyMine] = useState({ card: false, full: false });
   const points = useMemo(
     () =>
       mapTimelineScores(timeline, (stock) =>
@@ -648,12 +649,13 @@ export function StatsJosesCoefficientTimeline({
       ),
     [timeline]
   );
-  const players = useMemo(() => {
-    if (!onlyMine || highlightPlayerId == null) return timeline.players;
+  const playersFor = (full: boolean) => {
+    const mine = full ? onlyMine.full : onlyMine.card;
+    if (!mine || highlightPlayerId == null) return timeline.players;
     return timeline.players.filter(
       (player) => player.playerId === highlightPlayerId
     );
-  }, [highlightPlayerId, onlyMine, timeline.players]);
+  };
 
   return (
     <Box
@@ -673,45 +675,51 @@ export function StatsJosesCoefficientTimeline({
         actions={
           highlightPlayerId == null
             ? undefined
-            : () => (
-                <Tooltip
-                  title={
-                    onlyMine
-                      ? t("statsTimelineEverybody")
-                      : t("statsTimelineOnlyMine")
-                  }
-                >
-                  <IconButton
-                    size="small"
-                    aria-pressed={onlyMine}
-                    aria-label={
-                      onlyMine
-                        ? t("statsTimelineEverybody")
-                        : t("statsTimelineOnlyMine")
-                    }
-                    onClick={() => setOnlyMine((current) => !current)}
-                    sx={{
-                      color: onlyMine ? "primary.main" : "text.secondary",
-                    }}
-                  >
-                    <Person fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )
+            : (full) => {
+                const mine = full ? onlyMine.full : onlyMine.card;
+                const label = mine
+                  ? t("statsTimelineEverybody")
+                  : t("statsTimelineOnlyMine");
+                return (
+                  <Tooltip title={label}>
+                    <IconButton
+                      size="small"
+                      aria-pressed={mine}
+                      aria-label={label}
+                      onClick={() =>
+                        setOnlyMine((current) =>
+                          full
+                            ? { ...current, full: !current.full }
+                            : { ...current, card: !current.card }
+                        )
+                      }
+                      sx={{
+                        color: mine ? "primary.main" : "text.secondary",
+                      }}
+                    >
+                      <Person fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                );
+              }
         }
       >
-        <Box sx={{ width: "100%", height: "100%", minWidth: 0, minHeight: 0 }}>
-          <JosesCoefficientTimelinePlot
-            players={players}
-            points={points}
-            highlightPlayerIds={
-              highlightPlayerId == null ? [] : [highlightPlayerId]
-            }
-            emptyLabel={emptyLabel}
-            formatValue={(value) => formatJosesCoefficient(value)}
-            digits={1}
-          />
-        </Box>
+        {(full) => (
+          <Box
+            sx={{ width: "100%", height: "100%", minWidth: 0, minHeight: 0 }}
+          >
+            <JosesCoefficientTimelinePlot
+              players={playersFor(full)}
+              points={points}
+              highlightPlayerIds={
+                highlightPlayerId == null ? [] : [highlightPlayerId]
+              }
+              emptyLabel={emptyLabel}
+              formatValue={(value) => formatJosesCoefficient(value)}
+              digits={1}
+            />
+          </Box>
+        )}
       </LabExpandable>
     </Box>
   );
