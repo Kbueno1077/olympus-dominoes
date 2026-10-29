@@ -12,13 +12,49 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 
 const LabChartExpandedContext = createContext(false);
 
 /** True when this chart is the full-screen copy, false in the card. */
 export function useLabChartExpanded(): boolean {
   return useContext(LabChartExpandedContext);
+}
+
+type HiddenByView = { card: number[]; full: number[] };
+
+const ViewHiddenContext = createContext<{
+  hidden: HiddenByView;
+  setHidden: Dispatch<SetStateAction<HiddenByView>>;
+} | null>(null);
+
+/** Players turned off in this view. The card and full screen do not share a list. */
+export function useViewHiddenIds(): [
+  number[],
+  Dispatch<SetStateAction<number[]>>,
+] {
+  const expanded = useLabChartExpanded();
+  const view = expanded ? "full" : "card";
+  const ctx = useContext(ViewHiddenContext);
+  const [local, setLocal] = useState<number[]>([]);
+  if (!ctx) return [local, setLocal];
+  const hiddenIds = ctx.hidden[view];
+  const setHiddenIds: Dispatch<SetStateAction<number[]>> = (updater) => {
+    ctx.setHidden((current) => {
+      const prev = current[view];
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (next === prev) return current;
+      return { ...current, [view]: next };
+    });
+  };
+  return [hiddenIds, setHiddenIds];
 }
 
 export function LabExpandable({
@@ -42,6 +78,10 @@ export function LabExpandable({
   tile?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [hiddenByView, setHiddenByView] = useState<HiddenByView>({
+    card: [],
+    full: [],
+  });
   const chartBody = (expanded: boolean) =>
     typeof children === "function" ? children(expanded) : children;
 
@@ -75,6 +115,9 @@ export function LabExpandable({
   );
 
   return (
+    <ViewHiddenContext.Provider
+      value={{ hidden: hiddenByView, setHidden: setHiddenByView }}
+    >
     <>
       <Card
         sx={{
@@ -197,5 +240,6 @@ export function LabExpandable({
         </DialogContent>
       </Dialog>
     </>
+    </ViewHiddenContext.Provider>
   );
 }

@@ -21,6 +21,7 @@ import { JOSES_ACCENT } from "@/modules/Analytics/dashboardChrome";
 import {
   LabExpandable,
   useLabChartExpanded,
+  useViewHiddenIds,
 } from "@/modules/JoseLab/JoseLabExpand";
 import ChevronLeft from "@mui/icons-material/ChevronLeft";
 import ChevronRight from "@mui/icons-material/ChevronRight";
@@ -219,7 +220,7 @@ export function JosesCoefficientTimelinePlot({
   const { language, t } = useTranslation();
   const expanded = useLabChartExpanded();
   const pageSize = expanded ? WINDOW_FULL : WINDOW_INLINE;
-  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
+  const [hiddenIds, setHiddenIds] = useViewHiddenIds();
   const hidden = useMemo(() => new Set(hiddenIds), [hiddenIds]);
   const shown = useMemo(() => {
     const active = new Set<number>();
