@@ -33,14 +33,17 @@ export function LabExpandable({
   title: string;
   hint?: string;
   header?: ReactNode;
-  /** Icon buttons sitting just left of expand and of close. Called twice. */
-  actions?: () => ReactNode;
-  children: ReactNode;
+  /** Icon buttons sitting just left of expand and of close. Called once per view. */
+  actions?: (expanded: boolean) => ReactNode;
+  /** A function is called once for the card and once for full screen. */
+  children: ReactNode | ((expanded: boolean) => ReactNode);
   kind: "chart" | "table";
   /** Stretch to the grid cell so the tile lines up with neighboring charts. */
   tile?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const chartBody = (expanded: boolean) =>
+    typeof children === "function" ? children(expanded) : children;
 
   const heading = (
     <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -97,7 +100,7 @@ export function LabExpandable({
             alignItems="flex-start"
             sx={{ flexShrink: 0 }}
           >
-            {actions?.()}
+            {actions?.(false)}
             <IconButton
               size="small"
               onClick={() => setOpen(true)}
@@ -124,15 +127,16 @@ export function LabExpandable({
             }
           >
             <LabChartExpandedContext.Provider value={false}>
-              {children}
+              {chartBody(false)}
             </LabChartExpandedContext.Provider>
           </Box>
         ) : (
-          <Box sx={{ overflowX: "auto" }}>{children}</Box>
+          <Box sx={{ overflowX: "auto" }}>{chartBody(false)}</Box>
         )}
       </Card>
       <Dialog
         fullScreen
+        keepMounted={typeof children === "function"}
         open={open}
         onClose={() => setOpen(false)}
         PaperProps={{
@@ -155,7 +159,7 @@ export function LabExpandable({
         >
           {heading}
           <Stack direction="row" alignItems="center" sx={{ flexShrink: 0 }}>
-            {actions?.()}
+            {actions?.(true)}
             <IconButton
               onClick={() => setOpen(false)}
               aria-label="Close full screen"
@@ -184,11 +188,11 @@ export function LabExpandable({
               }}
             >
               <LabChartExpandedContext.Provider value={true}>
-                {children}
+                {chartBody(true)}
               </LabChartExpandedContext.Provider>
             </Box>
           ) : (
-            <Box sx={{ overflowX: "auto", minWidth: 0 }}>{children}</Box>
+            <Box sx={{ overflowX: "auto", minWidth: 0 }}>{chartBody(true)}</Box>
           )}
         </DialogContent>
       </Dialog>
