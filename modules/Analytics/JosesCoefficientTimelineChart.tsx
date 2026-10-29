@@ -5,6 +5,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import {
   coefficientAxisTicks,
   mapTimelineScores,
+  timelinePointsForPlayers,
   timelineStockToJosesInput,
   timelineWindowStart,
   type CoefficientTimeline,
@@ -23,7 +24,8 @@ import {
 } from "@/modules/JoseLab/JoseLabExpand";
 import ChevronLeft from "@mui/icons-material/ChevronLeft";
 import ChevronRight from "@mui/icons-material/ChevronRight";
-import { Box, Button, Typography } from "@mui/material";
+import Person from "@mui/icons-material/Person";
+import { Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
 import { useMemo, useRef, useState } from "react";
 import {
   CartesianGrid,
@@ -217,20 +219,27 @@ export function JosesCoefficientTimelinePlot({
   const { language, t } = useTranslation();
   const expanded = useLabChartExpanded();
   const pageSize = expanded ? WINDOW_FULL : WINDOW_INLINE;
-  const anchor = `${points.length}:${pageSize}`;
+  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
+  const hidden = useMemo(() => new Set(hiddenIds), [hiddenIds]);
+  const shown = useMemo(() => {
+    const active = new Set<number>();
+    for (const player of players) {
+      if (!hidden.has(player.playerId)) active.add(player.playerId);
+    }
+    return timelinePointsForPlayers(points, active);
+  }, [hidden, players, points]);
+  const anchor = `${shown.length}:${pageSize}`;
   const [scroll, setScroll] = useState<{
     anchor: string;
     start: number;
   } | null>(null);
   const wheelCarry = useRef(0);
-  const maxStart = Math.max(0, points.length - pageSize);
+  const maxStart = Math.max(0, shown.length - pageSize);
   const windowStart = timelineWindowStart(
-    points.length,
+    shown.length,
     pageSize,
     scroll != null && scroll.anchor === anchor ? scroll.start : null
   );
-  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
-  const hidden = useMemo(() => new Set(hiddenIds), [hiddenIds]);
   const highlight = useMemo(
     () => new Set(highlightPlayerIds),
     [highlightPlayerIds]
@@ -258,13 +267,13 @@ export function JosesCoefficientTimelinePlot({
 
   const rows = useMemo(
     () =>
-      points.map((point, index) => {
+      shown.map((point, index) => {
         const row: Record<string, string | number | null> = {
           index,
           tooltipLabel: tooltipLabel(language, point.title, point.endedAt),
           axisLabel: axisLabel(language, point.endedAt, index),
         };
-        const previous = index > 0 ? points[index - 1] : undefined;
+        const previous = index > 0 ? shown[index - 1] : undefined;
         for (const player of players) {
           const key = seriesKey(player.playerId);
           const value = point.values[player.playerId];
@@ -274,12 +283,12 @@ export function JosesCoefficientTimelinePlot({
         }
         return row;
       }),
-    [language, players, points]
+    [language, players, shown]
   );
 
   const yTicks = useMemo(() => {
     const values: number[] = [];
-    const slice = points.slice(windowStart, windowStart + pageSize);
+    const slice = shown.slice(windowStart, windowStart + pageSize);
     for (const point of slice) {
       for (const player of players) {
         if (hidden.has(player.playerId)) continue;
@@ -291,11 +300,14 @@ export function JosesCoefficientTimelinePlot({
     }
     if (values.length === 0) return [0];
     return coefficientAxisTicks(Math.min(...values), Math.max(...values));
-  }, [hidden, pageSize, players, points, windowStart]);
+  }, [hidden, pageSize, players, shown, windowStart]);
 
-  const hasValue = points.some((point) => Object.keys(point.values).length > 0);
+  const hasValue = shown.some((point) => Object.keys(point.values).length > 0);
+  const seriesHasScores = points.some(
+    (point) => Object.keys(point.values).length > 0
+  );
 
-  if (!hasValue) {
+  if (!seriesHasScores) {
     return (
       <Box
         sx={{
@@ -345,6 +357,7 @@ export function JosesCoefficientTimelinePlot({
         flexDirection: "column",
       }}
     >
+      {hasValue ? (
       <Box
         sx={{
           flex: 1,
@@ -362,13 +375,13 @@ export function JosesCoefficientTimelinePlot({
           wheelCarry.current -= hops * 48;
           setScroll((current) => {
             const base = timelineWindowStart(
-              points.length,
+              shown.length,
               pageSize,
               current != null && current.anchor === anchor ? current.start : null
             );
             return {
               anchor,
-              start: timelineWindowStart(points.length, pageSize, base + hops),
+              start: timelineWindowStart(shown.length, pageSize, base + hops),
             };
           });
         }}
@@ -466,6 +479,20 @@ export function JosesCoefficientTimelinePlot({
           </ChartContainer>
         </Box>
       </Box>
+      ) : (
+        <Box
+          sx={{
+            flex: 1,
+            display: "grid",
+            placeItems: "center",
+            px: 1,
+          }}
+        >
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            {emptyLabel}
+          </Typography>
+        </Box>
+      )}
       {maxStart > 0 ? (
         <Box
           sx={{
@@ -473,7 +500,7 @@ export function JosesCoefficientTimelinePlot({
             alignItems: "center",
             gap: 0.5,
             flexShrink: 0,
-            pt: 0.25,
+            py: 1.5,
           }}
         >
           <Button
@@ -612,6 +639,8 @@ export function StatsJosesCoefficientTimeline({
   hint,
   emptyLabel,
 }: StatsProps) {
+  const { t } = useTranslation();
+  const [onlyMine, setOnlyMine] = useState(false);
   const points = useMemo(
     () =>
       mapTimelineScores(timeline, (stock) =>
@@ -619,6 +648,12 @@ export function StatsJosesCoefficientTimeline({
       ),
     [timeline]
   );
+  const players = useMemo(() => {
+    if (!onlyMine || highlightPlayerId == null) return timeline.players;
+    return timeline.players.filter(
+      (player) => player.playerId === highlightPlayerId
+    );
+  }, [highlightPlayerId, onlyMine, timeline.players]);
 
   return (
     <Box
@@ -630,10 +665,44 @@ export function StatsJosesCoefficientTimeline({
         minHeight: { xs: 440, sm: 520 },
       }}
     >
-      <LabExpandable title={title} hint={hint} kind="chart" tile>
+      <LabExpandable
+        title={title}
+        hint={hint}
+        kind="chart"
+        tile
+        actions={
+          highlightPlayerId == null
+            ? undefined
+            : () => (
+                <Tooltip
+                  title={
+                    onlyMine
+                      ? t("statsTimelineEverybody")
+                      : t("statsTimelineOnlyMine")
+                  }
+                >
+                  <IconButton
+                    size="small"
+                    aria-pressed={onlyMine}
+                    aria-label={
+                      onlyMine
+                        ? t("statsTimelineEverybody")
+                        : t("statsTimelineOnlyMine")
+                    }
+                    onClick={() => setOnlyMine((current) => !current)}
+                    sx={{
+                      color: onlyMine ? "primary.main" : "text.secondary",
+                    }}
+                  >
+                    <Person fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )
+        }
+      >
         <Box sx={{ width: "100%", height: "100%", minWidth: 0, minHeight: 0 }}>
           <JosesCoefficientTimelinePlot
-            players={timeline.players}
+            players={players}
             points={points}
             highlightPlayerIds={
               highlightPlayerId == null ? [] : [highlightPlayerId]

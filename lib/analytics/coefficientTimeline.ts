@@ -36,6 +36,8 @@ export type CoefficientTimelinePoint = {
   matchId: number;
   title: string;
   endedAt: string;
+  /** Players credited in this match. Sit-outs are not included. */
+  playedIds: number[];
   /** Running stocks after this match, for players who have already played. */
   stocks: Record<number, TimelineStock>;
 };
@@ -55,6 +57,7 @@ export type ScoredTimelinePoint = {
   matchId: number;
   title: string;
   endedAt: string;
+  playedIds: number[];
   values: Record<number, number>;
 };
 
@@ -133,8 +136,10 @@ export function buildCoefficientTimeline(
       games: detail.games.map((game) => ({ game, seats: game.seats })),
     });
 
+    const playedIds: number[] = [];
     for (const row of delta.playerStats) {
-      if (hidden.has(row.playerId)) continue;
+      if (hidden.has(row.playerId) || row.gamesPlayed <= 0) continue;
+      playedIds.push(row.playerId);
       let stock = running.get(row.playerId);
       if (!stock) {
         stock = emptyStock();
@@ -157,6 +162,7 @@ export function buildCoefficientTimeline(
       matchId: item.id,
       title: item.title,
       endedAt: item.endedAt,
+      playedIds,
       stocks: snapshot(running, hidden),
     });
   }
@@ -242,6 +248,20 @@ export function coefficientAxisTicks(min: number, max: number): number[] {
   return ticks;
 }
 
+/**
+ * Dates where none of the players still on the chart actually sat.
+ * A carried score from an earlier match does not keep the date.
+ */
+export function timelinePointsForPlayers<T extends { playedIds: readonly number[] }>(
+  points: readonly T[],
+  activePlayerIds: ReadonlySet<number>
+): T[] {
+  if (activePlayerIds.size === 0) return [];
+  return points.filter((point) =>
+    point.playedIds.some((id) => activePlayerIds.has(id))
+  );
+}
+
 /** Score each carried stock. Missing players have not played yet. */
 export function mapTimelineScores(
   timeline: CoefficientTimeline,
@@ -258,6 +278,7 @@ export function mapTimelineScores(
       matchId: point.matchId,
       title: point.title,
       endedAt: point.endedAt,
+      playedIds: point.playedIds,
       values,
     };
   });
